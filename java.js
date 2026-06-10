@@ -270,7 +270,7 @@ function animate(timestamp) {
         let testUserId = user ? user.id : 123456789;
         let testUserName = user ? user.first_name : "Test Oyuncusu";
 
-        fetch('https://localhost:7198/api/score/save', {
+        fetch('https://ninja-bridge-api.onrender.com/api/score/save', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
