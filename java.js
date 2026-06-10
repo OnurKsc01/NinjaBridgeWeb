@@ -268,7 +268,7 @@ function animate(timestamp) {
         let testUserName = user ? user.first_name : "Test Oyuncusu";
 
         // SKOR GÖNDERME API BAĞLANTISI (BURAYI GÜNCELLE)
-        fetch('https://https://ninja-bridge-api.onrender.com/api/score/save', {
+        fetch('https://ninja-bridge-api.onrender.com/api/score/save', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -300,17 +300,18 @@ function animate(timestamp) {
 function thePlatformTheStickHits() {
   if (sticks.last().rotation != 90)
     throw Error(`Stick is ${sticks.last().rotation}°`);
+  
   const stickFarX = sticks.last().x + sticks.last().length;
 
   const platformTheStickHits = platforms.find(
-    (platform) => platform.x < constFarX && constFarX < platform.x + platform.w
+    (platform) => platform.x < stickFarX && stickFarX < platform.x + platform.w
   );
 
   if (
     platformTheStickHits &&
     platformTheStickHits.x + platformTheStickHits.w / 2 - perfectAreaSize / 2 <
-      constFarX &&
-    constFarX <
+      stickFarX &&
+    stickFarX <
       platformTheStickHits.x + platformTheStickHits.w / 2 + perfectAreaSize / 2
   )
     return [platformTheStickHits, true];
@@ -513,22 +514,8 @@ function getTreeY(x, baseHeight, amplitude) {
 // ==========================================
 // OYUN İÇİ SKOR TABLOSU MODALI VE API ÇEKİMİ
 // ==========================================
-const leaderboardBtn = document.createElement("button");
-leaderboardBtn.id = "leaderboardBtn";
-leaderboardBtn.style.cssText = "position:absolute; top:30px; left:30px; font-size:1.2em; font-weight:bold; cursor:pointer; background:gold; border:none; padding:10px; border-radius:5px; z-index:10;";
-leaderboardBtn.innerText = "🏆 Skorlar";
-document.body.appendChild(leaderboardBtn);
-
-const leaderboardModal = document.createElement("div");
-leaderboardModal.id = "leaderboardModal";
-leaderboardModal.style.cssText = "display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:20px; border-radius:10px; z-index:100; max-height:70%; overflow-y:auto; box-shadow: 0 0 15px rgba(0,0,0,0.8); width:250px; text-align:center;";
-leaderboardModal.innerHTML = `
-    <h2 style="margin-top:0;">Global Top 25</h2>
-    <ul id="scoreList" style="list-style:none; padding:0; text-align:left; font-weight:600;"></ul>
-    <button id="closeLeaderboard" style="margin-top:15px; background:red; color:white; border:none; padding:10px 20px; cursor:pointer; font-weight:bold; border-radius:5px;">Kapat</button>
-`;
-document.body.appendChild(leaderboardModal);
-
+const leaderboardBtn = document.getElementById("leaderboardBtn");
+const leaderboardModal = document.getElementById("leaderboardModal");
 const closeLeaderboard = document.getElementById("closeLeaderboard");
 const scoreList = document.getElementById("scoreList");
 
@@ -537,8 +524,7 @@ leaderboardBtn.addEventListener("click", function(event) {
     leaderboardModal.style.display = "block";
     scoreList.innerHTML = "<li style='text-align:center;'>Yükleniyor... ⏳</li>";
 
-    // SKOR TABLOSUNU ÇEKECEĞİ RENDER APİ LİNKİ (BURAYI DA GÜNCELLE)
-    fetch('https://https://ninja-bridge-api.onrender.com/api/score/global')
+    fetch('https://ninja-bridge-api.onrender.com/api/score/global')
         .then(response => response.json())
         .then(data => {
             scoreList.innerHTML = ""; 
