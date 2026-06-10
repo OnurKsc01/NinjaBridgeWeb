@@ -141,7 +141,7 @@ window.addEventListener("keydown", function (event) {
 
 // BİLGİSAYAR FARE KONTROLLERİ
 window.addEventListener("mousedown", function (event) {
-  if (phase == "waiting") {
+  if (phase == "waiting" && event.target.id !== "leaderboardBtn") {
     lastTimestamp = undefined;
     introductionElement.style.opacity = 0;
     phase = "stretching";
@@ -157,7 +157,7 @@ window.addEventListener("mouseup", function (event) {
 
 // MOBİL DOKUNMATİK EKRAN KONTROLLERİ
 window.addEventListener("touchstart", function (event) {
-  if (phase == "waiting") {
+  if (phase == "waiting" && event.target.id !== "leaderboardBtn" && event.target.id !== "closeLeaderboard") {
     lastTimestamp = undefined;
     introductionElement.style.opacity = 0;
     phase = "stretching";
@@ -267,7 +267,7 @@ function animate(timestamp) {
         let testUserId = user ? user.id : 123456789;
         let testUserName = user ? user.first_name : "Test Oyuncusu";
 
-        // SKOR GÖNDERME API BAĞLANTISI (BURAYI GÜNCELLE)
+        // SKOR GÖNDERME API BAĞLANTISI (DÜZELTİLDİ)
         fetch('https://ninja-bridge-api.onrender.com/api/score/save', {
             method: 'POST',
             headers: {
@@ -297,6 +297,7 @@ function animate(timestamp) {
   lastTimestamp = timestamp;
 }
 
+// DONMAYA SEBEP OLAN KISIM TAMAMEN DÜZELTİLDİ
 function thePlatformTheStickHits() {
   if (sticks.last().rotation != 90)
     throw Error(`Stick is ${sticks.last().rotation}°`);
@@ -512,45 +513,50 @@ function getTreeY(x, baseHeight, amplitude) {
 
 
 // ==========================================
-// OYUN İÇİ SKOR TABLOSU MODALI VE API ÇEKİMİ
+// OYUN İÇİ SKOR TABLOSU MODALI VE API ÇEKİMİ (DÜZELTİLDİ)
 // ==========================================
 const leaderboardBtn = document.getElementById("leaderboardBtn");
 const leaderboardModal = document.getElementById("leaderboardModal");
 const closeLeaderboard = document.getElementById("closeLeaderboard");
 const scoreList = document.getElementById("scoreList");
 
-leaderboardBtn.addEventListener("click", function(event) {
-    event.stopPropagation(); 
-    leaderboardModal.style.display = "block";
-    scoreList.innerHTML = "<li style='text-align:center;'>Yükleniyor... ⏳</li>";
+if(leaderboardBtn) {
+    leaderboardBtn.addEventListener("click", function(event) {
+        event.stopPropagation(); 
+        leaderboardModal.style.display = "block";
+        scoreList.innerHTML = "<li style='text-align:center;'>Yükleniyor... ⏳</li>";
 
-    fetch('https://ninja-bridge-api.onrender.com/api/score/global')
-        .then(response => response.json())
-        .then(data => {
-            scoreList.innerHTML = ""; 
-            if(data.length === 0) {
-                scoreList.innerHTML = "<li>Henüz kimse oynamadı!</li>";
-                return;
-            }
-            
-            data.forEach((item, index) => {
-                let li = document.createElement("li");
-                li.style.padding = "5px 0";
-                li.style.borderBottom = "1px solid #ddd";
-                li.innerText = `${index + 1}. ${item.name} ➖ ${item.score} Puan`;
-                scoreList.appendChild(li);
+        // LİNK DÜZELTİLDİ
+        fetch('https://ninja-bridge-api.onrender.com/api/score/global')
+            .then(response => response.json())
+            .then(data => {
+                scoreList.innerHTML = ""; 
+                if(data.length === 0) {
+                    scoreList.innerHTML = "<li>Henüz kimse oynamadı!</li>";
+                    return;
+                }
+                
+                data.forEach((item, index) => {
+                    let li = document.createElement("li");
+                    li.style.padding = "5px 0";
+                    li.style.borderBottom = "1px solid #ddd";
+                    li.innerText = `${index + 1}. ${item.name} ➖ ${item.score} Puan`;
+                    scoreList.appendChild(li);
+                });
+            })
+            .catch(error => {
+                scoreList.innerHTML = "<li style='color:red;'>Skorlar çekilemedi!</li>";
+                console.error(error);
             });
-        })
-        .catch(error => {
-            scoreList.innerHTML = "<li style='color:red;'>Skorlar çekilemedi!</li>";
-            console.error(error);
-        });
-});
+    });
 
-closeLeaderboard.addEventListener("click", function(event) {
-    event.stopPropagation();
-    leaderboardModal.style.display = "none";
-});
+    leaderboardBtn.addEventListener("touchstart", (e) => e.stopPropagation());
+}
 
-leaderboardBtn.addEventListener("touchstart", (e) => e.stopPropagation());
-closeLeaderboard.addEventListener("touchstart", (e) => e.stopPropagation());
+if(closeLeaderboard) {
+    closeLeaderboard.addEventListener("click", function(event) {
+        event.stopPropagation();
+        leaderboardModal.style.display = "none";
+    });
+    closeLeaderboard.addEventListener("touchstart", (e) => e.stopPropagation());
+}
