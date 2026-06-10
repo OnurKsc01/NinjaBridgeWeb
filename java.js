@@ -2,11 +2,9 @@ Array.prototype.last = function () {
   return this[this.length - 1];
 };
 
-
 Math.sinus = function (degree) {
   return Math.sin((degree / 180) * Math.PI);
 };
-
 
 let phase = "waiting"; 
 let lastTimestamp; 
@@ -19,10 +17,7 @@ let platforms = [];
 let sticks = [];
 let trees = [];
 
-
-
 let score = 0;
-
 
 const canvasWidth = 375;
 const canvasHeight = 375;
@@ -30,7 +25,6 @@ const platformHeight = 100;
 const heroDistanceFromEdge = 10; 
 const paddingX = 100; 
 const perfectAreaSize = 10;
-
 
 const backgroundSpeedMultiplier = 0.2;
 
@@ -61,12 +55,9 @@ const perfectElement = document.getElementById("perfect");
 const restartButton = document.getElementById("restart");
 const scoreElement = document.getElementById("score");
 
-
 resetGame();
 
-
 function resetGame() {
-  
   phase = "waiting";
   lastTimestamp = undefined;
   sceneOffset = 0;
@@ -77,7 +68,6 @@ function resetGame() {
   restartButton.style.display = "none";
   scoreElement.innerText = score;
 
-  
   platforms = [{ x: 50, w: 50 }];
   generatePlatform();
   generatePlatform();
@@ -108,7 +98,6 @@ function generateTree() {
   const minimumGap = 30;
   const maximumGap = 150;
 
-  
   const lastTree = trees[trees.length - 1];
   let furthestX = lastTree ? lastTree.x : 0;
 
@@ -129,7 +118,6 @@ function generatePlatform() {
   const minimumWidth = 20;
   const maximumWidth = 100;
 
-
   const lastPlatform = platforms[platforms.length - 1];
   let furthestX = lastPlatform.x + lastPlatform.w;
 
@@ -143,9 +131,6 @@ function generatePlatform() {
   platforms.push({ x, w });
 }
 
-resetGame();
-
-
 window.addEventListener("keydown", function (event) {
   if (event.key == " ") {
     event.preventDefault();
@@ -154,6 +139,7 @@ window.addEventListener("keydown", function (event) {
   }
 });
 
+// BİLGİSAYAR FARE KONTROLLERİ
 window.addEventListener("mousedown", function (event) {
   if (phase == "waiting") {
     lastTimestamp = undefined;
@@ -169,7 +155,7 @@ window.addEventListener("mouseup", function (event) {
   }
 });
 
-// --- MOBİL DOKUNMATİK DESTEĞİ ---
+// MOBİL DOKUNMATİK EKRAN KONTROLLERİ
 window.addEventListener("touchstart", function (event) {
   if (phase == "waiting") {
     lastTimestamp = undefined;
@@ -184,7 +170,6 @@ window.addEventListener("touchend", function (event) {
     phase = "turning";
   }
 });
-// --------------------------------
 
 window.addEventListener("resize", function (event) {
   canvas.width = window.innerWidth;
@@ -193,7 +178,6 @@ window.addEventListener("resize", function (event) {
 });
 
 window.requestAnimationFrame(animate);
-
 
 function animate(timestamp) {
   if (!lastTimestamp) {
@@ -217,7 +201,6 @@ function animate(timestamp) {
 
         const [nextPlatform, perfectHit] = thePlatformTheStickHits();
         if (nextPlatform) {
-         
           score += perfectHit ? 2 : 1;
           scoreElement.innerText = score;
 
@@ -240,14 +223,12 @@ function animate(timestamp) {
 
       const [nextPlatform] = thePlatformTheStickHits();
       if (nextPlatform) {
-        
         const maxHeroX = nextPlatform.x + nextPlatform.w - heroDistanceFromEdge;
         if (heroX > maxHeroX) {
           heroX = maxHeroX;
           phase = "transitioning";
         }
       } else {
-        
         const maxHeroX = sticks.last().x + sticks.last().length + heroWidth;
         if (heroX > maxHeroX) {
           heroX = maxHeroX;
@@ -261,7 +242,6 @@ function animate(timestamp) {
 
       const [nextPlatform] = thePlatformTheStickHits();
       if (sceneOffset > nextPlatform.x + nextPlatform.w - paddingX) {
-       
         sticks.push({
           x: nextPlatform.x + nextPlatform.w,
           length: 0,
@@ -278,16 +258,17 @@ function animate(timestamp) {
       heroY += (timestamp - lastTimestamp) / fallingSpeed;
       const maxHeroY =
         platformHeight + 100 + (window.innerHeight - canvasHeight) / 2;
+      
       if (heroY > maxHeroY) {
         restartButton.style.display = "block";
         let tg = window.Telegram?.WebApp;
         let user = tg?.initDataUnsafe?.user;
         
-        
         let testUserId = user ? user.id : 123456789;
         let testUserName = user ? user.first_name : "Test Oyuncusu";
 
-        fetch('https://ninja-bridge-api.onrender.com/api/score/save', {
+        // SKOR GÖNDERME API BAĞLANTISI (BURAYI GÜNCELLE)
+        fetch('https://https://ninja-bridge-api.onrender.com/api/score/save', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -304,31 +285,6 @@ function animate(timestamp) {
         .catch(error => console.error("Skor gönderim hatası:", error));
         return;
       }
-     
-if (heroY > maxHeroY) {
-  restartButton.style.display = "block";
-  
-  
-  let tg = window.Telegram.WebApp;
-  let user = tg.initDataUnsafe?.user;
-  
-  if (user) {
-      
-      fetch('8977118291:AAEoI9wtmI9xpZAcWxk-vXEVpWXz4RU47qk/api/score/save', {
-          method: 'POST',
-          headers: {
-              'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-              userId: user.id,
-              firstName: user.first_name,
-              score: score,
-              initData: tg.initData 
-          })
-      });
-  }
-  return;
-}
       break;
     }
     default:
@@ -347,15 +303,14 @@ function thePlatformTheStickHits() {
   const stickFarX = sticks.last().x + sticks.last().length;
 
   const platformTheStickHits = platforms.find(
-    (platform) => platform.x < stickFarX && stickFarX < platform.x + platform.w
+    (platform) => platform.x < constFarX && constFarX < platform.x + platform.w
   );
 
-  
   if (
     platformTheStickHits &&
     platformTheStickHits.x + platformTheStickHits.w / 2 - perfectAreaSize / 2 <
-      stickFarX &&
-    stickFarX <
+      constFarX &&
+    constFarX <
       platformTheStickHits.x + platformTheStickHits.w / 2 + perfectAreaSize / 2
   )
     return [platformTheStickHits, true];
@@ -369,18 +324,15 @@ function draw() {
 
   drawBackground();
 
-  
   ctx.translate(
     (window.innerWidth - canvasWidth) / 2 - sceneOffset,
     (window.innerHeight - canvasHeight) / 2
   );
 
-  
   drawPlatforms();
   drawHero();
   drawSticks();
 
-  
   ctx.restore();
 }
 
@@ -392,7 +344,6 @@ restartButton.addEventListener("click", function (event) {
 
 function drawPlatforms() {
   platforms.forEach(({ x, w }) => {
-    
     ctx.fillStyle = "black";
     ctx.fillRect(
       x,
@@ -401,7 +352,6 @@ function drawPlatforms() {
       platformHeight + (window.innerHeight - canvasHeight) / 2
     );
 
-    
     if (sticks.last().x < x) {
       ctx.fillStyle = "red";
       ctx.fillRect(
@@ -422,7 +372,6 @@ function drawHero() {
     heroY + canvasHeight - platformHeight - heroHeight / 2
   );
 
- 
   drawRoundedRect(
     -heroWidth / 2,
     -heroHeight / 2,
@@ -431,7 +380,6 @@ function drawHero() {
     5
   );
 
-  
   const legDistance = 5;
   ctx.beginPath();
   ctx.arc(legDistance, 11.5, 3, 0, Math.PI * 2, false);
@@ -440,13 +388,11 @@ function drawHero() {
   ctx.arc(-legDistance, 11.5, 3, 0, Math.PI * 2, false);
   ctx.fill();
 
-  
   ctx.beginPath();
   ctx.fillStyle = "white";
   ctx.arc(5, -7, 3, 0, Math.PI * 2, false);
   ctx.fill();
 
- 
   ctx.fillStyle = "red";
   ctx.fillRect(-heroWidth / 2 - 1, -12, heroWidth + 2, 4.5);
   ctx.beginPath();
@@ -481,38 +427,31 @@ function drawSticks() {
   sticks.forEach((stick) => {
     ctx.save();
 
-   
     ctx.translate(stick.x, canvasHeight - platformHeight);
     ctx.rotate((Math.PI / 180) * stick.rotation);
 
-    
     ctx.beginPath();
     ctx.lineWidth = 2;
     ctx.moveTo(0, 0);
     ctx.lineTo(0, -stick.length);
     ctx.stroke();
 
-    
     ctx.restore();
   });
 }
 
 function drawBackground() {
-  
   var gradient = ctx.createLinearGradient(0, 0, 0, window.innerHeight);
   gradient.addColorStop(0, "#BBD691");
   gradient.addColorStop(1, "#FEF1E1");
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
 
- 
   drawHill(hill1BaseHeight, hill1Amplitude, hill1Stretch, "#95C629");
   drawHill(hill2BaseHeight, hill2Amplitude, hill2Stretch, "#659F1C");
 
-  
   trees.forEach((tree) => drawTree(tree.x, tree.color));
 }
-
 
 function drawHill(baseHeight, amplitude, stretch, color) {
   ctx.beginPath();
@@ -538,7 +477,6 @@ function drawTree(x, color) {
   const treeCrownHeight = 25;
   const treeCrownWidth = 10;
 
- 
   ctx.fillStyle = "#7D833C";
   ctx.fillRect(
     -treeTrunkWidth / 2,
@@ -547,7 +485,6 @@ function drawTree(x, color) {
     treeTrunkHeight
   );
 
-  
   ctx.beginPath();
   ctx.moveTo(-treeCrownWidth / 2, -treeTrunkHeight);
   ctx.lineTo(0, -(treeTrunkHeight + treeCrownHeight));
@@ -571,3 +508,63 @@ function getTreeY(x, baseHeight, amplitude) {
   const sineBaseY = window.innerHeight - baseHeight;
   return Math.sinus(x) * amplitude + sineBaseY;
 }
+
+
+// ==========================================
+// OYUN İÇİ SKOR TABLOSU MODALI VE API ÇEKİMİ
+// ==========================================
+const leaderboardBtn = document.createElement("button");
+leaderboardBtn.id = "leaderboardBtn";
+leaderboardBtn.style.cssText = "position:absolute; top:30px; left:30px; font-size:1.2em; font-weight:bold; cursor:pointer; background:gold; border:none; padding:10px; border-radius:5px; z-index:10;";
+leaderboardBtn.innerText = "🏆 Skorlar";
+document.body.appendChild(leaderboardBtn);
+
+const leaderboardModal = document.createElement("div");
+leaderboardModal.id = "leaderboardModal";
+leaderboardModal.style.cssText = "display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:20px; border-radius:10px; z-index:100; max-height:70%; overflow-y:auto; box-shadow: 0 0 15px rgba(0,0,0,0.8); width:250px; text-align:center;";
+leaderboardModal.innerHTML = `
+    <h2 style="margin-top:0;">Global Top 25</h2>
+    <ul id="scoreList" style="list-style:none; padding:0; text-align:left; font-weight:600;"></ul>
+    <button id="closeLeaderboard" style="margin-top:15px; background:red; color:white; border:none; padding:10px 20px; cursor:pointer; font-weight:bold; border-radius:5px;">Kapat</button>
+`;
+document.body.appendChild(leaderboardModal);
+
+const closeLeaderboard = document.getElementById("closeLeaderboard");
+const scoreList = document.getElementById("scoreList");
+
+leaderboardBtn.addEventListener("click", function(event) {
+    event.stopPropagation(); 
+    leaderboardModal.style.display = "block";
+    scoreList.innerHTML = "<li style='text-align:center;'>Yükleniyor... ⏳</li>";
+
+    // SKOR TABLOSUNU ÇEKECEĞİ RENDER APİ LİNKİ (BURAYI DA GÜNCELLE)
+    fetch('https://https://ninja-bridge-api.onrender.com/api/score/global')
+        .then(response => response.json())
+        .then(data => {
+            scoreList.innerHTML = ""; 
+            if(data.length === 0) {
+                scoreList.innerHTML = "<li>Henüz kimse oynamadı!</li>";
+                return;
+            }
+            
+            data.forEach((item, index) => {
+                let li = document.createElement("li");
+                li.style.padding = "5px 0";
+                li.style.borderBottom = "1px solid #ddd";
+                li.innerText = `${index + 1}. ${item.name} ➖ ${item.score} Puan`;
+                scoreList.appendChild(li);
+            });
+        })
+        .catch(error => {
+            scoreList.innerHTML = "<li style='color:red;'>Skorlar çekilemedi!</li>";
+            console.error(error);
+        });
+});
+
+closeLeaderboard.addEventListener("click", function(event) {
+    event.stopPropagation();
+    leaderboardModal.style.display = "none";
+});
+
+leaderboardBtn.addEventListener("touchstart", (e) => e.stopPropagation());
+closeLeaderboard.addEventListener("touchstart", (e) => e.stopPropagation());
