@@ -3,6 +3,13 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <div class="container">
   <div id="score"></div>
+  <button id="leaderboardBtn" style="position:absolute; top:30px; left:30px; font-size:1.2em; font-weight:bold; cursor:pointer; background:gold; border:none; padding:10px; border-radius:5px; z-index:10;">🏆 Skorlar</button>
+
+  <div id="leaderboardModal" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:20px; border-radius:10px; z-index:100; max-height:70%; overflow-y:auto; box-shadow: 0 0 15px rgba(0,0,0,0.8); width:250px; text-align:center;">
+      <h2 style="margin-top:0;">Global Top 25</h2>
+      <ul id="scoreList" style="list-style:none; padding:0; text-align:left; font-weight:600;"></ul>
+      <button id="closeLeaderboard" style="margin-top:15px; background:red; color:white; border:none; padding:10px 20px; cursor:pointer; font-weight:bold; border-radius:5px;">Kapat</button>
+  </div>
   <canvas id="game" width="375" height="375"></canvas>
   <div id="introduction">Köprüyü uzatmak için ekrana basılı tut.</div>
   <div id="perfect">2X Skor</div>
