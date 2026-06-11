@@ -18,6 +18,7 @@ let sticks = [];
 let trees = [];
 
 let score = 0;
+let combo = 0; // YENİ: Combo Sayacı eklendi
 
 const canvasWidth = 375;
 const canvasHeight = 375;
@@ -62,6 +63,7 @@ function resetGame() {
   lastTimestamp = undefined;
   sceneOffset = 0;
   score = 0;
+  combo = 0; // YENİ: Oyun sıfırlandığında combo da sıfırlanır
 
   introductionElement.style.opacity = 1;
   perfectElement.style.opacity = 0;
@@ -113,10 +115,17 @@ function generateTree() {
 }
 
 function generatePlatform() {
-  const minimumGap = 40;
-  const maximumGap = 200;
+  // YENİ: DİNAMİK ZORLUK SİSTEMİ
+  // Skor arttıkça zorluk çarpanı artar (Maksimum %85 zorlaşır)
+  let difficultyMultiplier = Math.min(score / 25, 0.85); 
+
+  // Platformlar arası mesafe artar
+  const minimumGap = 40 + (difficultyMultiplier * 60);
+  const maximumGap = 200 + (difficultyMultiplier * 100);
+  
+  // Platformların genişliği daralır
   const minimumWidth = 20;
-  const maximumWidth = 100;
+  const maximumWidth = Math.max(100 - (difficultyMultiplier * 60), 25);
 
   const lastPlatform = platforms[platforms.length - 1];
   let furthestX = lastPlatform.x + lastPlatform.w;
@@ -190,7 +199,9 @@ function animate(timestamp) {
     case "waiting":
       return; 
     case "stretching": {
-      sticks.last().length += (timestamp - lastTimestamp) / stretchingSpeed;
+      // YENİ: Skor arttıkça çubuğun uzama hızı artar (Kontrolü zorlaşır)
+      let currentSpeedFactor = Math.max(stretchingSpeed - (score * 0.05), 1.5);
+      sticks.last().length += (timestamp - lastTimestamp) / currentSpeedFactor;
       break;
     }
     case "turning": {
@@ -201,12 +212,25 @@ function animate(timestamp) {
 
         const [nextPlatform, perfectHit] = thePlatformTheStickHits();
         if (nextPlatform) {
-          score += perfectHit ? 2 : 1;
+          
+          // YENİ: COMBO VE PUANLAMA SİSTEMİ
+          if (perfectHit) {
+            combo++;
+            let earnedPoints = 1 + combo; // Kusursuz vuruşta combo katı kadar ekstra puan
+            score += earnedPoints;
+            perfectElement.innerText = `🔥 KUSURSUZ! +${earnedPoints}\n${combo}x COMBO`;
+            perfectElement.style.color = "#FFD700"; // Altın sarısı renk
+          } else {
+            combo = 0; // Kusursuz vurulmazsa combo sıfırlanır
+            score += 1;
+            perfectElement.innerText = "";
+          }
+
           scoreElement.innerText = score;
 
           if (perfectHit) {
             perfectElement.style.opacity = 1;
-            setTimeout(() => (perfectElement.style.opacity = 0), 1000);
+            setTimeout(() => (perfectElement.style.opacity = 0), 1200);
           }
 
           generatePlatform();
@@ -267,7 +291,7 @@ function animate(timestamp) {
         let testUserId = user ? user.id : 123456789;
         let testUserName = user ? user.first_name : "Test Oyuncusu";
 
-        // SKOR GÖNDERME API BAĞLANTISI (BURAYI GÜNCELLE)
+        // SKOR GÖNDERME API BAĞLANTISI (Orijinal kodun korundu)
         fetch('https://ninja-bridge-api.onrender.com/api/score/save', {
             method: 'POST',
             headers: {
@@ -509,7 +533,6 @@ function getTreeY(x, baseHeight, amplitude) {
   const sineBaseY = window.innerHeight - baseHeight;
   return Math.sinus(x) * amplitude + sineBaseY;
 }
-
 
 // ==========================================
 // OYUN İÇİ SKOR TABLOSU MODALI VE API ÇEKİMİ
