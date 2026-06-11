@@ -50,10 +50,18 @@ body {
   cursor: pointer;
 }
 
+/* 🔥 YENİ COMBO TASARIMI BURADA 🔥 */
 #perfect {
   position: absolute;
+  top: 25%;
   opacity: 0;
-  transition: opacity 2s;
+  transition: opacity 0.4s ease-out;
+  font-size: 1.8em;
+  font-weight: 900;
+  text-align: center;
+  text-shadow: 2px 2px 5px rgba(0,0,0,0.7);
+  white-space: pre-line;
+  pointer-events: none;
 }
 
 #youtube,
@@ -62,7 +70,6 @@ body {
 }
 
 @media (min-height: 425px) {
- 
   #youtube {
     z-index: 2;
     display: block;
