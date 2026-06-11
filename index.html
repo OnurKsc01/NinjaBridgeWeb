@@ -1,17 +1,42 @@
-<link rel="stylesheet" href="css.css">
-<script src="java.js?v=3" defer></script>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<div class="container">
-  <div id="score"></div>
-  <button id="leaderboardBtn" style="position:absolute; top:30px; left:30px; font-size:1.2em; font-weight:bold; cursor:pointer; background:gold; border:none; padding:10px; border-radius:5px; z-index:10;">🏆 Skorlar</button>
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Ninja Bridge</title>
+  <link rel="stylesheet" href="css.css">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="java.js?v=4" defer></script>
+</head>
+<body>
+  <div class="container">
+    <div id="score">0</div>
+    
+    <button id="leaderboardBtn" class="menu-btn" style="top:30px; left:30px; background:gold;">🏆 Skorlar</button>
+    <button id="shopBtn" class="menu-btn" style="top:80px; left:30px; background:#4CAF50; color:white;">🛒 Market</button>
+    
+    <div id="coinDisplay" style="position:absolute; top:30px; right:100px; font-size:1.5em; font-weight:bold; background:rgba(255,255,255,0.8); padding:5px 15px; border-radius:15px; z-index:10; box-shadow:0 2px 5px rgba(0,0,0,0.3);">
+      🪙 <span id="coinCount">0</span>
+    </div>
 
-  <div id="leaderboardModal" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:20px; border-radius:10px; z-index:100; max-height:70%; overflow-y:auto; box-shadow: 0 0 15px rgba(0,0,0,0.8); width:250px; text-align:center;">
+    <div id="leaderboardModal" class="modal">
       <h2 style="margin-top:0;">Global Top 25</h2>
-      <ul id="scoreList" style="list-style:none; padding:0; text-align:left; font-weight:600;"></ul>
-      <button id="closeLeaderboard" style="margin-top:15px; background:red; color:white; border:none; padding:10px 20px; cursor:pointer; font-weight:bold; border-radius:5px;">Kapat</button>
+      <ul id="scoreList" class="modal-list"></ul>
+      <button id="closeLeaderboard" class="close-btn">Kapat</button>
+    </div>
+
+    <div id="shopModal" class="modal">
+      <h2 style="margin-top:0;">🛒 Kostüm Marketi</h2>
+      <p style="font-weight:bold;">Bakiye: 🪙 <span id="shopCoinCount">0</span></p>
+      <ul id="shopList" class="modal-list"></ul>
+      <button id="closeShop" class="close-btn">Kapat</button>
+    </div>
+
+    <canvas id="game" width="375" height="375"></canvas>
+    
+    <div id="introduction">Köprüyü oluşturmak için ekrana basılı tutun.</div>
+    <div id="perfect">2X SKOR</div>
+    <button id="restart">TEKRAR DENE</button>
   </div>
-  <canvas id="game" width="375" height="375"></canvas>
-  <div id="introduction">Köprüyü oluşturmak için ekrana basılı tutun.</div>
-  <div id="perfect">2X SKOR</div>
-  <button id="restart">TEKRAR DENE</button>
-</div>
+</body>
+</html>
