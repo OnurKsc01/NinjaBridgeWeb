@@ -6,55 +6,80 @@ Math.sinus = function (degree) {
   return Math.sin((degree / 180) * Math.PI);
 };
 
+// ------------------------------------
+// TELEGRAM & OYUNCU VERİLERİ
+// ------------------------------------
+let tg = window.Telegram?.WebApp;
+let user = tg?.initDataUnsafe?.user;
+let tgUserId = user ? user.id : 123456789;
+let tgUserName = user ? user.first_name : "Test Oyuncusu";
+
+let playerCoins = 0;
+let currentSkin = "default";
+let ownedSkins = ["default"];
+
+// ------------------------------------
+// KOSTÜM (SKIN) VERİTABANI
+// ------------------------------------
+const skinData = {
+  "default": { name: "Varsayılan", price: 0, body: "black", bandana: "red", alpha: 1 },
+  "hayalet": { name: "Hayalet Ninja", price: 10, body: "#ffffff", bandana: "#cccccc", alpha: 0.4 },
+  "yesil": { name: "Yeşil Ninja", price: 20, body: "#228B22", bandana: "black", alpha: 1 },
+  "bronz": { name: "Bronz Ninja", price: 30, body: "#cd7f32", bandana: "#5c4033", alpha: 1 },
+  "demir": { name: "Demir Ninja", price: 40, body: "#a9a9a9", bandana: "#696969", alpha: 1 },
+  "altin": { name: "Altın Ninja", price: 50, body: "#ffd700", bandana: "#b8860b", alpha: 1 },
+  "hiper": { name: "Hiper Ninja", price: 65, body: "#800080", bandana: "#00ffff", alpha: 1 }
+};
+
+// ------------------------------------
+// OYUN DEĞİŞKENLERİ
+// ------------------------------------
 let phase = "waiting"; 
 let lastTimestamp; 
-
-let heroX; 
-let heroY; 
-let sceneOffset; 
-
-let platforms = [];
-let sticks = [];
-let trees = [];
-
+let heroX, heroY, sceneOffset; 
+let platforms = [], sticks = [], trees = [];
 let score = 0;
-let combo = 0; // YENİ: Combo Sayacı eklendi
+let combo = 0; 
 
-const canvasWidth = 375;
-const canvasHeight = 375;
-const platformHeight = 100;
-const heroDistanceFromEdge = 10; 
-const paddingX = 100; 
-const perfectAreaSize = 10;
-
+const canvasWidth = 375, canvasHeight = 375, platformHeight = 100;
+const heroDistanceFromEdge = 10, paddingX = 100, perfectAreaSize = 10;
 const backgroundSpeedMultiplier = 0.2;
-
-const hill1BaseHeight = 100;
-const hill1Amplitude = 10;
-const hill1Stretch = 1;
-const hill2BaseHeight = 70;
-const hill2Amplitude = 20;
-const hill2Stretch = 0.5;
-
-const stretchingSpeed = 4; 
-const turningSpeed = 4; 
-const walkingSpeed = 4;
-const transitioningSpeed = 2;
-const fallingSpeed = 2;
-
-const heroWidth = 17; 
-const heroHeight = 30; 
+const hill1BaseHeight = 100, hill1Amplitude = 10, hill1Stretch = 1;
+const hill2BaseHeight = 70, hill2Amplitude = 20, hill2Stretch = 0.5;
+const stretchingSpeed = 4, turningSpeed = 4, walkingSpeed = 4, transitioningSpeed = 2, fallingSpeed = 2;
+const heroWidth = 17, heroHeight = 30; 
 
 const canvas = document.getElementById("game");
 canvas.width = window.innerWidth; 
 canvas.height = window.innerHeight;
-
 const ctx = canvas.getContext("2d");
 
 const introductionElement = document.getElementById("introduction");
 const perfectElement = document.getElementById("perfect");
 const restartButton = document.getElementById("restart");
 const scoreElement = document.getElementById("score");
+const coinCountElement = document.getElementById("coinCount");
+const shopCoinCountElement = document.getElementById("shopCoinCount");
+
+// Oyuncu verilerini çek
+loadPlayerData();
+
+function loadPlayerData() {
+    fetch(`https://ninja-bridge-api.onrender.com/api/score/player/${tgUserId}`)
+        .then(res => res.json())
+        .then(data => {
+            playerCoins = data.coins || 0;
+            currentSkin = data.currentSkin || "default";
+            ownedSkins = data.ownedSkins || ["default"];
+            updateCoinUI();
+            draw(); // Kostümü hemen uygula
+        }).catch(err => console.error("Veri çekilemedi:", err));
+}
+
+function updateCoinUI() {
+    coinCountElement.innerText = playerCoins;
+    shopCoinCountElement.innerText = playerCoins;
+}
 
 resetGame();
 
@@ -63,7 +88,7 @@ function resetGame() {
   lastTimestamp = undefined;
   sceneOffset = 0;
   score = 0;
-  combo = 0; // YENİ: Oyun sıfırlandığında combo da sıfırlanır
+  combo = 0; 
 
   introductionElement.style.opacity = 1;
   perfectElement.style.opacity = 0;
@@ -71,116 +96,57 @@ function resetGame() {
   scoreElement.innerText = score;
 
   platforms = [{ x: 50, w: 50 }];
-  generatePlatform();
-  generatePlatform();
-  generatePlatform();
-  generatePlatform();
-
+  for(let i=0; i<4; i++) generatePlatform();
   sticks = [{ x: platforms[0].x + platforms[0].w, length: 0, rotation: 0 }];
-
   trees = [];
-  generateTree();
-  generateTree();
-  generateTree();
-  generateTree();
-  generateTree();
-  generateTree();
-  generateTree();
-  generateTree();
-  generateTree();
-  generateTree();
+  for(let i=0; i<10; i++) generateTree();
 
   heroX = platforms[0].x + platforms[0].w - heroDistanceFromEdge;
   heroY = 0;
-
   draw();
 }
 
 function generateTree() {
-  const minimumGap = 30;
-  const maximumGap = 150;
-
+  const minimumGap = 30, maximumGap = 150;
   const lastTree = trees[trees.length - 1];
   let furthestX = lastTree ? lastTree.x : 0;
-
-  const x =
-    furthestX +
-    minimumGap +
-    Math.floor(Math.random() * (maximumGap - minimumGap));
-
+  const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap));
   const treeColors = ["#6D8821", "#8FAC34", "#98B333"];
-  const color = treeColors[Math.floor(Math.random() * 3)];
-
-  trees.push({ x, color });
+  trees.push({ x, color: treeColors[Math.floor(Math.random() * 3)] });
 }
 
 function generatePlatform() {
-  // YENİ: DİNAMİK ZORLUK SİSTEMİ
-  // Skor arttıkça zorluk çarpanı artar (Maksimum %85 zorlaşır)
   let difficultyMultiplier = Math.min(score / 25, 0.85); 
-
-  // Platformlar arası mesafe artar
   const minimumGap = 40 + (difficultyMultiplier * 60);
   const maximumGap = 200 + (difficultyMultiplier * 100);
-  
-  // Platformların genişliği daralır
   const minimumWidth = 20;
   const maximumWidth = Math.max(100 - (difficultyMultiplier * 60), 25);
-
   const lastPlatform = platforms[platforms.length - 1];
   let furthestX = lastPlatform.x + lastPlatform.w;
-
-  const x =
-    furthestX +
-    minimumGap +
-    Math.floor(Math.random() * (maximumGap - minimumGap));
-  const w =
-    minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth));
-
+  const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap));
+  const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth));
   platforms.push({ x, w });
 }
 
-window.addEventListener("keydown", function (event) {
-  if (event.key == " ") {
-    event.preventDefault();
-    resetGame();
-    return;
-  }
-});
+// Kontroller (Menüler açıkken oyun tıklamalarını iptal et)
+function isMenuOpen() {
+    return document.getElementById("shopModal").style.display === "block" || 
+           document.getElementById("leaderboardModal").style.display === "block";
+}
 
-// BİLGİSAYAR FARE KONTROLLERİ
-window.addEventListener("mousedown", function (event) {
-  if (phase == "waiting") {
+window.addEventListener("mousedown", (e) => { if (!isMenuOpen() && phase == "waiting" && e.target.tagName === 'CANVAS') startStretching(); });
+window.addEventListener("touchstart", (e) => { if (!isMenuOpen() && phase == "waiting" && e.target.tagName === 'CANVAS') startStretching(); });
+window.addEventListener("mouseup", () => { if (phase == "stretching") phase = "turning"; });
+window.addEventListener("touchend", () => { if (phase == "stretching") phase = "turning"; });
+
+function startStretching() {
     lastTimestamp = undefined;
     introductionElement.style.opacity = 0;
     phase = "stretching";
     window.requestAnimationFrame(animate);
-  }
-});
+}
 
-window.addEventListener("mouseup", function (event) {
-  if (phase == "stretching") {
-    phase = "turning";
-  }
-});
-
-// MOBİL DOKUNMATİK EKRAN KONTROLLERİ
-window.addEventListener("touchstart", function (event) {
-  if (phase == "waiting") {
-    lastTimestamp = undefined;
-    introductionElement.style.opacity = 0;
-    phase = "stretching";
-    window.requestAnimationFrame(animate);
-  }
-});
-
-window.addEventListener("touchend", function (event) {
-  if (phase == "stretching") {
-    phase = "turning";
-  }
-});
-
-window.addEventListener("resize", function (event) {
+window.addEventListener("resize", () => {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
   draw();
@@ -198,53 +164,39 @@ function animate(timestamp) {
   switch (phase) {
     case "waiting":
       return; 
-    case "stretching": {
-      // YENİ: Skor arttıkça çubuğun uzama hızı artar (Kontrolü zorlaşır)
+    case "stretching":
       let currentSpeedFactor = Math.max(stretchingSpeed - (score * 0.05), 1.5);
       sticks.last().length += (timestamp - lastTimestamp) / currentSpeedFactor;
       break;
-    }
-    case "turning": {
+    case "turning":
       sticks.last().rotation += (timestamp - lastTimestamp) / turningSpeed;
-
       if (sticks.last().rotation > 90) {
         sticks.last().rotation = 90;
-
         const [nextPlatform, perfectHit] = thePlatformTheStickHits();
         if (nextPlatform) {
-          
-          // YENİ: COMBO VE PUANLAMA SİSTEMİ
           if (perfectHit) {
             combo++;
-            let earnedPoints = 1 + combo; // Kusursuz vuruşta combo katı kadar ekstra puan
+            let earnedPoints = 1 + combo; 
             score += earnedPoints;
             perfectElement.innerText = `🔥 KUSURSUZ! +${earnedPoints}\n${combo}x COMBO`;
-            perfectElement.style.color = "#FFD700"; // Altın sarısı renk
+            perfectElement.style.color = "#FFD700"; 
           } else {
-            combo = 0; // Kusursuz vurulmazsa combo sıfırlanır
+            combo = 0; 
             score += 1;
             perfectElement.innerText = "";
           }
-
           scoreElement.innerText = score;
-
           if (perfectHit) {
             perfectElement.style.opacity = 1;
             setTimeout(() => (perfectElement.style.opacity = 0), 1200);
           }
-
-          generatePlatform();
-          generateTree();
-          generateTree();
+          generatePlatform(); generateTree(); generateTree();
         }
-
         phase = "walking";
       }
       break;
-    }
-    case "walking": {
+    case "walking":
       heroX += (timestamp - lastTimestamp) / walkingSpeed;
-
       const [nextPlatform] = thePlatformTheStickHits();
       if (nextPlatform) {
         const maxHeroX = nextPlatform.x + nextPlatform.w - heroDistanceFromEdge;
@@ -260,320 +212,250 @@ function animate(timestamp) {
         }
       }
       break;
-    }
-    case "transitioning": {
+    case "transitioning":
       sceneOffset += (timestamp - lastTimestamp) / transitioningSpeed;
-
-      const [nextPlatform] = thePlatformTheStickHits();
-      if (sceneOffset > nextPlatform.x + nextPlatform.w - paddingX) {
-        sticks.push({
-          x: nextPlatform.x + nextPlatform.w,
-          length: 0,
-          rotation: 0
-        });
+      const [nextPlatform2] = thePlatformTheStickHits();
+      if (sceneOffset > nextPlatform2.x + nextPlatform2.w - paddingX) {
+        sticks.push({ x: nextPlatform2.x + nextPlatform2.w, length: 0, rotation: 0 });
         phase = "waiting";
       }
       break;
-    }
-    case "falling": {
+    case "falling":
       if (sticks.last().rotation < 180)
         sticks.last().rotation += (timestamp - lastTimestamp) / turningSpeed;
-
       heroY += (timestamp - lastTimestamp) / fallingSpeed;
-      const maxHeroY =
-        platformHeight + 100 + (window.innerHeight - canvasHeight) / 2;
+      const maxHeroY = platformHeight + 100 + (window.innerHeight - canvasHeight) / 2;
       
       if (heroY > maxHeroY) {
         restartButton.style.display = "block";
-        let tg = window.Telegram?.WebApp;
-        let user = tg?.initDataUnsafe?.user;
         
-        let testUserId = user ? user.id : 123456789;
-        let testUserName = user ? user.first_name : "Test Oyuncusu";
-
-        // SKOR GÖNDERME API BAĞLANTISI (Orijinal kodun korundu)
+        // Skoru Kaydet ve Jeton Kazan
         fetch('https://ninja-bridge-api.onrender.com/api/score/save', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                userId: testUserId,
-                firstName: testUserName,
-                score: score,
-                groupId: 0 
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: 0 })
         })
         .then(response => response.json())
-        .then(data => console.log("Skor API'ye gönderildi:", data))
-        .catch(error => console.error("Skor gönderim hatası:", error));
+        .then(data => {
+            if(data.earnedCoins > 0) {
+                playerCoins += data.earnedCoins;
+                updateCoinUI();
+            }
+        }).catch(err => console.error(err));
         return;
       }
       break;
-    }
-    default:
-      throw Error("Wrong phase");
   }
-
   draw();
   window.requestAnimationFrame(animate);
-
   lastTimestamp = timestamp;
 }
 
 function thePlatformTheStickHits() {
-  if (sticks.last().rotation != 90)
-    throw Error(`Stick is ${sticks.last().rotation}°`);
-  
+  if (sticks.last().rotation != 90) throw Error(`Stick is ${sticks.last().rotation}°`);
   const stickFarX = sticks.last().x + sticks.last().length;
-
-  const platformTheStickHits = platforms.find(
-    (platform) => platform.x < stickFarX && stickFarX < platform.x + platform.w
-  );
-
-  if (
-    platformTheStickHits &&
-    platformTheStickHits.x + platformTheStickHits.w / 2 - perfectAreaSize / 2 <
-      stickFarX &&
-    stickFarX <
-      platformTheStickHits.x + platformTheStickHits.w / 2 + perfectAreaSize / 2
-  )
+  const platformTheStickHits = platforms.find((platform) => platform.x < stickFarX && stickFarX < platform.x + platform.w);
+  if (platformTheStickHits && platformTheStickHits.x + platformTheStickHits.w / 2 - perfectAreaSize / 2 < stickFarX && stickFarX < platformTheStickHits.x + platformTheStickHits.w / 2 + perfectAreaSize / 2)
     return [platformTheStickHits, true];
-
   return [platformTheStickHits, false];
 }
 
 function draw() {
   ctx.save();
   ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-
   drawBackground();
-
-  ctx.translate(
-    (window.innerWidth - canvasWidth) / 2 - sceneOffset,
-    (window.innerHeight - canvasHeight) / 2
-  );
-
+  ctx.translate((window.innerWidth - canvasWidth) / 2 - sceneOffset, (window.innerHeight - canvasHeight) / 2);
   drawPlatforms();
   drawHero();
   drawSticks();
-
   ctx.restore();
 }
 
-restartButton.addEventListener("click", function (event) {
-  event.preventDefault();
+restartButton.addEventListener("click", (e) => {
+  e.preventDefault();
   resetGame();
-  restartButton.style.display = "none";
 });
 
 function drawPlatforms() {
   platforms.forEach(({ x, w }) => {
     ctx.fillStyle = "black";
-    ctx.fillRect(
-      x,
-      canvasHeight - platformHeight,
-      w,
-      platformHeight + (window.innerHeight - canvasHeight) / 2
-    );
-
+    ctx.fillRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2);
     if (sticks.last().x < x) {
       ctx.fillStyle = "red";
-      ctx.fillRect(
-        x + w / 2 - perfectAreaSize / 2,
-        canvasHeight - platformHeight,
-        perfectAreaSize,
-        perfectAreaSize
-      );
+      ctx.fillRect(x + w / 2 - perfectAreaSize / 2, canvasHeight - platformHeight, perfectAreaSize, perfectAreaSize);
     }
   });
 }
 
 function drawHero() {
+  // SEÇİLİ KOSTÜMÜ UYGULA
+  let skin = skinData[currentSkin] || skinData["default"];
+
   ctx.save();
-  ctx.fillStyle = "black";
-  ctx.translate(
-    heroX - heroWidth / 2,
-    heroY + canvasHeight - platformHeight - heroHeight / 2
-  );
+  ctx.globalAlpha = skin.alpha; // Hayalet kostümü için şeffaflık
+  ctx.fillStyle = skin.body;
+  ctx.translate(heroX - heroWidth / 2, heroY + canvasHeight - platformHeight - heroHeight / 2);
 
-  drawRoundedRect(
-    -heroWidth / 2,
-    -heroHeight / 2,
-    heroWidth,
-    heroHeight - 4,
-    5
-  );
+  // Gövde
+  drawRoundedRect(-heroWidth / 2, -heroHeight / 2, heroWidth, heroHeight - 4, 5);
 
+  // Bacaklar
+  ctx.fillStyle = skin.body; 
+  if(skin.body === "#ffffff") ctx.fillStyle = "#cccccc"; // Hayalet bacak detayı
   const legDistance = 5;
-  ctx.beginPath();
-  ctx.arc(legDistance, 11.5, 3, 0, Math.PI * 2, false);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(-legDistance, 11.5, 3, 0, Math.PI * 2, false);
-  ctx.fill();
+  ctx.beginPath(); ctx.arc(legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill();
+  ctx.beginPath(); ctx.arc(-legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill();
 
+  // Göz (Her zaman beyaz/parlak)
   ctx.beginPath();
   ctx.fillStyle = "white";
   ctx.arc(5, -7, 3, 0, Math.PI * 2, false);
   ctx.fill();
 
-  ctx.fillStyle = "red";
+  // Bandana
+  ctx.fillStyle = skin.bandana;
   ctx.fillRect(-heroWidth / 2 - 1, -12, heroWidth + 2, 4.5);
-  ctx.beginPath();
-  ctx.moveTo(-9, -14.5);
-  ctx.lineTo(-17, -18.5);
-  ctx.lineTo(-14, -8.5);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(-10, -10.5);
-  ctx.lineTo(-15, -3.5);
-  ctx.lineTo(-5, -7);
-  ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-9, -14.5); ctx.lineTo(-17, -18.5); ctx.lineTo(-14, -8.5); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-10, -10.5); ctx.lineTo(-15, -3.5); ctx.lineTo(-5, -7); ctx.fill();
 
   ctx.restore();
 }
 
 function drawRoundedRect(x, y, width, height, radius) {
   ctx.beginPath();
-  ctx.moveTo(x, y + radius);
-  ctx.lineTo(x, y + height - radius);
-  ctx.arcTo(x, y + height, x + radius, y + height, radius);
-  ctx.lineTo(x + width - radius, y + height);
-  ctx.arcTo(x + width, y + height, x + width, y + height - radius, radius);
-  ctx.lineTo(x + width, y + radius);
-  ctx.arcTo(x + width, y, x + width - radius, y, radius);
-  ctx.lineTo(x + radius, y);
-  ctx.arcTo(x, y, x, y + radius, radius);
-  ctx.fill();
+  ctx.moveTo(x, y + radius); ctx.lineTo(x, y + height - radius); ctx.arcTo(x, y + height, x + radius, y + height, radius);
+  ctx.lineTo(x + width - radius, y + height); ctx.arcTo(x + width, y + height, x + width, y + height - radius, radius);
+  ctx.lineTo(x + width, y + radius); ctx.arcTo(x + width, y, x + width - radius, y, radius);
+  ctx.lineTo(x + radius, y); ctx.arcTo(x, y, x, y + radius, radius); ctx.fill();
 }
 
 function drawSticks() {
   sticks.forEach((stick) => {
     ctx.save();
-
     ctx.translate(stick.x, canvasHeight - platformHeight);
     ctx.rotate((Math.PI / 180) * stick.rotation);
-
-    ctx.beginPath();
-    ctx.lineWidth = 2;
-    ctx.moveTo(0, 0);
-    ctx.lineTo(0, -stick.length);
-    ctx.stroke();
-
+    ctx.beginPath(); ctx.lineWidth = 2; ctx.moveTo(0, 0); ctx.lineTo(0, -stick.length); ctx.stroke();
     ctx.restore();
   });
 }
 
 function drawBackground() {
   var gradient = ctx.createLinearGradient(0, 0, 0, window.innerHeight);
-  gradient.addColorStop(0, "#BBD691");
-  gradient.addColorStop(1, "#FEF1E1");
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
-
+  gradient.addColorStop(0, "#BBD691"); gradient.addColorStop(1, "#FEF1E1");
+  ctx.fillStyle = gradient; ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
   drawHill(hill1BaseHeight, hill1Amplitude, hill1Stretch, "#95C629");
   drawHill(hill2BaseHeight, hill2Amplitude, hill2Stretch, "#659F1C");
-
   trees.forEach((tree) => drawTree(tree.x, tree.color));
 }
 
 function drawHill(baseHeight, amplitude, stretch, color) {
-  ctx.beginPath();
-  ctx.moveTo(0, window.innerHeight);
-  ctx.lineTo(0, getHillY(0, baseHeight, amplitude, stretch));
-  for (let i = 0; i < window.innerWidth; i++) {
-    ctx.lineTo(i, getHillY(i, baseHeight, amplitude, stretch));
-  }
-  ctx.lineTo(window.innerWidth, window.innerHeight);
-  ctx.fillStyle = color;
-  ctx.fill();
+  ctx.beginPath(); ctx.moveTo(0, window.innerHeight); ctx.lineTo(0, getHillY(0, baseHeight, amplitude, stretch));
+  for (let i = 0; i < window.innerWidth; i++) { ctx.lineTo(i, getHillY(i, baseHeight, amplitude, stretch)); }
+  ctx.lineTo(window.innerWidth, window.innerHeight); ctx.fillStyle = color; ctx.fill();
 }
 
 function drawTree(x, color) {
   ctx.save();
-  ctx.translate(
-    (-sceneOffset * backgroundSpeedMultiplier + x) * hill1Stretch,
-    getTreeY(x, hill1BaseHeight, hill1Amplitude)
-  );
-
-  const treeTrunkHeight = 5;
-  const treeTrunkWidth = 2;
-  const treeCrownHeight = 25;
-  const treeCrownWidth = 10;
-
-  ctx.fillStyle = "#7D833C";
-  ctx.fillRect(
-    -treeTrunkWidth / 2,
-    -treeTrunkHeight,
-    treeTrunkWidth,
-    treeTrunkHeight
-  );
-
-  ctx.beginPath();
-  ctx.moveTo(-treeCrownWidth / 2, -treeTrunkHeight);
-  ctx.lineTo(0, -(treeTrunkHeight + treeCrownHeight));
-  ctx.lineTo(treeCrownWidth / 2, -treeTrunkHeight);
-  ctx.fillStyle = color;
-  ctx.fill();
-
+  ctx.translate((-sceneOffset * backgroundSpeedMultiplier + x) * hill1Stretch, getTreeY(x, hill1BaseHeight, hill1Amplitude));
+  ctx.fillStyle = "#7D833C"; ctx.fillRect(-1, -5, 2, 5);
+  ctx.beginPath(); ctx.moveTo(-5, -5); ctx.lineTo(0, -30); ctx.lineTo(5, -5); ctx.fillStyle = color; ctx.fill();
   ctx.restore();
 }
 
-function getHillY(windowX, baseHeight, amplitude, stretch) {
-  const sineBaseY = window.innerHeight - baseHeight;
-  return (
-    Math.sinus((sceneOffset * backgroundSpeedMultiplier + windowX) * stretch) *
-      amplitude +
-    sineBaseY
-  );
-}
+function getHillY(windowX, baseHeight, amplitude, stretch) { return (Math.sinus((sceneOffset * backgroundSpeedMultiplier + windowX) * stretch) * amplitude + window.innerHeight - baseHeight); }
+function getTreeY(x, baseHeight, amplitude) { return Math.sinus(x) * amplitude + window.innerHeight - baseHeight; }
 
-function getTreeY(x, baseHeight, amplitude) {
-  const sineBaseY = window.innerHeight - baseHeight;
-  return Math.sinus(x) * amplitude + sineBaseY;
-}
-
-// ==========================================
-// OYUN İÇİ SKOR TABLOSU MODALI VE API ÇEKİMİ
-// ==========================================
-const leaderboardBtn = document.getElementById("leaderboardBtn");
-const leaderboardModal = document.getElementById("leaderboardModal");
-const closeLeaderboard = document.getElementById("closeLeaderboard");
-const scoreList = document.getElementById("scoreList");
-
-leaderboardBtn.addEventListener("click", function(event) {
-    event.stopPropagation(); 
-    leaderboardModal.style.display = "block";
-    scoreList.innerHTML = "<li style='text-align:center;'>Yükleniyor... ⏳</li>";
-
-    fetch(`https://ninja-bridge-api.onrender.com/api/score/global?t=${new Date().getTime()}`)
-        .then(response => response.json())
+// ------------------------------------
+// LİDERLİK TABLOSU MODALI
+// ------------------------------------
+document.getElementById("leaderboardBtn").addEventListener("click", (e) => {
+    e.stopPropagation(); 
+    document.getElementById("leaderboardModal").style.display = "block";
+    const list = document.getElementById("scoreList");
+    list.innerHTML = "<li style='text-align:center;'>Yükleniyor... ⏳</li>";
+    fetch(`https://ninja-bridge-api.onrender.com/api/score/global?t=${Date.now()}`)
+        .then(res => res.json())
         .then(data => {
-            scoreList.innerHTML = ""; 
-            if(data.length === 0) {
-                scoreList.innerHTML = "<li>Henüz kimse oynamadı!</li>";
-                return;
-            }
-            
-            data.forEach((item, index) => {
-                let li = document.createElement("li");
-                li.style.padding = "5px 0";
-                li.style.borderBottom = "1px solid #ddd";
-                li.innerText = `${index + 1}. ${item.name} ➖ ${item.score} Puan`;
-                scoreList.appendChild(li);
+            list.innerHTML = ""; 
+            if(data.length === 0) { list.innerHTML = "<li>Henüz kimse oynamadı!</li>"; return; }
+            data.forEach((item, i) => {
+                list.innerHTML += `<li><span>${i + 1}. ${item.name}</span> <span>${item.score} Puan</span></li>`;
             });
-        })
-        .catch(error => {
-            scoreList.innerHTML = "<li style='color:red;'>Skorlar çekilemedi!</li>";
-            console.error(error);
+        }).catch(err => list.innerHTML = "<li style='color:red;'>Hata oluştu!</li>");
+});
+document.getElementById("closeLeaderboard").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("leaderboardModal").style.display = "none"; });
+
+// ------------------------------------
+// MARKET SİSTEMİ VE MODALI
+// ------------------------------------
+document.getElementById("shopBtn").addEventListener("click", (e) => {
+    e.stopPropagation();
+    document.getElementById("shopModal").style.display = "block";
+    renderShop();
+});
+
+document.getElementById("closeShop").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("shopModal").style.display = "none"; });
+
+function renderShop() {
+    const list = document.getElementById("shopList");
+    list.innerHTML = "";
+    
+    Object.keys(skinData).forEach(key => {
+        const skin = skinData[key];
+        let actionHTML = "";
+
+        if (currentSkin === key) {
+            actionHTML = `<span class="equipped-txt">✅ Kuşanıltı</span>`;
+        } else if (ownedSkins.includes(key)) {
+            actionHTML = `<button class="equip-btn" onclick="equipSkin('${key}')">Kuşan</button>`;
+        } else {
+            actionHTML = `<button class="buy-btn" onclick="buySkin('${key}', ${skin.price})">Satın Al (🪙 ${skin.price})</button>`;
+        }
+
+        list.innerHTML += `
+            <li>
+                <span><span style="color:${skin.body}; text-shadow: 1px 1px 1px black;">⬤</span> ${skin.name}</span>
+                ${actionHTML}
+            </li>
+        `;
+    });
+}
+
+window.buySkin = function(skinKey, price) {
+    if(playerCoins < price) {
+        alert("Yetersiz Jeton! Daha fazla oynamalısın.");
+        return;
+    }
+    
+    if(confirm(`${skinData[skinKey].name} kostümünü ${price} jetona almak istiyor musun?`)) {
+        fetch('https://ninja-bridge-api.onrender.com/api/score/buyskin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: tgUserId, skinName: skinKey, price: price })
+        }).then(res => res.json()).then(data => {
+            if(data.success) {
+                playerCoins -= price;
+                ownedSkins.push(skinKey);
+                updateCoinUI();
+                renderShop();
+                alert("Satın alma başarılı! Şimdi kuşanabilirsin.");
+            } else {
+                alert("İşlem başarısız oldu.");
+            }
         });
-});
+    }
+}
 
-closeLeaderboard.addEventListener("click", function(event) {
-    event.stopPropagation();
-    leaderboardModal.style.display = "none";
-});
-
-leaderboardBtn.addEventListener("touchstart", (e) => e.stopPropagation());
-closeLeaderboard.addEventListener("touchstart", (e) => e.stopPropagation());
+window.equipSkin = function(skinKey) {
+    fetch('https://ninja-bridge-api.onrender.com/api/score/equipskin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: tgUserId, skinName: skinKey })
+    }).then(res => res.json()).then(data => {
+        if(data.success) {
+            currentSkin = skinKey;
+            renderShop();
+            draw(); // Ana ekrandaki karakteri hemen güncelle
+        }
+    });
+}
