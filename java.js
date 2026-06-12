@@ -22,6 +22,8 @@ let currentSkin = "default";
 let ownedSkins = ["default"];
 let currentBg = "default";
 let ownedBgs = ["default"];
+let currentPet = "default";
+let ownedPets = ["default"];
 
 // ------------------------------------
 // MARKET VERİTABANI
@@ -45,6 +47,13 @@ const bgData = {
   "col": { name: "Çöl Sıcağı", price: 150, top: "#FF8C00", bottom: "#FFD700", hill1: "#CD853F", hill2: "#8B4513", tree: "#5C4033", leaves: ["#D2B48C", "#F4A460", "#DEB887"] }
 };
 
+const petData = {
+  "default": { name: "Yok", price: 0, desc: "Yalnız kurt.", emoji: "" },
+  "kopek": { name: "Altın Avcısı", price: 200, desc: "4 Puanda 1 Jeton", emoji: "🐶" },
+  "kedi": { name: "Gözcü Kedi", price: 250, desc: "Büyük Kombo Alanı", emoji: "🐱" },
+  "maymun": { name: "Kuyruklu Maymun", price: 400, desc: "Her Oyunda +1 Can", emoji: "🐒" }
+};
+
 // ------------------------------------
 // OYUN DEĞİŞKENLERİ
 // ------------------------------------
@@ -54,9 +63,10 @@ let heroX, heroY, sceneOffset;
 let platforms = [], sticks = [], trees = [];
 let score = 0;
 let combo = 0; 
+let hasExtraLife = false; // Maymun Peti için ekstra can
 
 const canvasWidth = 375, canvasHeight = 375, platformHeight = 100;
-const heroDistanceFromEdge = 10, paddingX = 100, perfectAreaSize = 10;
+const heroDistanceFromEdge = 10, paddingX = 100;
 const backgroundSpeedMultiplier = 0.2;
 const hill1BaseHeight = 100, hill1Amplitude = 10, hill1Stretch = 1;
 const hill2BaseHeight = 70, hill2Amplitude = 20, hill2Stretch = 0.5;
@@ -86,8 +96,10 @@ function loadPlayerData() {
             ownedSkins = data.ownedSkins || ["default"];
             currentBg = data.currentBackground || "default";
             ownedBgs = data.ownedBackgrounds || ["default"];
+            currentPet = data.currentPet || "default";
+            ownedPets = data.ownedPets || ["default"];
             updateCoinUI();
-            resetGame(); // Veri yüklendikten sonra oyunu başlat
+            resetGame();
         }).catch(err => console.error("Veri çekilemedi:", err));
 }
 
@@ -96,12 +108,20 @@ function updateCoinUI() {
     shopCoinCountElement.innerText = playerCoins;
 }
 
+// 🔥 Kedi Peti Buff'ı: Kusursuz alanı dinamik olarak büyüt
+function getPerfectAreaSize() {
+    return (currentPet === "kedi") ? 25 : 10;
+}
+
 function resetGame() {
   phase = "waiting";
   lastTimestamp = undefined;
   sceneOffset = 0;
   score = 0;
   combo = 0; 
+  
+  // 🔥 Maymun Peti Buff'ı: Her oyuna başlarken +1 Can ver
+  hasExtraLife = (currentPet === "maymun");
 
   introductionElement.style.opacity = 1;
   perfectElement.style.opacity = 0;
@@ -241,6 +261,24 @@ function animate(timestamp) {
       const maxHeroY = platformHeight + 100 + (window.innerHeight - canvasHeight) / 2;
       
       if (heroY > maxHeroY) {
+          
+        // 🔥 Maymun Peti Hayat Kurtarır!
+        if (hasExtraLife) {
+            hasExtraLife = false;
+            phase = "waiting";
+            heroY = 0;
+            // Karakteri düştüğü çubuğun başladığı yere (önceki platforma) geri koy
+            heroX = sticks.last().x - heroDistanceFromEdge;
+            sticks.last().length = 0;
+            sticks.last().rotation = 0;
+            
+            perfectElement.innerText = "🐒 MAYMUN KURTARDI!";
+            perfectElement.style.color = "#FF8C00";
+            perfectElement.style.opacity = 1;
+            setTimeout(() => (perfectElement.style.opacity = 0), 1500);
+            return;
+        }
+
         restartButton.style.display = "block";
         
         fetch('https://ninja-bridge-api.onrender.com/api/score/save', {
@@ -268,7 +306,9 @@ function thePlatformTheStickHits() {
   if (sticks.last().rotation != 90) throw Error(`Stick is ${sticks.last().rotation}°`);
   const stickFarX = sticks.last().x + sticks.last().length;
   const platformTheStickHits = platforms.find((platform) => platform.x < stickFarX && stickFarX < platform.x + platform.w);
-  if (platformTheStickHits && platformTheStickHits.x + platformTheStickHits.w / 2 - perfectAreaSize / 2 < stickFarX && stickFarX < platformTheStickHits.x + platformTheStickHits.w / 2 + perfectAreaSize / 2)
+  
+  let pArea = getPerfectAreaSize(); // Kedinin gücünü okuyoruz
+  if (platformTheStickHits && platformTheStickHits.x + platformTheStickHits.w / 2 - pArea / 2 < stickFarX && stickFarX < platformTheStickHits.x + platformTheStickHits.w / 2 + pArea / 2)
     return [platformTheStickHits, true];
   return [platformTheStickHits, false];
 }
@@ -279,6 +319,7 @@ function draw() {
   drawBackground();
   ctx.translate((window.innerWidth - canvasWidth) / 2 - sceneOffset, (window.innerHeight - canvasHeight) / 2);
   drawPlatforms();
+  drawPet(); // Peti kahramanın arkasına (alt katmana) çiziyoruz
   drawHero();
   drawSticks();
   ctx.restore();
@@ -295,7 +336,8 @@ function drawPlatforms() {
     ctx.fillRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2);
     if (sticks.last().x < x) {
       ctx.fillStyle = "red";
-      ctx.fillRect(x + w / 2 - perfectAreaSize / 2, canvasHeight - platformHeight, perfectAreaSize, perfectAreaSize);
+      let pArea = getPerfectAreaSize();
+      ctx.fillRect(x + w / 2 - pArea / 2, canvasHeight - platformHeight, pArea, pArea);
     }
   });
 }
@@ -318,7 +360,7 @@ function drawHero() {
 
   ctx.beginPath();
   ctx.fillStyle = "white";
-  if(skin.body === "#ffffff") ctx.fillStyle = "black"; // Hayalet gözü
+  if(skin.body === "#ffffff") ctx.fillStyle = "black"; 
   ctx.arc(5, -7, 3, 0, Math.PI * 2, false);
   ctx.fill();
 
@@ -327,6 +369,24 @@ function drawHero() {
   ctx.beginPath(); ctx.moveTo(-9, -14.5); ctx.lineTo(-17, -18.5); ctx.lineTo(-14, -8.5); ctx.fill();
   ctx.beginPath(); ctx.moveTo(-10, -10.5); ctx.lineTo(-15, -3.5); ctx.lineTo(-5, -7); ctx.fill();
 
+  ctx.restore();
+}
+
+// 🔥 YENİ: Yoldaşı Çizme Fonksiyonu
+function drawPet() {
+  if (currentPet === "default") return;
+  let pet = petData[currentPet];
+  
+  ctx.save();
+  // Yürürken yoldaşın arkada tatlı tatlı zıplaması için minik bir animasyon
+  let bounce = (phase === "walking" || phase === "transitioning") ? Math.abs(Math.sin(Date.now() / 100)) * 6 : 0;
+  
+  let pX = heroX - 28; // Kahramanın biraz arkasında
+  let pY = heroY + canvasHeight - platformHeight - 5 - bounce; 
+
+  ctx.translate(pX, pY);
+  ctx.font = "20px Arial";
+  ctx.fillText(pet.emoji, -10, 5); // Emojiyi çiz
   ctx.restore();
 }
 
@@ -396,28 +456,37 @@ function renderShop() {
     
     // Kostümler Başlığı
     let html = `<li style="background:#ddd; justify-content:center; padding:5px; font-size:1.1em;">🥷 <b>KOSTÜMLER</b></li>`;
-    
     Object.keys(skinData).forEach(key => {
         const skin = skinData[key];
         let actionHTML = "";
         if (currentSkin === key) actionHTML = `<span class="equipped-txt">✅</span>`;
         else if (ownedSkins.includes(key)) actionHTML = `<button class="equip-btn" onclick="equipSkin('${key}')">Kuşan</button>`;
         else actionHTML = `<button class="buy-btn" onclick="buySkin('${key}', ${skin.price})">🪙 ${skin.price}</button>`;
-
         html += `<li><span><span style="color:${skin.body}; text-shadow: 1px 1px 1px black;">⬤</span> ${skin.name}</span> ${actionHTML}</li>`;
     });
 
     // Arka Planlar Başlığı
     html += `<li style="background:#ddd; justify-content:center; padding:5px; font-size:1.1em; margin-top:10px;">🌌 <b>ARKA PLANLAR</b></li>`;
-
     Object.keys(bgData).forEach(key => {
         const bg = bgData[key];
         let actionHTML = "";
         if (currentBg === key) actionHTML = `<span class="equipped-txt">✅</span>`;
         else if (ownedBgs.includes(key)) actionHTML = `<button class="equip-btn" onclick="equipBg('${key}')">Kuşan</button>`;
         else actionHTML = `<button class="buy-btn" onclick="buyBg('${key}', ${bg.price})">🪙 ${bg.price}</button>`;
-
         html += `<li><span><span style="color:${bg.top}; text-shadow: 1px 1px 1px black;">🟩</span> ${bg.name}</span> ${actionHTML}</li>`;
+    });
+
+    // Yoldaşlar (Petler) Başlığı
+    html += `<li style="background:#ddd; justify-content:center; padding:5px; font-size:1.1em; margin-top:10px;">🐾 <b>YOLDAŞLAR (PET)</b></li>`;
+    Object.keys(petData).forEach(key => {
+        const pet = petData[key];
+        let actionHTML = "";
+        if (currentPet === key) actionHTML = `<span class="equipped-txt">✅</span>`;
+        else if (ownedPets.includes(key)) actionHTML = `<button class="equip-btn" onclick="equipPet('${key}')">Kuşan</button>`;
+        else actionHTML = `<button class="buy-btn" onclick="buyPet('${key}', ${pet.price})">🪙 ${pet.price}</button>`;
+        
+        let descHtml = pet.desc ? `<br><small style="color:gray; font-size:0.8em;">${pet.desc}</small>` : "";
+        html += `<li><span style="line-height:1.2;">${pet.emoji} ${pet.name}${descHtml}</span> ${actionHTML}</li>`;
     });
 
     list.innerHTML = html;
@@ -460,3 +529,46 @@ window.equipBg = function(bgKey) {
         if(data.success) { currentBg = bgKey; renderShop(); draw(); }
     });
 }
+
+// 🔥 YENİ: Pet Satın Alma ve Kuşanma
+window.buyPet = function(petKey, price) {
+    if(playerCoins < price) { alert("Yetersiz Jeton!"); return; }
+    if(confirm(`${petData[petKey].name} yoldaşını sahipleneceksin. Onaylıyor musun?`)) {
+        fetch('https://ninja-bridge-api.onrender.com/api/score/buypet', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey, price: price })
+        }).then(res => res.json()).then(data => {
+            if(data.success) { playerCoins -= price; ownedPets.push(petKey); updateCoinUI(); renderShop(); }
+        });
+    }
+}
+
+window.equipPet = function(petKey) {
+    fetch('https://ninja-bridge-api.onrender.com/api/score/equippet', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey })
+    }).then(res => res.json()).then(data => {
+        if(data.success) { 
+            currentPet = petKey; 
+            hasExtraLife = (currentPet === "maymun"); // Kuşandığı an maymunsa canı ver
+            renderShop(); 
+            draw(); 
+        }
+    });
+}
+
+// LİDERLİK TABLOSU MODALI
+document.getElementById("leaderboardBtn").addEventListener("click", (e) => {
+    e.stopPropagation(); 
+    document.getElementById("leaderboardModal").style.display = "block";
+    const list = document.getElementById("scoreList");
+    list.innerHTML = "<li style='text-align:center;'>Yükleniyor... ⏳</li>";
+    fetch(`https://ninja-bridge-api.onrender.com/api/score/global?t=${Date.now()}`)
+        .then(res => res.json())
+        .then(data => {
+            list.innerHTML = ""; 
+            if(data.length === 0) { list.innerHTML = "<li>Henüz kimse oynamadı!</li>"; return; }
+            data.forEach((item, i) => {
+                list.innerHTML += `<li><span>${i + 1}. ${item.name}</span> <span>${item.score} Puan</span></li>`;
+            });
+        }).catch(err => list.innerHTML = "<li style='color:red;'>Hata oluştu!</li>");
+});
+document.getElementById("closeLeaderboard").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("leaderboardModal").style.display = "none"; });
