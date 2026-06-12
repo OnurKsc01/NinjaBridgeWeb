@@ -72,7 +72,7 @@ function loadPlayerData() {
             currentSkin = data.currentSkin || "default";
             ownedSkins = data.ownedSkins || ["default"];
             updateCoinUI();
-            draw(); // Kostümü hemen uygula
+            draw(); 
         }).catch(err => console.error("Veri çekilemedi:", err));
 }
 
@@ -115,20 +115,28 @@ function generateTree() {
   trees.push({ x, color: treeColors[Math.floor(Math.random() * 3)] });
 }
 
+// 🔥 ÇÖZÜM 3: PLATFORM ÖLÇEKLENDİRME VE GÖRÜNÜRLÜK
 function generatePlatform() {
-  let difficultyMultiplier = Math.min(score / 25, 0.85); 
-  const minimumGap = 40 + (difficultyMultiplier * 60);
-  const maximumGap = 200 + (difficultyMultiplier * 100);
-  const minimumWidth = 20;
-  const maximumWidth = Math.max(100 - (difficultyMultiplier * 60), 25);
+  // Zorluk artış hızı yarı yarıya düşürüldü (Max %50 zorlaşır)
+  let difficultyMultiplier = Math.min(score / 50, 0.50); 
+
+  // Platformlar arası maksimum mesafe ekran dışına taşmayacak şekilde limitlendi
+  const minimumGap = 40 + (difficultyMultiplier * 20);
+  const maximumGap = 90 + (difficultyMultiplier * 40); 
+  
+  // Platform genişlikleri aşırı incelmesin (Minimum 40 piksel kalsın)
+  const minimumWidth = 40;
+  const maximumWidth = Math.max(100 - (difficultyMultiplier * 40), 40);
+
   const lastPlatform = platforms[platforms.length - 1];
   let furthestX = lastPlatform.x + lastPlatform.w;
+
   const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap));
   const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth));
+
   platforms.push({ x, w });
 }
 
-// Kontroller (Menüler açıkken oyun tıklamalarını iptal et)
 function isMenuOpen() {
     return document.getElementById("shopModal").style.display === "block" || 
            document.getElementById("leaderboardModal").style.display === "block";
@@ -165,7 +173,9 @@ function animate(timestamp) {
     case "waiting":
       return; 
     case "stretching":
-      let currentSpeedFactor = Math.max(stretchingSpeed - (score * 0.05), 1.5);
+      // 🔥 ÇÖZÜM 4: ÇUBUK UZAMA HIZI (ZORLUK) DENGELENDİ
+      // Hızlanma çok daha yumuşak olacak ve belli bir seviyede sabitlenecek.
+      let currentSpeedFactor = Math.max(stretchingSpeed - (score * 0.015), 2.8);
       sticks.last().length += (timestamp - lastTimestamp) / currentSpeedFactor;
       break;
     case "turning":
@@ -229,7 +239,6 @@ function animate(timestamp) {
       if (heroY > maxHeroY) {
         restartButton.style.display = "block";
         
-        // Skoru Kaydet ve Jeton Kazan
         fetch('https://ninja-bridge-api.onrender.com/api/score/save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -288,31 +297,26 @@ function drawPlatforms() {
 }
 
 function drawHero() {
-  // SEÇİLİ KOSTÜMÜ UYGULA
   let skin = skinData[currentSkin] || skinData["default"];
 
   ctx.save();
-  ctx.globalAlpha = skin.alpha; // Hayalet kostümü için şeffaflık
+  ctx.globalAlpha = skin.alpha; 
   ctx.fillStyle = skin.body;
   ctx.translate(heroX - heroWidth / 2, heroY + canvasHeight - platformHeight - heroHeight / 2);
 
-  // Gövde
   drawRoundedRect(-heroWidth / 2, -heroHeight / 2, heroWidth, heroHeight - 4, 5);
 
-  // Bacaklar
   ctx.fillStyle = skin.body; 
-  if(skin.body === "#ffffff") ctx.fillStyle = "#cccccc"; // Hayalet bacak detayı
+  if(skin.body === "#ffffff") ctx.fillStyle = "#cccccc"; 
   const legDistance = 5;
   ctx.beginPath(); ctx.arc(legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill();
   ctx.beginPath(); ctx.arc(-legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill();
 
-  // Göz (Her zaman beyaz/parlak)
   ctx.beginPath();
   ctx.fillStyle = "white";
   ctx.arc(5, -7, 3, 0, Math.PI * 2, false);
   ctx.fill();
 
-  // Bandana
   ctx.fillStyle = skin.bandana;
   ctx.fillRect(-heroWidth / 2 - 1, -12, heroWidth + 2, 4.5);
   ctx.beginPath(); ctx.moveTo(-9, -14.5); ctx.lineTo(-17, -18.5); ctx.lineTo(-14, -8.5); ctx.fill();
@@ -455,7 +459,7 @@ window.equipSkin = function(skinKey) {
         if(data.success) {
             currentSkin = skinKey;
             renderShop();
-            draw(); // Ana ekrandaki karakteri hemen güncelle
+            draw(); 
         }
     });
 }
