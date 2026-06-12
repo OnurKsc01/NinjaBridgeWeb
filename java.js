@@ -14,16 +14,17 @@ let user = tg?.initDataUnsafe?.user;
 let tgUserId = user ? user.id : 123456789;
 let tgUserName = user ? user.first_name : "Test Oyuncusu";
 
-// 🔥 YENİ: Botun URL sonuna eklediği startapp (Grup ID) bilgisini yakalıyoruz
 let startParam = tg?.initDataUnsafe?.start_param;
 let tgGroupId = startParam ? Number(startParam) : 0;
 
 let playerCoins = 0;
 let currentSkin = "default";
 let ownedSkins = ["default"];
+let currentBg = "default";
+let ownedBgs = ["default"];
 
 // ------------------------------------
-// KOSTÜM (SKIN) VERİTABANI
+// MARKET VERİTABANI
 // ------------------------------------
 const skinData = {
   "default": { name: "Varsayılan", price: 0, body: "black", bandana: "red", alpha: 1 },
@@ -32,7 +33,16 @@ const skinData = {
   "bronz": { name: "Bronz Ninja", price: 30, body: "#cd7f32", bandana: "#5c4033", alpha: 1 },
   "demir": { name: "Demir Ninja", price: 40, body: "#a9a9a9", bandana: "#696969", alpha: 1 },
   "altin": { name: "Altın Ninja", price: 50, body: "#ffd700", bandana: "#b8860b", alpha: 1 },
-  "hiper": { name: "Hiper Ninja", price: 65, body: "#800080", bandana: "#00ffff", alpha: 1 }
+  "hiper": { name: "Hiper Ninja", price: 65, body: "#800080", bandana: "#00ffff", alpha: 1 },
+  "golge": { name: "Gölge Katili", price: 80, body: "#1a1a1a", bandana: "#4a0000", alpha: 1 },
+  "buzul": { name: "Buzul Ninja", price: 100, body: "#add8e6", bandana: "#ffffff", alpha: 1 }
+};
+
+const bgData = {
+  "default": { name: "Gündüz Vadisi", price: 0, top: "#BBD691", bottom: "#FEF1E1", hill1: "#95C629", hill2: "#659F1C", tree: "#7D833C", leaves: ["#6D8821", "#8FAC34", "#98B333"] },
+  "gece": { name: "Gece Yarısı", price: 50, top: "#0B1D3A", bottom: "#1A0B2E", hill1: "#1A2A42", hill2: "#0D1B2A", tree: "#1E1E1E", leaves: ["#2B3A42", "#1A2A42", "#3B4A52"] },
+  "kanli": { name: "Kanlı Ay", price: 100, top: "#4A0000", bottom: "#1A0000", hill1: "#590000", hill2: "#330000", tree: "#1A0000", leaves: ["#660000", "#800000", "#4D0000"] },
+  "col": { name: "Çöl Sıcağı", price: 150, top: "#FF8C00", bottom: "#FFD700", hill1: "#CD853F", hill2: "#8B4513", tree: "#5C4033", leaves: ["#D2B48C", "#F4A460", "#DEB887"] }
 };
 
 // ------------------------------------
@@ -65,7 +75,6 @@ const scoreElement = document.getElementById("score");
 const coinCountElement = document.getElementById("coinCount");
 const shopCoinCountElement = document.getElementById("shopCoinCount");
 
-// Oyuncu verilerini çek
 loadPlayerData();
 
 function loadPlayerData() {
@@ -75,8 +84,10 @@ function loadPlayerData() {
             playerCoins = data.coins || 0;
             currentSkin = data.currentSkin || "default";
             ownedSkins = data.ownedSkins || ["default"];
+            currentBg = data.currentBackground || "default";
+            ownedBgs = data.ownedBackgrounds || ["default"];
             updateCoinUI();
-            draw(); 
+            resetGame(); // Veri yüklendikten sonra oyunu başlat
         }).catch(err => console.error("Veri çekilemedi:", err));
 }
 
@@ -84,8 +95,6 @@ function updateCoinUI() {
     coinCountElement.innerText = playerCoins;
     shopCoinCountElement.innerText = playerCoins;
 }
-
-resetGame();
 
 function resetGame() {
   phase = "waiting";
@@ -111,30 +120,23 @@ function resetGame() {
 }
 
 function generateTree() {
+  let bg = bgData[currentBg] || bgData["default"];
   const minimumGap = 30, maximumGap = 150;
   const lastTree = trees[trees.length - 1];
   let furthestX = lastTree ? lastTree.x : 0;
   const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap));
-  const treeColors = ["#6D8821", "#8FAC34", "#98B333"];
-  trees.push({ x, color: treeColors[Math.floor(Math.random() * 3)] });
+  trees.push({ x, color: bg.leaves[Math.floor(Math.random() * 3)] });
 }
 
-// 🔥 ÇÖZÜM 3: PLATFORM ÖLÇEKLENDİRME VE GÖRÜNÜRLÜK
 function generatePlatform() {
-  // Zorluk artış hızı yarı yarıya düşürüldü (Max %50 zorlaşır)
   let difficultyMultiplier = Math.min(score / 50, 0.50); 
-
-  // Platformlar arası maksimum mesafe ekran dışına taşmayacak şekilde limitlendi
   const minimumGap = 40 + (difficultyMultiplier * 20);
   const maximumGap = 90 + (difficultyMultiplier * 40); 
-  
-  // Platform genişlikleri aşırı incelmesin (Minimum 40 piksel kalsın)
   const minimumWidth = 40;
   const maximumWidth = Math.max(100 - (difficultyMultiplier * 40), 40);
 
   const lastPlatform = platforms[platforms.length - 1];
   let furthestX = lastPlatform.x + lastPlatform.w;
-
   const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap));
   const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth));
 
@@ -177,8 +179,6 @@ function animate(timestamp) {
     case "waiting":
       return; 
     case "stretching":
-      // 🔥 ÇÖZÜM 4: ÇUBUK UZAMA HIZI (ZORLUK) DENGELENDİ
-      // Hızlanma çok daha yumuşak olacak ve belli bir seviyede sabitlenecek.
       let currentSpeedFactor = Math.max(stretchingSpeed - (score * 0.015), 2.8);
       sticks.last().length += (timestamp - lastTimestamp) / currentSpeedFactor;
       break;
@@ -246,7 +246,6 @@ function animate(timestamp) {
         fetch('https://ninja-bridge-api.onrender.com/api/score/save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            // 🔥 YENİ: 0 yerine tgGroupId gönderiyoruz
             body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: tgGroupId })
         })
         .then(response => response.json())
@@ -319,6 +318,7 @@ function drawHero() {
 
   ctx.beginPath();
   ctx.fillStyle = "white";
+  if(skin.body === "#ffffff") ctx.fillStyle = "black"; // Hayalet gözü
   ctx.arc(5, -7, 3, 0, Math.PI * 2, false);
   ctx.fill();
 
@@ -349,12 +349,18 @@ function drawSticks() {
 }
 
 function drawBackground() {
+  let bg = bgData[currentBg] || bgData["default"];
+
   var gradient = ctx.createLinearGradient(0, 0, 0, window.innerHeight);
-  gradient.addColorStop(0, "#BBD691"); gradient.addColorStop(1, "#FEF1E1");
-  ctx.fillStyle = gradient; ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
-  drawHill(hill1BaseHeight, hill1Amplitude, hill1Stretch, "#95C629");
-  drawHill(hill2BaseHeight, hill2Amplitude, hill2Stretch, "#659F1C");
-  trees.forEach((tree) => drawTree(tree.x, tree.color));
+  gradient.addColorStop(0, bg.top); 
+  gradient.addColorStop(1, bg.bottom);
+  ctx.fillStyle = gradient; 
+  ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+
+  drawHill(hill1BaseHeight, hill1Amplitude, hill1Stretch, bg.hill1);
+  drawHill(hill2BaseHeight, hill2Amplitude, hill2Stretch, bg.hill2);
+  
+  trees.forEach((tree) => drawTree(tree.x, tree.color, bg.tree));
 }
 
 function drawHill(baseHeight, amplitude, stretch, color) {
@@ -363,36 +369,16 @@ function drawHill(baseHeight, amplitude, stretch, color) {
   ctx.lineTo(window.innerWidth, window.innerHeight); ctx.fillStyle = color; ctx.fill();
 }
 
-function drawTree(x, color) {
+function drawTree(x, color, trunkColor) {
   ctx.save();
   ctx.translate((-sceneOffset * backgroundSpeedMultiplier + x) * hill1Stretch, getTreeY(x, hill1BaseHeight, hill1Amplitude));
-  ctx.fillStyle = "#7D833C"; ctx.fillRect(-1, -5, 2, 5);
+  ctx.fillStyle = trunkColor; ctx.fillRect(-1, -5, 2, 5);
   ctx.beginPath(); ctx.moveTo(-5, -5); ctx.lineTo(0, -30); ctx.lineTo(5, -5); ctx.fillStyle = color; ctx.fill();
   ctx.restore();
 }
 
 function getHillY(windowX, baseHeight, amplitude, stretch) { return (Math.sinus((sceneOffset * backgroundSpeedMultiplier + windowX) * stretch) * amplitude + window.innerHeight - baseHeight); }
 function getTreeY(x, baseHeight, amplitude) { return Math.sinus(x) * amplitude + window.innerHeight - baseHeight; }
-
-// ------------------------------------
-// LİDERLİK TABLOSU MODALI
-// ------------------------------------
-document.getElementById("leaderboardBtn").addEventListener("click", (e) => {
-    e.stopPropagation(); 
-    document.getElementById("leaderboardModal").style.display = "block";
-    const list = document.getElementById("scoreList");
-    list.innerHTML = "<li style='text-align:center;'>Yükleniyor... ⏳</li>";
-    fetch(`https://ninja-bridge-api.onrender.com/api/score/global?t=${Date.now()}`)
-        .then(res => res.json())
-        .then(data => {
-            list.innerHTML = ""; 
-            if(data.length === 0) { list.innerHTML = "<li>Henüz kimse oynamadı!</li>"; return; }
-            data.forEach((item, i) => {
-                list.innerHTML += `<li><span>${i + 1}. ${item.name}</span> <span>${item.score} Puan</span></li>`;
-            });
-        }).catch(err => list.innerHTML = "<li style='color:red;'>Hata oluştu!</li>");
-});
-document.getElementById("closeLeaderboard").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("leaderboardModal").style.display = "none"; });
 
 // ------------------------------------
 // MARKET SİSTEMİ VE MODALI
@@ -407,64 +393,70 @@ document.getElementById("closeShop").addEventListener("click", (e) => { e.stopPr
 
 function renderShop() {
     const list = document.getElementById("shopList");
-    list.innerHTML = "";
+    
+    // Kostümler Başlığı
+    let html = `<li style="background:#ddd; justify-content:center; padding:5px; font-size:1.1em;">🥷 <b>KOSTÜMLER</b></li>`;
     
     Object.keys(skinData).forEach(key => {
         const skin = skinData[key];
         let actionHTML = "";
+        if (currentSkin === key) actionHTML = `<span class="equipped-txt">✅</span>`;
+        else if (ownedSkins.includes(key)) actionHTML = `<button class="equip-btn" onclick="equipSkin('${key}')">Kuşan</button>`;
+        else actionHTML = `<button class="buy-btn" onclick="buySkin('${key}', ${skin.price})">🪙 ${skin.price}</button>`;
 
-        if (currentSkin === key) {
-            actionHTML = `<span class="equipped-txt">✅ Kuşanıltı</span>`;
-        } else if (ownedSkins.includes(key)) {
-            actionHTML = `<button class="equip-btn" onclick="equipSkin('${key}')">Kuşan</button>`;
-        } else {
-            actionHTML = `<button class="buy-btn" onclick="buySkin('${key}', ${skin.price})">Satın Al (🪙 ${skin.price})</button>`;
-        }
-
-        list.innerHTML += `
-            <li>
-                <span><span style="color:${skin.body}; text-shadow: 1px 1px 1px black;">⬤</span> ${skin.name}</span>
-                ${actionHTML}
-            </li>
-        `;
+        html += `<li><span><span style="color:${skin.body}; text-shadow: 1px 1px 1px black;">⬤</span> ${skin.name}</span> ${actionHTML}</li>`;
     });
+
+    // Arka Planlar Başlığı
+    html += `<li style="background:#ddd; justify-content:center; padding:5px; font-size:1.1em; margin-top:10px;">🌌 <b>ARKA PLANLAR</b></li>`;
+
+    Object.keys(bgData).forEach(key => {
+        const bg = bgData[key];
+        let actionHTML = "";
+        if (currentBg === key) actionHTML = `<span class="equipped-txt">✅</span>`;
+        else if (ownedBgs.includes(key)) actionHTML = `<button class="equip-btn" onclick="equipBg('${key}')">Kuşan</button>`;
+        else actionHTML = `<button class="buy-btn" onclick="buyBg('${key}', ${bg.price})">🪙 ${bg.price}</button>`;
+
+        html += `<li><span><span style="color:${bg.top}; text-shadow: 1px 1px 1px black;">🟩</span> ${bg.name}</span> ${actionHTML}</li>`;
+    });
+
+    list.innerHTML = html;
 }
 
 window.buySkin = function(skinKey, price) {
-    if(playerCoins < price) {
-        alert("Yetersiz Jeton! Daha fazla oynamalısın.");
-        return;
-    }
-    
-    if(confirm(`${skinData[skinKey].name} kostümünü ${price} jetona almak istiyor musun?`)) {
+    if(playerCoins < price) { alert("Yetersiz Jeton!"); return; }
+    if(confirm(`${skinData[skinKey].name} kostümünü alacaksın. Onaylıyor musun?`)) {
         fetch('https://ninja-bridge-api.onrender.com/api/score/buyskin', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: tgUserId, skinName: skinKey, price: price })
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey, price: price })
         }).then(res => res.json()).then(data => {
-            if(data.success) {
-                playerCoins -= price;
-                ownedSkins.push(skinKey);
-                updateCoinUI();
-                renderShop();
-                alert("Satın alma başarılı! Şimdi kuşanabilirsin.");
-            } else {
-                alert("İşlem başarısız oldu.");
-            }
+            if(data.success) { playerCoins -= price; ownedSkins.push(skinKey); updateCoinUI(); renderShop(); }
         });
     }
 }
 
 window.equipSkin = function(skinKey) {
     fetch('https://ninja-bridge-api.onrender.com/api/score/equipskin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: tgUserId, skinName: skinKey })
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey })
     }).then(res => res.json()).then(data => {
-        if(data.success) {
-            currentSkin = skinKey;
-            renderShop();
-            draw(); 
-        }
+        if(data.success) { currentSkin = skinKey; renderShop(); draw(); }
+    });
+}
+
+window.buyBg = function(bgKey, price) {
+    if(playerCoins < price) { alert("Yetersiz Jeton!"); return; }
+    if(confirm(`${bgData[bgKey].name} arka planını alacaksın. Onaylıyor musun?`)) {
+        fetch('https://ninja-bridge-api.onrender.com/api/score/buybg', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: bgKey, price: price })
+        }).then(res => res.json()).then(data => {
+            if(data.success) { playerCoins -= price; ownedBgs.push(bgKey); updateCoinUI(); renderShop(); }
+        });
+    }
+}
+
+window.equipBg = function(bgKey) {
+    fetch('https://ninja-bridge-api.onrender.com/api/score/equipbg', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: bgKey })
+    }).then(res => res.json()).then(data => {
+        if(data.success) { currentBg = bgKey; renderShop(); draw(); }
     });
 }
