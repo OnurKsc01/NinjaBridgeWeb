@@ -262,11 +262,12 @@ function animate(timestamp) {
       
       if (heroY > maxHeroY) {
           
-        // 🔥 Maymun Peti Hayat Kurtarır!
+        // 🔥 GÜNCEL: Maymun Peti Hayat Kurtarma Sistemi
         if (hasExtraLife) {
             hasExtraLife = false;
-            phase = "waiting";
+            phase = "rescued"; // Tıklamaları geçici olarak kilitlemek için yeni aşama
             heroY = 0;
+            
             // Karakteri düştüğü çubuğun başladığı yere (önceki platforma) geri koy
             heroX = sticks.last().x - heroDistanceFromEdge;
             sticks.last().length = 0;
@@ -275,7 +276,16 @@ function animate(timestamp) {
             perfectElement.innerText = "🐒 MAYMUN KURTARDI!";
             perfectElement.style.color = "#FF8C00";
             perfectElement.style.opacity = 1;
-            setTimeout(() => (perfectElement.style.opacity = 0), 1500);
+            
+            // Karakteri platformda beklemeden anında çiz!
+            draw(); 
+
+            // 1.5 saniye sonra oyuncunun tekrar oynamasına izin ver
+            setTimeout(() => {
+                perfectElement.style.opacity = 0;
+                phase = "waiting"; 
+            }, 1500);
+            
             return;
         }
 
