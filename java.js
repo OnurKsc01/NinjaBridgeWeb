@@ -63,7 +63,10 @@ let heroX, heroY, sceneOffset;
 let platforms = [], sticks = [], trees = [];
 let score = 0;
 let combo = 0; 
-let hasExtraLife = false; // Maymun Peti için ekstra can
+
+// 🔥 HİLE KORUMASI İÇİN DEĞİŞKENLER
+let hasExtraLife = false; 
+let monkeyUsedThisRun = false; // Maymunun bu turda yorulup yorulmadığını takip eder
 
 const canvasWidth = 375, canvasHeight = 375, platformHeight = 100;
 const heroDistanceFromEdge = 10, paddingX = 100;
@@ -108,7 +111,6 @@ function updateCoinUI() {
     shopCoinCountElement.innerText = playerCoins;
 }
 
-// 🔥 Kedi Peti Buff'ı: Kusursuz alanı dinamik olarak büyüt
 function getPerfectAreaSize() {
     return (currentPet === "kedi") ? 25 : 10;
 }
@@ -120,7 +122,8 @@ function resetGame() {
   score = 0;
   combo = 0; 
   
-  // 🔥 Maymun Peti Buff'ı: Her oyuna başlarken +1 Can ver
+  // 🔥 Oyun sıfırlandığında hafızayı temizle ve maymuna hakkını geri ver
+  monkeyUsedThisRun = false; 
   hasExtraLife = (currentPet === "maymun");
 
   introductionElement.style.opacity = 1;
@@ -262,13 +265,12 @@ function animate(timestamp) {
       
       if (heroY > maxHeroY) {
           
-        // 🔥 GÜNCEL: Maymun Peti Hayat Kurtarma Sistemi
         if (hasExtraLife) {
             hasExtraLife = false;
-            phase = "rescued"; // Tıklamaları geçici olarak kilitlemek için yeni aşama
-            heroY = 0;
+            monkeyUsedThisRun = true; // 🔥 Maymunun hakkını kullandığını hafızaya al
             
-            // Karakteri düştüğü çubuğun başladığı yere (önceki platforma) geri koy
+            phase = "rescued"; 
+            heroY = 0;
             heroX = sticks.last().x - heroDistanceFromEdge;
             sticks.last().length = 0;
             sticks.last().rotation = 0;
@@ -277,10 +279,8 @@ function animate(timestamp) {
             perfectElement.style.color = "#FF8C00";
             perfectElement.style.opacity = 1;
             
-            // Karakteri platformda beklemeden anında çiz!
             draw(); 
 
-            // 1.5 saniye sonra oyuncunun tekrar oynamasına izin ver
             setTimeout(() => {
                 perfectElement.style.opacity = 0;
                 phase = "waiting"; 
@@ -317,7 +317,7 @@ function thePlatformTheStickHits() {
   const stickFarX = sticks.last().x + sticks.last().length;
   const platformTheStickHits = platforms.find((platform) => platform.x < stickFarX && stickFarX < platform.x + platform.w);
   
-  let pArea = getPerfectAreaSize(); // Kedinin gücünü okuyoruz
+  let pArea = getPerfectAreaSize(); 
   if (platformTheStickHits && platformTheStickHits.x + platformTheStickHits.w / 2 - pArea / 2 < stickFarX && stickFarX < platformTheStickHits.x + platformTheStickHits.w / 2 + pArea / 2)
     return [platformTheStickHits, true];
   return [platformTheStickHits, false];
@@ -329,7 +329,7 @@ function draw() {
   drawBackground();
   ctx.translate((window.innerWidth - canvasWidth) / 2 - sceneOffset, (window.innerHeight - canvasHeight) / 2);
   drawPlatforms();
-  drawPet(); // Peti kahramanın arkasına (alt katmana) çiziyoruz
+  drawPet(); 
   drawHero();
   drawSticks();
   ctx.restore();
@@ -382,21 +382,19 @@ function drawHero() {
   ctx.restore();
 }
 
-// 🔥 YENİ: Yoldaşı Çizme Fonksiyonu
 function drawPet() {
   if (currentPet === "default") return;
   let pet = petData[currentPet];
   
   ctx.save();
-  // Yürürken yoldaşın arkada tatlı tatlı zıplaması için minik bir animasyon
   let bounce = (phase === "walking" || phase === "transitioning") ? Math.abs(Math.sin(Date.now() / 100)) * 6 : 0;
   
-  let pX = heroX - 28; // Kahramanın biraz arkasında
+  let pX = heroX - 28; 
   let pY = heroY + canvasHeight - platformHeight - 5 - bounce; 
 
   ctx.translate(pX, pY);
   ctx.font = "20px Arial";
-  ctx.fillText(pet.emoji, -10, 5); // Emojiyi çiz
+  ctx.fillText(pet.emoji, -10, 5); 
   ctx.restore();
 }
 
@@ -464,7 +462,6 @@ document.getElementById("closeShop").addEventListener("click", (e) => { e.stopPr
 function renderShop() {
     const list = document.getElementById("shopList");
     
-    // Kostümler Başlığı
     let html = `<li style="background:#ddd; justify-content:center; padding:5px; font-size:1.1em;">🥷 <b>KOSTÜMLER</b></li>`;
     Object.keys(skinData).forEach(key => {
         const skin = skinData[key];
@@ -475,7 +472,6 @@ function renderShop() {
         html += `<li><span><span style="color:${skin.body}; text-shadow: 1px 1px 1px black;">⬤</span> ${skin.name}</span> ${actionHTML}</li>`;
     });
 
-    // Arka Planlar Başlığı
     html += `<li style="background:#ddd; justify-content:center; padding:5px; font-size:1.1em; margin-top:10px;">🌌 <b>ARKA PLANLAR</b></li>`;
     Object.keys(bgData).forEach(key => {
         const bg = bgData[key];
@@ -486,7 +482,6 @@ function renderShop() {
         html += `<li><span><span style="color:${bg.top}; text-shadow: 1px 1px 1px black;">🟩</span> ${bg.name}</span> ${actionHTML}</li>`;
     });
 
-    // Yoldaşlar (Petler) Başlığı
     html += `<li style="background:#ddd; justify-content:center; padding:5px; font-size:1.1em; margin-top:10px;">🐾 <b>YOLDAŞLAR (PET)</b></li>`;
     Object.keys(petData).forEach(key => {
         const pet = petData[key];
@@ -540,7 +535,6 @@ window.equipBg = function(bgKey) {
     });
 }
 
-// 🔥 YENİ: Pet Satın Alma ve Kuşanma
 window.buyPet = function(petKey, price) {
     if(playerCoins < price) { alert("Yetersiz Jeton!"); return; }
     if(confirm(`${petData[petKey].name} yoldaşını sahipleneceksin. Onaylıyor musun?`)) {
@@ -558,7 +552,8 @@ window.equipPet = function(petKey) {
     }).then(res => res.json()).then(data => {
         if(data.success) { 
             currentPet = petKey; 
-            hasExtraLife = (currentPet === "maymun"); // Kuşandığı an maymunsa canı ver
+            // 🔥 HİLE KORUMASI: Sadece maymun bu turda hiç KULLANILMADIysa can ver!
+            hasExtraLife = (currentPet === "maymun" && !monkeyUsedThisRun); 
             renderShop(); 
             draw(); 
         }
