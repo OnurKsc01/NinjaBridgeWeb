@@ -14,6 +14,10 @@ let user = tg?.initDataUnsafe?.user;
 let tgUserId = user ? user.id : 123456789;
 let tgUserName = user ? user.first_name : "Test Oyuncusu";
 
+// 🔥 YENİ: Botun URL sonuna eklediği startapp (Grup ID) bilgisini yakalıyoruz
+let startParam = tg?.initDataUnsafe?.start_param;
+let tgGroupId = startParam ? Number(startParam) : 0;
+
 let playerCoins = 0;
 let currentSkin = "default";
 let ownedSkins = ["default"];
@@ -242,7 +246,8 @@ function animate(timestamp) {
         fetch('https://ninja-bridge-api.onrender.com/api/score/save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: 0 })
+            // 🔥 YENİ: 0 yerine tgGroupId gönderiyoruz
+            body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: tgGroupId })
         })
         .then(response => response.json())
         .then(data => {
