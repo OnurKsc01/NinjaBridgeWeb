@@ -26,7 +26,69 @@ function unlockSounds() {
     }
 }
 
-// 🔥 FAZ 5: CANLI DÜELLO BİLDİRİM EKRANI
+// ------------------------------------
+// FAZ 6: ADSGRAM REKLAM BAĞLANTISI
+// ------------------------------------
+let adController = null;
+function initAdsGram() {
+    if (window.Adsgram) {
+        // 🔥 NOT: AdsGram'dan alacağın "int-XXXX" formatındaki ID'yi buraya yazmalısın
+        adController = window.Adsgram.createAdController({ blockId: "YOUR_ADSGRAM_BLOCK_ID" });
+    }
+}
+
+function checkAdStatus() {
+    const watchAdBtn = document.getElementById("watchAdBtn");
+    if (!watchAdBtn) return;
+    
+    fetch(`https://ninja-bridge-api.onrender.com/api/score/adstatus/${tgUserId}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.canWatch) {
+                watchAdBtn.style.display = "block";
+                watchAdBtn.style.background = "#e74c3c";
+                watchAdBtn.style.pointerEvents = "auto";
+                watchAdBtn.innerText = `📺 +${data.nextRewardCoins} Jeton`;
+            } else {
+                watchAdBtn.style.display = "block";
+                watchAdBtn.style.background = "#7f8c8d";
+                watchAdBtn.style.pointerEvents = "none";
+                watchAdBtn.innerText = "📺 Haklar Tükendi";
+            }
+        }).catch(() => { watchAdBtn.style.display = "none"; });
+}
+
+document.getElementById("watchAdBtn").addEventListener("click", () => {
+    if (!adController) {
+        tg.showAlert("Reklam yüklenemedi, lütfen biraz sonra tekrar deneyin.");
+        return;
+    }
+    
+    adController.show().then((result) => {
+        if (result.done) {
+            // Reklam başarıyla izlendi, API'den ödülü talep et
+            fetch('https://ninja-bridge-api.onrender.com/api/score/watchad', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: tgUserId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                playerCoins = data.totalCoins;
+                playerGems = data.totalGems;
+                updateCoinUI();
+                checkAdStatus(); // Hakkı ve buton yazısını tazele
+                tg.showAlert(`🎉 Reklam Tamamlandı!\nHesabına +${data.earnedCoins} Jeton eklendi!`);
+            });
+        }
+    }).catch(() => {
+        tg.showAlert("Reklam ödülü alınamadı. Lütfen videoyu kapatmadan sonuna kadar izleyin.");
+    });
+});
+
+// ------------------------------------
+// FAZ 5: CANLI DÜELLO BİLDİRİM SİSTEMİ
+// ------------------------------------
 const duelNotif = document.createElement("div");
 duelNotif.id = "duelNotification";
 duelNotif.style.cssText = "position:absolute; top:70px; left:50%; transform:translateX(-50%); background:rgba(220, 20, 60, 0.9); color:white; padding:10px 20px; border-radius:10px; font-weight:bold; font-size:14px; z-index:100; display:none; text-align:center; box-shadow:0 4px 8px rgba(0,0,0,0.3); pointer-events:none; text-shadow:1px 1px 2px black;";
@@ -84,6 +146,8 @@ const introductionElement = document.getElementById("introduction"); const perfe
 const restartButton = document.getElementById("restart"); const scoreElement = document.getElementById("score");
 const coinCountElement = document.getElementById("coinCount"); const shopCoinCountElement = document.getElementById("shopCoinCount");
 
+// Başlangıç Kurulumları
+initAdsGram();
 loadPlayerData();
 
 function loadPlayerData() {
@@ -91,7 +155,9 @@ function loadPlayerData() {
         .then(res => res.json())
         .then(data => {
             playerCoins = data.coins || 0; playerGems = data.gems || 0; currentSkin = data.currentSkin || "default"; ownedSkins = data.ownedSkins || ["default"]; currentBg = data.currentBackground || "default"; ownedBgs = data.ownedBackgrounds || ["default"]; currentPet = data.currentPet || "default"; ownedPets = data.ownedPets || {}; 
-            updateCoinUI(); resetGame();
+            updateCoinUI(); 
+            checkAdStatus(); // Reklam durumunu sorgula
+            resetGame();
         }).catch(err => console.error(err));
 }
 function updateCoinUI() { coinCountElement.innerHTML = `🪙 ${playerCoins} | 💎 ${playerGems}`; shopCoinCountElement.innerHTML = `🪙 ${playerCoins} | 💎 ${playerGems}`; }
@@ -125,10 +191,7 @@ window.addEventListener("touchstart", (e) => { if (!isMenuOpen() && phase == "wa
 window.addEventListener("mouseup", () => { if (phase == "stretching") phase = "turning"; });
 window.addEventListener("touchend", () => { if (phase == "stretching") phase = "turning"; });
 
-function startStretching() { 
-    lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); 
-    window.requestAnimationFrame(animate); 
-}
+function startStretching() { lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); window.requestAnimationFrame(animate); }
 window.addEventListener("resize", () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; draw(); });
 window.requestAnimationFrame(animate);
 
@@ -201,6 +264,7 @@ function drawPlatforms() {
   let bg = bgData[currentBg] || bgData["default"]; let platformColor = bg.isDark ? "#1a1a1a" : "black"; let glowColor = bg.isDark ? "#00ffff" : "transparent";
   platforms.forEach(({ x, w }) => { ctx.save(); ctx.fillStyle = platformColor; if(bg.isDark) { ctx.shadowBlur = 15; ctx.shadowColor = glowColor; ctx.strokeStyle = glowColor; ctx.lineWidth = 2; } ctx.fillRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2); if(bg.isDark) { ctx.strokeRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2); } ctx.restore(); if (sticks.last().x < x) { ctx.fillStyle = "red"; let pArea = getPerfectAreaSize(); ctx.fillRect(x + w / 2 - pArea / 2, canvasHeight - platformHeight, pArea, pArea); } });
 }
+/*  */
 function drawHero() {
   let skin = skinData[currentSkin] || skinData["default"]; ctx.save(); ctx.globalAlpha = skin.alpha; ctx.fillStyle = skin.body; ctx.translate(heroX - heroWidth / 2, heroY + canvasHeight - platformHeight - heroHeight / 2); drawRoundedRect(-heroWidth / 2, -heroHeight / 2, heroWidth, heroHeight - 4, 5); ctx.fillStyle = skin.body; if(skin.body === "#ffffff") ctx.fillStyle = "#cccccc"; const legDistance = 5; ctx.beginPath(); ctx.arc(legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.beginPath(); ctx.arc(-legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.beginPath(); ctx.fillStyle = "white"; if(skin.body === "#ffffff") ctx.fillStyle = "black"; ctx.arc(5, -7, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.fillStyle = skin.bandana; ctx.fillRect(-heroWidth / 2 - 1, -12, heroWidth + 2, 4.5); ctx.beginPath(); ctx.moveTo(-9, -14.5); ctx.lineTo(-17, -18.5); ctx.lineTo(-14, -8.5); ctx.fill(); ctx.beginPath(); ctx.moveTo(-10, -10.5); ctx.lineTo(-15, -3.5); ctx.lineTo(-5, -7); ctx.fill(); ctx.restore();
 }
@@ -216,7 +280,7 @@ function getHillY(windowX, base, amp, stretch) { return (Math.sinus((sceneOffset
 function getTreeY(x, base, amp) { return Math.sinus(x) * amp + window.innerHeight - base; }
 
 // ------------------------------------
-// MARKET SİSTEMİ (Maks. 4 Seviye, Sadece Elmas ile 1-3-5 Geliştirme, HIZLI ELMAS ALIMI)
+// MARKET SİSTEMİ
 // ------------------------------------
 document.getElementById("shopBtn").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("shopModal").style.display = "block"; renderShop(); });
 document.getElementById("closeShop").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("shopModal").style.display = "none"; });
@@ -253,35 +317,20 @@ function renderShop() {
     list.innerHTML = html;
 }
 
-// 🔥 DONMAYI ENGELLEYEN YENİ HIZLI ELMAS ALMA FONKSİYONU
 let isConverting = false;
 window.convertGems = function() { 
     if(playerCoins < 1000) { 
         if (tg && tg.showAlert) tg.showAlert("1000 Jetonun yok!"); else alert("1000 Jetonun yok!"); 
         return; 
     } 
-    
-    if (isConverting) return; // Arka arkaya hızlı tıklamaları engeller (spam koruması)
-    isConverting = true;
-    
-    let btn = document.getElementById("gemBuyBtn");
-    if(btn) btn.innerText = "⏳"; // Butonu işlem yapılıyor ikonuna çevir
-    
+    if (isConverting) return; isConverting = true;
+    let btn = document.getElementById("gemBuyBtn"); if(btn) btn.innerText = "⏳"; 
     fetch('https://ninja-bridge-api.onrender.com/api/score/convert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId }) })
     .then(res => res.json()).then(data => { 
         isConverting = false;
-        if(data.success) { 
-            playerCoins -= 1000; 
-            playerGems += 1; 
-            updateCoinUI(); 
-            renderShop(); 
-        } else {
-            if(btn) btn.innerText = "💎 1 Al";
-        }
-    }).catch(err => {
-        isConverting = false;
-        if(btn) btn.innerText = "💎 1 Al";
-    }); 
+        if(data.success) { playerCoins -= 1000; playerGems += 1; updateCoinUI(); renderShop(); } 
+        else { if(btn) btn.innerText = "💎 1 Al"; }
+    }).catch(() => { isConverting = false; if(btn) btn.innerText = "💎 1 Al"; }); 
 }
 
 window.upgradePet = function(petKey, nextLevel, costType, costVal) { 
@@ -290,13 +339,7 @@ window.upgradePet = function(petKey, nextLevel, costType, costVal) {
     tg.showConfirm(`${petData[petKey].name} yoldaşını Seviye ${nextLevel} yapacaksın. Onaylıyor musun?`, function(agreed) { 
         if(agreed) { 
             fetch('https://ninja-bridge-api.onrender.com/api/score/upgradepet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, petName: petKey, coinCost: costType === "coins" ? costVal : 0, gemCost: costType === "gems" ? costVal : 0, nextLevel: nextLevel }) })
-            .then(res => res.json()).then(data => { 
-                if(data.success) { 
-                    if(costType === "coins") playerCoins -= costVal; 
-                    if(costType === "gems") playerGems -= costVal; 
-                    ownedPets[petKey] = nextLevel; updateCoinUI(); renderShop(); 
-                } 
-            }); 
+            .then(res => res.json()).then(data => { if(data.success) { if(costType === "coins") playerCoins -= costVal; if(costType === "gems") playerGems -= costVal; ownedPets[petKey] = nextLevel; updateCoinUI(); renderShop(); } }); 
         } 
     }); 
 }
@@ -323,5 +366,5 @@ window.buyPet = function(petKey, price) {
 }
 window.equipPet = function(petKey) { fetch('https://ninja-bridge-api.onrender.com/api/score/equippet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey }) }).then(res => res.json()).then(data => { if(data.success) { currentPet = petKey; renderShop(); draw(); } }); }
 
-document.getElementById("leaderboardBtn").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("leaderboardModal").style.display = "block"; const list = document.getElementById("scoreList"); list.innerHTML = "<li style='text-align:center;'>Yükleniyor... ⏳</li>"; fetch(`https://ninja-bridge-api.onrender.com/api/score/global?t=${Date.now()}`).then(res => res.json()).then(data => { list.innerHTML = ""; if(data.length === 0) { list.innerHTML = "<li>Henüz kimse oynamadı!</li>"; return; } data.forEach((item, i) => { list.innerHTML += `<li><span>${i + 1}. ${item.name}</span> <span>${item.score} Puan</span></li>`; }); }).catch(err => list.innerHTML = "<li style='color:red;'>Hata oluştu!</li>"); }); 
+document.getElementById("leaderboardBtn").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("leaderboardModal").style.display = "block"; const list = document.getElementById("scoreList"); list.innerHTML = "<li style='text-align:center;'>Yükleniyor... ⏳</li>"; fetch(`https://ninja-bridge-api.onrender.com/api/score/global?t=${Date.now()}`).then(res => res.json()).then(data => { list.innerHTML = ""; if(data.length === 0) { list.innerHTML = "<li>Henüz kimse oynamadı!</li>"; return; } data.forEach((item, i) => { list.innerHTML += `<li><span>${i + 1}. ${item.name}</span> <span>${item.score} Puan</span></li>`; }); }).catch(() => list.innerHTML = "<li style='color:red;'>Hata oluştu!</li>"); }); 
 document.getElementById("closeLeaderboard").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("leaderboardModal").style.display = "none"; });
