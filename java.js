@@ -27,20 +27,24 @@ function unlockSounds() {
 }
 
 // ------------------------------------
-// FAZ 6: ADSGRAM REKLAM BAĞLANTISI
+// FAZ 6: ADSGRAM REKLAM BAĞLANTISI (HATA KORUMALI)
 // ------------------------------------
 let adController = null;
+let adRetryCount = 0;
+
 function initAdsGram() {
     if (window.Adsgram) {
         adController = window.Adsgram.createAdController({ blockId: "35103" });
-    } else {
+    } else if (adRetryCount < 10) {
+        // Reklam engelleyici (Adblock) varsa sonsuza kadar döngüye girmemesi için 10 defa dener ve bırakır.
+        adRetryCount++;
         setTimeout(initAdsGram, 500);
     }
 }
 
 function checkAdStatus() {
     const watchAdBtn = document.getElementById("watchAdBtn");
-    if (!watchAdBtn) return;
+    if (!watchAdBtn) return; // HTML'de buton yoksa kodun çökmesini engeller
     
     fetch(`https://ninja-bridge-api.onrender.com/api/score/adstatus/${tgUserId}`)
         .then(res => res.json())
@@ -59,32 +63,36 @@ function checkAdStatus() {
         }).catch(() => { watchAdBtn.style.display = "none"; });
 }
 
-document.getElementById("watchAdBtn").addEventListener("click", () => {
-    if (!adController) {
-        if(tg && tg.showAlert) tg.showAlert("Reklam yükleniyor, lütfen birkaç saniye sonra tekrar deneyin.");
-        return;
-    }
-    
-    adController.show().then((result) => {
-        if (result.done) {
-            fetch('https://ninja-bridge-api.onrender.com/api/score/watchad', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: tgUserId })
-            })
-            .then(res => res.json())
-            .then(data => {
-                playerCoins = data.totalCoins;
-                playerGems = data.totalGems;
-                updateCoinUI();
-                checkAdStatus(); 
-                if(tg && tg.showAlert) tg.showAlert(`🎉 Reklam Tamamlandı!\nHesabına +${data.earnedCoins} Jeton eklendi!`);
-            });
+// Buton varsa tıklama özelliğini ekle (Yoksa oyunu çökertme)
+const watchAdBtnElement = document.getElementById("watchAdBtn");
+if (watchAdBtnElement) {
+    watchAdBtnElement.addEventListener("click", () => {
+        if (!adController) {
+            if(tg && tg.showAlert) tg.showAlert("Reklam yüklenemedi (Reklam engelleyici açık olabilir veya bağlantı yavaş).");
+            return;
         }
-    }).catch(() => {
-        if(tg && tg.showAlert) tg.showAlert("Reklam ödülü alınamadı. Lütfen videoyu sonuna kadar izleyin.");
+        
+        adController.show().then((result) => {
+            if (result.done) {
+                fetch('https://ninja-bridge-api.onrender.com/api/score/watchad', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: tgUserId })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    playerCoins = data.totalCoins;
+                    playerGems = data.totalGems;
+                    updateCoinUI();
+                    checkAdStatus(); 
+                    if(tg && tg.showAlert) tg.showAlert(`🎉 Reklam Tamamlandı!\nHesabına +${data.earnedCoins} Jeton eklendi!`);
+                });
+            }
+        }).catch(() => {
+            if(tg && tg.showAlert) tg.showAlert("Reklam ödülü alınamadı. Lütfen videoyu sonuna kadar izleyin.");
+        });
     });
-});
+}
 
 // ------------------------------------
 // FAZ 5: CANLI DÜELLO BİLDİRİM SİSTEMİ
@@ -146,9 +154,9 @@ const introductionElement = document.getElementById("introduction"); const perfe
 const restartButton = document.getElementById("restart"); const scoreElement = document.getElementById("score");
 const coinCountElement = document.getElementById("coinCount"); const shopCoinCountElement = document.getElementById("shopCoinCount");
 
-// 🔥 YENİ MANTIK: Sunucuyu beklemeden oyunu ANINDA ekrana çiz!
+// Başlangıç Yüklemeleri
 initAdsGram();
-resetGame(); 
+resetGame(); // Hata olsa da olmasa da ekranı ilk saniyede çizer!
 loadPlayerData();
 
 function loadPlayerData() {
@@ -166,14 +174,12 @@ function loadPlayerData() {
             updateCoinUI(); 
             checkAdStatus(); 
             
-            // Eğer oyuncu henüz oynamaya başlamadıysa arka planı ve karakteri güncelle
             if (phase === "waiting") {
                 if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; }
-                draw();
+                draw(); // Veriler gelince arka planı güncelle
             }
         }).catch(err => {
-            console.error("API Bağlantı Hatası:", err);
-            // Hata olsa bile oyun zaten resetGame ile çizilmiş oldu!
+            console.warn("API Gecikmesi, oyun yine de devam ediyor:", err);
         });
 }
 
