@@ -1,9 +1,5 @@
-Array.prototype.last = function () {
-  return this[this.length - 1];
-};
-Math.sinus = function (degree) {
-  return Math.sin((degree / 180) * Math.PI);
-};
+Array.prototype.last = function () { return this[this.length - 1]; };
+Math.sinus = function (degree) { return Math.sin((degree / 180) * Math.PI); };
 
 // ------------------------------------
 // TELEGRAM & OYUNCU VERİLERİ
@@ -66,31 +62,19 @@ const petData = {
   "maymun": { name: "Kuyruklu Maymun", price: 400, desc: "Sv'ye göre ekstra Can & Jeton", emoji: "🐒" }
 };
 
-let phase = "waiting"; 
-let lastTimestamp; 
-let heroX, heroY, sceneOffset; 
-let platforms = [], sticks = [], trees = [];
-let score = 0, combo = 0; 
-let currentMonkeyLives = 0; 
+let phase = "waiting"; let lastTimestamp; let heroX, heroY, sceneOffset; 
+let platforms = [], sticks = [], trees = []; let score = 0, combo = 0; let currentMonkeyLives = 0; 
 
-const canvasWidth = 375, canvasHeight = 375, platformHeight = 100;
-const heroDistanceFromEdge = 10, paddingX = 100;
-const backgroundSpeedMultiplier = 0.2;
-const hill1BaseHeight = 100, hill1Amplitude = 10, hill1Stretch = 1;
+const canvasWidth = 375, canvasHeight = 375, platformHeight = 100; const heroDistanceFromEdge = 10, paddingX = 100;
+const backgroundSpeedMultiplier = 0.2; const hill1BaseHeight = 100, hill1Amplitude = 10, hill1Stretch = 1;
 const hill2BaseHeight = 70, hill2Amplitude = 20, hill2Stretch = 0.5;
 const stretchingSpeed = 4, turningSpeed = 4, walkingSpeed = 4, transitioningSpeed = 2, fallingSpeed = 2;
 const heroWidth = 17, heroHeight = 30; 
 
-const canvas = document.getElementById("game");
-canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-const ctx = canvas.getContext("2d");
-
-const introductionElement = document.getElementById("introduction");
-const perfectElement = document.getElementById("perfect");
-const restartButton = document.getElementById("restart");
-const scoreElement = document.getElementById("score");
-const coinCountElement = document.getElementById("coinCount");
-const shopCoinCountElement = document.getElementById("shopCoinCount");
+const canvas = document.getElementById("game"); canvas.width = window.innerWidth; canvas.height = window.innerHeight; const ctx = canvas.getContext("2d");
+const introductionElement = document.getElementById("introduction"); const perfectElement = document.getElementById("perfect");
+const restartButton = document.getElementById("restart"); const scoreElement = document.getElementById("score");
+const coinCountElement = document.getElementById("coinCount"); const shopCoinCountElement = document.getElementById("shopCoinCount");
 
 loadPlayerData();
 
@@ -98,16 +82,11 @@ function loadPlayerData() {
     fetch(`https://ninja-bridge-api.onrender.com/api/score/player/${tgUserId}`)
         .then(res => res.json())
         .then(data => {
-            playerCoins = data.coins || 0;
-            playerGems = data.gems || 0;
-            currentSkin = data.currentSkin || "default";
-            ownedSkins = data.ownedSkins || ["default"];
-            currentBg = data.currentBackground || "default";
-            ownedBgs = data.ownedBackgrounds || ["default"];
-            currentPet = data.currentPet || "default";
-            ownedPets = data.ownedPets || {}; 
-            updateCoinUI();
-            resetGame();
+            playerCoins = data.coins || 0; playerGems = data.gems || 0;
+            currentSkin = data.currentSkin || "default"; ownedSkins = data.ownedSkins || ["default"];
+            currentBg = data.currentBackground || "default"; ownedBgs = data.ownedBackgrounds || ["default"];
+            currentPet = data.currentPet || "default"; ownedPets = data.ownedPets || {}; 
+            updateCoinUI(); resetGame();
         }).catch(err => console.error(err));
 }
 
@@ -117,10 +96,7 @@ function updateCoinUI() {
 }
 
 function getPerfectAreaSize() {
-    if (currentPet === "kedi") {
-        let lvl = ownedPets["kedi"] || 1;
-        return 20 + (lvl * 5); 
-    }
+    if (currentPet === "kedi") { let lvl = ownedPets["kedi"] || 1; return 20 + (lvl * 5); }
     return 10;
 }
 
@@ -133,22 +109,17 @@ function getMonkeyStats() {
 
 function resetGame() {
   phase = "waiting"; lastTimestamp = undefined; sceneOffset = 0; score = 0; combo = 0; sessionEarnedGems = 0;
-  
-  if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } 
-  else { currentMonkeyLives = 0; }
-
+  if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } else { currentMonkeyLives = 0; }
   introductionElement.style.opacity = 1; perfectElement.style.opacity = 0; restartButton.style.display = "none";
   scoreElement.innerText = score;
   platforms = [{ x: 50, w: 50 }]; for(let i=0; i<4; i++) generatePlatform();
   sticks = [{ x: platforms[0].x + platforms[0].w, length: 0, rotation: 0 }];
   trees = []; for(let i=0; i<10; i++) generateTree();
-  heroX = platforms[0].x + platforms[0].w - heroDistanceFromEdge; heroY = 0;
-  draw();
+  heroX = platforms[0].x + platforms[0].w - heroDistanceFromEdge; heroY = 0; draw();
 }
 
 function generateTree() {
-  let bg = bgData[currentBg] || bgData["default"];
-  const minimumGap = 30, maximumGap = 150;
+  let bg = bgData[currentBg] || bgData["default"]; const minimumGap = 30, maximumGap = 150;
   let furthestX = trees.length > 0 ? trees.last().x : 0;
   const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap));
   trees.push({ x, color: bg.leaves[Math.floor(Math.random() * 3)] });
@@ -159,12 +130,8 @@ function generatePlatform() {
   if (score >= 3000) { minimumGap = 120; maximumGap = 170; minimumWidth = 20; maximumWidth = 30; } 
   else if (score >= 1500) { minimumGap = 85; maximumGap = 135; minimumWidth = 28; maximumWidth = 45; } 
   else if (score >= 500) { minimumGap = 65; maximumGap = 110; minimumWidth = 35; maximumWidth = 60; }
-
-  let maxScreenGap = window.innerWidth - 130;
-  if (maximumGap > maxScreenGap) { maximumGap = Math.max(minimumGap + 10, maxScreenGap); }
-
-  const lastPlatform = platforms.last();
-  let furthestX = lastPlatform.x + lastPlatform.w;
+  let maxScreenGap = window.innerWidth - 130; if (maximumGap > maxScreenGap) { maximumGap = Math.max(minimumGap + 10, maxScreenGap); }
+  const lastPlatform = platforms.last(); let furthestX = lastPlatform.x + lastPlatform.w;
   const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap));
   const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth));
   platforms.push({ x, w });
@@ -183,33 +150,20 @@ window.requestAnimationFrame(animate);
 
 function animate(timestamp) {
   if (!lastTimestamp) { lastTimestamp = timestamp; window.requestAnimationFrame(animate); return; }
-
   switch (phase) {
     case "waiting": return; 
     case "stretching": sticks.last().length += (timestamp - lastTimestamp) / Math.max(stretchingSpeed - (score * 0.015), 2.8); break;
     case "turning":
       sticks.last().rotation += (timestamp - lastTimestamp) / turningSpeed;
       if (sticks.last().rotation > 90) {
-        sticks.last().rotation = 90;
-        const [nextPlatform, perfectHit] = thePlatformTheStickHits();
+        sticks.last().rotation = 90; const [nextPlatform, perfectHit] = thePlatformTheStickHits();
         if (nextPlatform) {
           if (perfectHit) {
             combo++; score += 1 + combo; 
-            
-            if (combo % 50 === 0) {
-                playerGems += 1;
-                sessionEarnedGems += 1;
-                updateCoinUI();
-                perfectElement.innerText = `💎 50x COMBO!\n+1 ELMAS KAZANDIN!`;
-                perfectElement.style.color = "#00ffff"; 
-            } else {
-                perfectElement.innerText = `🔥 KUSURSUZ! +${1 + combo}\n${combo}x COMBO`;
-                perfectElement.style.color = "#FFD700"; 
-            }
+            if (combo % 50 === 0) { playerGems += 1; sessionEarnedGems += 1; updateCoinUI(); perfectElement.innerText = `💎 50x COMBO!\n+1 ELMAS KAZANDIN!`; perfectElement.style.color = "#00ffff"; } 
+            else { perfectElement.innerText = `🔥 KUSURSUZ! +${1 + combo}\n${combo}x COMBO`; perfectElement.style.color = "#FFD700"; }
             comboSound.currentTime = 0; comboSound.play().catch(e => {});
-          } else {
-            combo = 0; score += 1; perfectElement.innerText = "";
-          }
+          } else { combo = 0; score += 1; perfectElement.innerText = ""; }
           scoreElement.innerText = score;
           if (perfectHit) { perfectElement.style.opacity = 1; setTimeout(() => (perfectElement.style.opacity = 0), 1200); }
           generatePlatform(); generateTree(); generateTree();
@@ -218,46 +172,29 @@ function animate(timestamp) {
       }
       break;
     case "walking":
-      heroX += (timestamp - lastTimestamp) / walkingSpeed;
-      const [nextPlatform] = thePlatformTheStickHits();
-      if (nextPlatform) {
-        const maxHeroX = nextPlatform.x + nextPlatform.w - heroDistanceFromEdge;
-        if (heroX > maxHeroX) { heroX = maxHeroX; phase = "transitioning"; }
-      } else {
-        const maxHeroX = sticks.last().x + sticks.last().length + heroWidth;
-        if (heroX > maxHeroX) { heroX = maxHeroX; phase = "falling"; fallSound.currentTime = 0; fallSound.play().catch(e => {}); }
-      }
+      heroX += (timestamp - lastTimestamp) / walkingSpeed; const [nextPlatform] = thePlatformTheStickHits();
+      if (nextPlatform) { const maxHeroX = nextPlatform.x + nextPlatform.w - heroDistanceFromEdge; if (heroX > maxHeroX) { heroX = maxHeroX; phase = "transitioning"; } } 
+      else { const maxHeroX = sticks.last().x + sticks.last().length + heroWidth; if (heroX > maxHeroX) { heroX = maxHeroX; phase = "falling"; fallSound.currentTime = 0; fallSound.play().catch(e => {}); } }
       break;
     case "transitioning":
-      sceneOffset += (timestamp - lastTimestamp) / transitioningSpeed;
-      const [nextPlatform2] = thePlatformTheStickHits();
+      sceneOffset += (timestamp - lastTimestamp) / transitioningSpeed; const [nextPlatform2] = thePlatformTheStickHits();
       if (sceneOffset > nextPlatform2.x + nextPlatform2.w - paddingX) { sticks.push({ x: nextPlatform2.x + nextPlatform2.w, length: 0, rotation: 0 }); phase = "waiting"; }
       break;
     case "falling":
       if (sticks.last().rotation < 180) sticks.last().rotation += (timestamp - lastTimestamp) / turningSpeed;
       heroY += (timestamp - lastTimestamp) / fallingSpeed;
       if (heroY > platformHeight + 100 + (window.innerHeight - canvasHeight) / 2) {
-        
         if (currentMonkeyLives > 0) {
-            currentMonkeyLives--;
-            let mStats = getMonkeyStats();
+            currentMonkeyLives--; let mStats = getMonkeyStats();
             if (mStats.bonusCoins > 0) { playerCoins += mStats.bonusCoins; updateCoinUI(); }
-
             phase = "rescued"; heroY = 0; heroX = sticks.last().x - heroDistanceFromEdge; sticks.last().length = 0; sticks.last().rotation = 0;
-            perfectElement.innerText = mStats.bonusCoins > 0 ? `🐒 KURTARILDI!\n+${mStats.bonusCoins} Jeton Bonus!` : `🐒 MAYMUN KURTARDI!`;
-            perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1;
-            draw(); 
-            setTimeout(() => { perfectElement.style.opacity = 0; phase = "waiting"; }, 1500);
+            perfectElement.innerText = mStats.bonusCoins > 0 ? `🐒 KURTARILDI!\n+${mStats.bonusCoins} Jeton Bonus!` : `🐒 MAYMUN KURTARDI!`; perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1;
+            draw(); setTimeout(() => { perfectElement.style.opacity = 0; phase = "waiting"; }, 1500);
             return;
         }
-
         restartButton.style.display = "block";
-        fetch('https://ninja-bridge-api.onrender.com/api/score/save', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: tgGroupId, earnedGems: sessionEarnedGems })
-        }).then(res => res.json()).then(data => {
-            if(data.earnedCoins > 0) { playerCoins += data.earnedCoins; updateCoinUI(); }
-        }).catch(err => console.error(err));
+        fetch('https://ninja-bridge-api.onrender.com/api/score/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: tgGroupId, earnedGems: sessionEarnedGems })
+        }).then(res => res.json()).then(data => { if(data.earnedCoins > 0) { playerCoins += data.earnedCoins; updateCoinUI(); } }).catch(err => console.error(err));
         return;
       }
       break;
@@ -286,8 +223,7 @@ function drawSticks() {
   let bg = bgData[currentBg] || bgData["default"]; let stickColor = bg.isDark ? "#00ffff" : "black"; let glowEffect = bg.isDark ? 10 : 0;
   sticks.forEach((stick) => {
     ctx.save(); ctx.translate(stick.x, canvasHeight - platformHeight); ctx.rotate((Math.PI / 180) * stick.rotation);
-    ctx.beginPath(); ctx.lineWidth = 3; ctx.strokeStyle = stickColor;
-    if(glowEffect > 0) { ctx.shadowBlur = glowEffect; ctx.shadowColor = stickColor; }
+    ctx.beginPath(); ctx.lineWidth = 3; ctx.strokeStyle = stickColor; if(glowEffect > 0) { ctx.shadowBlur = glowEffect; ctx.shadowColor = stickColor; }
     ctx.moveTo(0, 0); ctx.lineTo(0, -stick.length); ctx.stroke(); ctx.restore();
   });
 }
@@ -295,11 +231,9 @@ function drawSticks() {
 function drawPlatforms() {
   let bg = bgData[currentBg] || bgData["default"]; let platformColor = bg.isDark ? "#1a1a1a" : "black"; let glowColor = bg.isDark ? "#00ffff" : "transparent";
   platforms.forEach(({ x, w }) => {
-    ctx.save(); ctx.fillStyle = platformColor;
-    if(bg.isDark) { ctx.shadowBlur = 15; ctx.shadowColor = glowColor; ctx.strokeStyle = glowColor; ctx.lineWidth = 2; }
+    ctx.save(); ctx.fillStyle = platformColor; if(bg.isDark) { ctx.shadowBlur = 15; ctx.shadowColor = glowColor; ctx.strokeStyle = glowColor; ctx.lineWidth = 2; }
     ctx.fillRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2);
-    if(bg.isDark) { ctx.strokeRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2); }
-    ctx.restore();
+    if(bg.isDark) { ctx.strokeRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2); } ctx.restore();
     if (sticks.last().x < x) { ctx.fillStyle = "red"; let pArea = getPerfectAreaSize(); ctx.fillRect(x + w / 2 - pArea / 2, canvasHeight - platformHeight, pArea, pArea); }
   });
 }
@@ -332,7 +266,7 @@ function getHillY(windowX, base, amp, stretch) { return (Math.sinus((sceneOffset
 function getTreeY(x, base, amp) { return Math.sinus(x) * amp + window.innerHeight - base; }
 
 // ------------------------------------
-// MARKET VE GÜNCELLEME SİSTEMİ (FAZ 4) - KÜÇÜLTÜLMÜŞ TASARIM
+// MARKET SİSTEMİ (KÜÇÜLTÜLMÜŞ TASARIM)
 // ------------------------------------
 document.getElementById("shopBtn").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("shopModal").style.display = "block"; renderShop(); });
 document.getElementById("closeShop").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("shopModal").style.display = "none"; });
@@ -340,48 +274,42 @@ document.getElementById("closeShop").addEventListener("click", (e) => { e.stopPr
 function renderShop() {
     const list = document.getElementById("shopList");
     
-    let html = `<li style="background:#ddd; justify-content:center; padding:3px; font-size:0.9em;">💎 <b>ELMAS BORSASI</b></li>`;
-    html += `<li style="padding: 5px; font-size:0.9em;"><span>🪙 1000 Jeton Bozdur</span> <button class="buy-btn" style="background:#9b59b6; padding: 4px 8px; font-size:0.9em;" onclick="convertGems()">💎 1 Al</button></li>`;
+    let html = `<li style="background:#ddd; justify-content:center; padding:2px; font-size:11px;">💎 <b>ELMAS BORSASI</b></li>`;
+    html += `<li style="padding: 3px 5px; font-size:11px; display:flex; justify-content:space-between; align-items:center;"><span>🪙 1000 Jeton Bozdur</span> <button class="buy-btn" style="background:#9b59b6; padding: 3px 6px; font-size:10px; margin:0;" onclick="convertGems()">💎 1 Al</button></li>`;
 
-    html += `<li style="background:#ddd; justify-content:center; padding:3px; font-size:0.9em; margin-top:5px;">🥷 <b>KOSTÜMLER</b></li>`;
+    html += `<li style="background:#ddd; justify-content:center; padding:2px; font-size:11px; margin-top:4px;">🥷 <b>KOSTÜMLER</b></li>`;
     Object.keys(skinData).forEach(key => {
         const skin = skinData[key]; let actionHTML = "";
-        if (currentSkin === key) actionHTML = `<span class="equipped-txt" style="font-size:0.9em;">✅</span>`;
-        else if (ownedSkins.includes(key)) actionHTML = `<button class="equip-btn" style="padding: 4px 8px; font-size:0.9em;" onclick="equipSkin('${key}')">Kuşan</button>`;
-        else actionHTML = `<button class="buy-btn" style="padding: 4px 8px; font-size:0.9em;" onclick="buySkin('${key}', ${skin.price})">🪙 ${skin.price}</button>`;
-        html += `<li style="padding: 5px; font-size:0.9em;"><span><span style="color:${skin.body}; text-shadow: 1px 1px 1px black;">⬤</span> ${skin.name}</span> ${actionHTML}</li>`;
+        if (currentSkin === key) actionHTML = `<span class="equipped-txt" style="font-size:10px;">✅</span>`;
+        else if (ownedSkins.includes(key)) actionHTML = `<button class="equip-btn" style="padding: 3px 6px; font-size:10px; margin:0;" onclick="equipSkin('${key}')">Kuşan</button>`;
+        else actionHTML = `<button class="buy-btn" style="padding: 3px 6px; font-size:10px; margin:0;" onclick="buySkin('${key}', ${skin.price})">🪙 ${skin.price}</button>`;
+        html += `<li style="padding: 3px 5px; font-size:11px; display:flex; justify-content:space-between; align-items:center;"><span><span style="color:${skin.body}; text-shadow: 1px 1px 1px black;">⬤</span> ${skin.name}</span> ${actionHTML}</li>`;
     });
 
-    html += `<li style="background:#ddd; justify-content:center; padding:3px; font-size:0.9em; margin-top:5px;">🌌 <b>ARKA PLANLAR</b></li>`;
+    html += `<li style="background:#ddd; justify-content:center; padding:2px; font-size:11px; margin-top:4px;">🌌 <b>ARKA PLANLAR</b></li>`;
     Object.keys(bgData).forEach(key => {
         const bg = bgData[key]; let actionHTML = "";
-        if (currentBg === key) actionHTML = `<span class="equipped-txt" style="font-size:0.9em;">✅</span>`;
-        else if (ownedBgs.includes(key)) actionHTML = `<button class="equip-btn" style="padding: 4px 8px; font-size:0.9em;" onclick="equipBg('${key}')">Kuşan</button>`;
-        else actionHTML = `<button class="buy-btn" style="padding: 4px 8px; font-size:0.9em;" onclick="buyBg('${key}', ${bg.price})">🪙 ${bg.price}</button>`;
-        html += `<li style="padding: 5px; font-size:0.9em;"><span><span style="color:${bg.top}; text-shadow: 1px 1px 1px black;">🟩</span> ${bg.name}</span> ${actionHTML}</li>`;
+        if (currentBg === key) actionHTML = `<span class="equipped-txt" style="font-size:10px;">✅</span>`;
+        else if (ownedBgs.includes(key)) actionHTML = `<button class="equip-btn" style="padding: 3px 6px; font-size:10px; margin:0;" onclick="equipBg('${key}')">Kuşan</button>`;
+        else actionHTML = `<button class="buy-btn" style="padding: 3px 6px; font-size:10px; margin:0;" onclick="buyBg('${key}', ${bg.price})">🪙 ${bg.price}</button>`;
+        html += `<li style="padding: 3px 5px; font-size:11px; display:flex; justify-content:space-between; align-items:center;"><span><span style="color:${bg.top}; text-shadow: 1px 1px 1px black;">🟩</span> ${bg.name}</span> ${actionHTML}</li>`;
     });
 
-    html += `<li style="background:#ddd; justify-content:center; padding:3px; font-size:0.9em; margin-top:5px;">🐾 <b>YOLDAŞLAR & GELİŞTİRME</b></li>`;
+    html += `<li style="background:#ddd; justify-content:center; padding:2px; font-size:11px; margin-top:4px;">🐾 <b>YOLDAŞLAR & GELİŞTİRME</b></li>`;
     Object.keys(petData).forEach(key => {
-        const pet = petData[key]; 
-        let isOwned = ownedPets.hasOwnProperty(key);
-        let level = isOwned ? ownedPets[key] : 0;
+        const pet = petData[key]; let isOwned = ownedPets.hasOwnProperty(key); let level = isOwned ? ownedPets[key] : 0;
         
         if (!isOwned) {
-            let actionHTML = `<button class="buy-btn" style="padding: 4px 8px; font-size:0.9em;" onclick="buyPet('${key}', ${pet.price})">🪙 ${pet.price}</button>`;
-            html += `<li style="padding: 5px; font-size:0.9em;"><span style="line-height:1.1;">${pet.emoji} ${pet.name} (Sv.1)<br><small style="color:gray; font-size:0.75em;">${pet.desc}</small></span> ${actionHTML}</li>`;
+            let actionHTML = `<button class="buy-btn" style="padding: 3px 6px; font-size:10px; margin:0;" onclick="buyPet('${key}', ${pet.price})">🪙 ${pet.price}</button>`;
+            html += `<li style="padding: 3px 5px; font-size:11px; display:flex; justify-content:space-between; align-items:center;"><span style="line-height:1.1;">${pet.emoji} ${pet.name} (Sv.1)<br><small style="color:gray; font-size:9px;">${pet.desc}</small></span> ${actionHTML}</li>`;
         } else {
-            let eqBtn = (currentPet === key) ? `<span class="equipped-txt" style="font-size:0.9em;">✅</span>` : `<button class="equip-btn" style="padding: 4px 8px; font-size:0.9em;" onclick="equipPet('${key}')">Kuşan</button>`;
+            let eqBtn = (currentPet === key) ? `<span class="equipped-txt" style="font-size:10px;">✅</span>` : `<button class="equip-btn" style="padding: 3px 6px; font-size:10px; margin:0;" onclick="equipPet('${key}')">Kuşan</button>`;
             let upgBtn = "";
             if (level < 6) {
-                let costType = (level < 2) ? "coins" : "gems";
-                let costVal = (level < 2) ? 500 : (level === 2 ? 1 : level === 3 ? 2 : level === 4 ? 3 : 5);
-                let icon = costType === "coins" ? "🪙" : "💎";
-                upgBtn = `<button class="buy-btn" style="background:#e67e22; margin-top:3px; padding: 4px 8px; font-size:0.85em;" onclick="upgradePet('${key}', ${level+1}, '${costType}', ${costVal})">⬆️ ${icon} ${costVal}</button>`;
-            } else {
-                upgBtn = `<span style="font-size:0.8em; color:red; margin-top:3px; font-weight:bold;">MAX SV.</span>`;
-            }
-            html += `<li style="padding: 5px; font-size:0.9em;"><span style="line-height:1.1;">${pet.emoji} ${pet.name} (Sv.${level})<br><small style="color:gray; font-size:0.75em;">${pet.desc}</small></span> <div style="display:flex; flex-direction:column; align-items:flex-end;">${eqBtn}${upgBtn}</div></li>`;
+                let costType = (level < 2) ? "coins" : "gems"; let costVal = (level < 2) ? 500 : (level === 2 ? 1 : level === 3 ? 2 : level === 4 ? 3 : 5); let icon = costType === "coins" ? "🪙" : "💎";
+                upgBtn = `<button class="buy-btn" style="background:#e67e22; margin-top:2px; padding: 2px 5px; font-size:9px;" onclick="upgradePet('${key}', ${level+1}, '${costType}', ${costVal})">⬆️ ${icon} ${costVal}</button>`;
+            } else { upgBtn = `<span style="font-size:9px; color:red; margin-top:2px; font-weight:bold;">MAX SV.</span>`; }
+            html += `<li style="padding: 3px 5px; font-size:11px; display:flex; justify-content:space-between; align-items:center;"><span style="line-height:1.1;">${pet.emoji} ${pet.name} (Sv.${level})<br><small style="color:gray; font-size:9px;">${pet.desc}</small></span> <div style="display:flex; flex-direction:column; align-items:flex-end;">${eqBtn}${upgBtn}</div></li>`;
         }
     });
     list.innerHTML = html;
@@ -390,53 +318,31 @@ function renderShop() {
 window.convertGems = function() {
     if(playerCoins < 1000) { tg.showAlert("1000 Jetonun yok!"); return; }
     tg.showConfirm("1000 Jetonunu verip 1 Elmas 💎 alacaksın. Onaylıyor musun?", function(agreed) {
-        if(agreed) {
-            fetch('https://ninja-bridge-api.onrender.com/api/score/convert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId })
-            }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= 1000; playerGems += 1; updateCoinUI(); renderShop(); tg.showAlert("💎 Elmas Eklendi!"); } });
-        }
+        if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/convert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= 1000; playerGems += 1; updateCoinUI(); renderShop(); tg.showAlert("💎 Elmas Eklendi!"); } }); }
     });
 }
 
 window.upgradePet = function(petKey, nextLevel, costType, costVal) {
     if (costType === "coins" && playerCoins < costVal) { tg.showAlert("Yetersiz Jeton!"); return; }
     if (costType === "gems" && playerGems < costVal) { tg.showAlert("Yetersiz Elmas!"); return; }
-    
     tg.showConfirm(`${petData[petKey].name} yoldaşını Seviye ${nextLevel} yapacaksın. Onaylıyor musun?`, function(agreed) {
-        if(agreed) {
-            fetch('https://ninja-bridge-api.onrender.com/api/score/upgradepet', { 
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ userId: tgUserId, petName: petKey, coinCost: costType === "coins" ? costVal : 0, gemCost: costType === "gems" ? costVal : 0, nextLevel: nextLevel })
-            }).then(res => res.json()).then(data => { 
-                if(data.success) { 
-                    if(costType === "coins") playerCoins -= costVal; 
-                    if(costType === "gems") playerGems -= costVal; 
-                    ownedPets[petKey] = nextLevel; 
-                    updateCoinUI(); renderShop(); tg.showAlert(`Geliştirme Başarılı! ⬆️`);
-                } 
-            });
-        }
+        if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/upgradepet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, petName: petKey, coinCost: costType === "coins" ? costVal : 0, gemCost: costType === "gems" ? costVal : 0, nextLevel: nextLevel }) }).then(res => res.json()).then(data => { if(data.success) { if(costType === "coins") playerCoins -= costVal; if(costType === "gems") playerGems -= costVal; ownedPets[petKey] = nextLevel; updateCoinUI(); renderShop(); tg.showAlert(`Geliştirme Başarılı! ⬆️`); } }); }
     });
 }
 
 window.buySkin = function(skinKey, price) {
     if(playerCoins < price) { tg.showAlert("Yetersiz Jeton!"); return; }
-    tg.showConfirm(`${skinData[skinKey].name} kostümünü alacaksın. Onaylıyor musun?`, function(agreed) {
-        if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/buyskin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey, price: price }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= price; ownedSkins.push(skinKey); updateCoinUI(); renderShop(); } }); }
-    });
+    tg.showConfirm(`${skinData[skinKey].name} kostümünü alacaksın. Onaylıyor musun?`, function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/buyskin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey, price: price }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= price; ownedSkins.push(skinKey); updateCoinUI(); renderShop(); } }); } });
 }
 window.equipSkin = function(skinKey) { fetch('https://ninja-bridge-api.onrender.com/api/score/equipskin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey }) }).then(res => res.json()).then(data => { if(data.success) { currentSkin = skinKey; renderShop(); draw(); } }); }
 window.buyBg = function(bgKey, price) {
     if(playerCoins < price) { tg.showAlert("Yetersiz Jeton!"); return; }
-    tg.showConfirm(`${bgData[bgKey].name} arka planını alacaksın. Onaylıyor musun?`, function(agreed) {
-        if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/buybg', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: bgKey, price: price }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= price; ownedBgs.push(bgKey); updateCoinUI(); renderShop(); } }); }
-    });
+    tg.showConfirm(`${bgData[bgKey].name} arka planını alacaksın. Onaylıyor musun?`, function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/buybg', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: bgKey, price: price }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= price; ownedBgs.push(bgKey); updateCoinUI(); renderShop(); } }); } });
 }
 window.equipBg = function(bgKey) { fetch('https://ninja-bridge-api.onrender.com/api/score/equipbg', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: bgKey }) }).then(res => res.json()).then(data => { if(data.success) { currentBg = bgKey; renderShop(); draw(); } }); }
 window.buyPet = function(petKey, price) {
     if(playerCoins < price) { tg.showAlert("Yetersiz Jeton!"); return; }
-    tg.showConfirm(`${petData[petKey].name} yoldaşını sahipleneceksin. Onaylıyor musun?`, function(agreed) {
-        if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/buypet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey, price: price }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= price; ownedPets[petKey] = 1; updateCoinUI(); renderShop(); } }); }
-    });
+    tg.showConfirm(`${petData[petKey].name} yoldaşını sahipleneceksin. Onaylıyor musun?`, function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/buypet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey, price: price }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= price; ownedPets[petKey] = 1; updateCoinUI(); renderShop(); } }); } });
 }
 window.equipPet = function(petKey) { fetch('https://ninja-bridge-api.onrender.com/api/score/equippet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey }) }).then(res => res.json()).then(data => { if(data.success) { currentPet = petKey; renderShop(); draw(); } }); }
 
