@@ -26,11 +26,11 @@ let currentPet = "default";
 let ownedPets = ["default"];
 
 // ------------------------------------
-// SES EFEKTLERİ (FAZ 2)
+// SES EFEKTLERİ VE KİLİT AÇMA (FAZ 2 & 4)
 // ------------------------------------
 const bgMusic = new Audio('bg.mp3');
 bgMusic.loop = true;
-bgMusic.volume = 0.3; // Arka plan müziği sesi biraz kısık olmalı
+bgMusic.volume = 0.3; 
 
 const comboSound = new Audio('combo.mp3');
 comboSound.volume = 0.8;
@@ -38,12 +38,15 @@ comboSound.volume = 0.8;
 const fallSound = new Audio('dusme.mp3');
 fallSound.volume = 0.8;
 
-let musicStarted = false;
+let soundsUnlocked = false;
 
-function playBgMusic() {
-    if (!musicStarted) {
-        bgMusic.play().catch(e => console.log("Müzik başlatılamadı (Kullanıcı etkileşimi bekleniyor)."));
-        musicStarted = true;
+// Tarayıcı güvenliğini aşmak için ilk tıklandığında seslerin kilidini açar
+function unlockSounds() {
+    if (!soundsUnlocked) {
+        bgMusic.play().catch(()=>{});
+        comboSound.play().then(() => comboSound.pause()).catch(()=>{});
+        fallSound.play().then(() => fallSound.pause()).catch(()=>{});
+        soundsUnlocked = true;
     }
 }
 
@@ -62,7 +65,6 @@ const skinData = {
   "buzul": { name: "Buzul Ninja", price: 100, body: "#add8e6", bandana: "#ffffff", alpha: 1 }
 };
 
-// 🔥 YENİ DÜNYALAR VE KARANLIK MOD AYARI EKLENDİ
 const bgData = {
   "default": { name: "Gündüz Vadisi", price: 0, top: "#BBD691", bottom: "#FEF1E1", hill1: "#95C629", hill2: "#659F1C", tree: "#7D833C", leaves: ["#6D8821", "#8FAC34", "#98B333"], isDark: false },
   "gece": { name: "Gece Yarısı", price: 50, top: "#0B1D3A", bottom: "#1A0B2E", hill1: "#1A2A42", hill2: "#0D1B2A", tree: "#1E1E1E", leaves: ["#2B3A42", "#1A2A42", "#3B4A52"], isDark: true },
@@ -179,18 +181,12 @@ function generatePlatform() {
   let minimumWidth = 45;
   let maximumWidth = 85;
 
-  if (score >= 3000) {
-    minimumGap = 120; maximumGap = 170; minimumWidth = 20; maximumWidth = 30;
-  } else if (score >= 1500) {
-    minimumGap = 85; maximumGap = 135; minimumWidth = 28; maximumWidth = 45;
-  } else if (score >= 500) {
-    minimumGap = 65; maximumGap = 110; minimumWidth = 35; maximumWidth = 60;
-  }
+  if (score >= 3000) { minimumGap = 120; maximumGap = 170; minimumWidth = 20; maximumWidth = 30; } 
+  else if (score >= 1500) { minimumGap = 85; maximumGap = 135; minimumWidth = 28; maximumWidth = 45; } 
+  else if (score >= 500) { minimumGap = 65; maximumGap = 110; minimumWidth = 35; maximumWidth = 60; }
 
   let maxScreenGap = window.innerWidth - 130;
-  if (maximumGap > maxScreenGap) {
-    maximumGap = Math.max(minimumGap + 10, maxScreenGap);
-  }
+  if (maximumGap > maxScreenGap) { maximumGap = Math.max(minimumGap + 10, maxScreenGap); }
 
   const lastPlatform = platforms[platforms.length - 1];
   let furthestX = lastPlatform.x + lastPlatform.w;
@@ -214,7 +210,7 @@ function startStretching() {
     lastTimestamp = undefined;
     introductionElement.style.opacity = 0;
     phase = "stretching";
-    playBgMusic(); // 🔥 Oyuncu tıkladığı an müzik başlar
+    unlockSounds(); // 🔥 Ekrana ilk tıklandığı an ses engeli kalkar
     window.requestAnimationFrame(animate);
 }
 
@@ -234,8 +230,7 @@ function animate(timestamp) {
   }
 
   switch (phase) {
-    case "waiting":
-      return; 
+    case "waiting": return; 
     case "stretching":
       let currentSpeedFactor = Math.max(stretchingSpeed - (score * 0.015), 2.8);
       sticks.last().length += (timestamp - lastTimestamp) / currentSpeedFactor;
@@ -253,7 +248,7 @@ function animate(timestamp) {
             perfectElement.innerText = `🔥 KUSURSUZ! +${earnedPoints}\n${combo}x COMBO`;
             perfectElement.style.color = "#FFD700"; 
             
-            // 🔥 TRİNK SESİ ÇALIYOR
+            // 🔥 TRİNK SESİ
             comboSound.currentTime = 0;
             comboSound.play().catch(e => {});
 
@@ -277,17 +272,14 @@ function animate(timestamp) {
       const [nextPlatform] = thePlatformTheStickHits();
       if (nextPlatform) {
         const maxHeroX = nextPlatform.x + nextPlatform.w - heroDistanceFromEdge;
-        if (heroX > maxHeroX) {
-          heroX = maxHeroX;
-          phase = "transitioning";
-        }
+        if (heroX > maxHeroX) { heroX = maxHeroX; phase = "transitioning"; }
       } else {
         const maxHeroX = sticks.last().x + sticks.last().length + heroWidth;
         if (heroX > maxHeroX) {
           heroX = maxHeroX;
           phase = "falling";
           
-          // 🔥 DÜŞME SESİ ÇALIYOR
+          // 🔥 DÜŞME SESİ
           fallSound.currentTime = 0;
           fallSound.play().catch(e => {});
         }
@@ -302,65 +294,45 @@ function animate(timestamp) {
       }
       break;
     case "falling":
-      if (sticks.last().rotation < 180)
-        sticks.last().rotation += (timestamp - lastTimestamp) / turningSpeed;
+      if (sticks.last().rotation < 180) sticks.last().rotation += (timestamp - lastTimestamp) / turningSpeed;
       heroY += (timestamp - lastTimestamp) / fallingSpeed;
       const maxHeroY = platformHeight + 100 + (window.innerHeight - canvasHeight) / 2;
       
       if (heroY > maxHeroY) {
-          
         if (hasExtraLife) {
             hasExtraLife = false;
             monkeyUsedThisRun = true; 
-            
             phase = "rescued"; 
             heroY = 0;
             heroX = sticks.last().x - heroDistanceFromEdge;
             sticks.last().length = 0;
             sticks.last().rotation = 0;
-            
             perfectElement.innerText = "🐒 MAYMUN KURTARDI!";
             perfectElement.style.color = "#FF8C00";
             perfectElement.style.opacity = 1;
-            
             draw(); 
-
-            setTimeout(() => {
-                perfectElement.style.opacity = 0;
-                phase = "waiting"; 
-            }, 1500);
-            
+            setTimeout(() => { perfectElement.style.opacity = 0; phase = "waiting"; }, 1500);
             return;
         }
 
         restartButton.style.display = "block";
-        
         fetch('https://ninja-bridge-api.onrender.com/api/score/save', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: tgGroupId })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if(data.earnedCoins > 0) {
-                playerCoins += data.earnedCoins;
-                updateCoinUI();
-            }
+        }).then(res => res.json()).then(data => {
+            if(data.earnedCoins > 0) { playerCoins += data.earnedCoins; updateCoinUI(); }
         }).catch(err => console.error(err));
         return;
       }
       break;
   }
-  draw();
-  window.requestAnimationFrame(animate);
-  lastTimestamp = timestamp;
+  draw(); window.requestAnimationFrame(animate); lastTimestamp = timestamp;
 }
 
 function thePlatformTheStickHits() {
   if (sticks.last().rotation != 90) throw Error(`Stick is ${sticks.last().rotation}°`);
   const stickFarX = sticks.last().x + sticks.last().length;
   const platformTheStickHits = platforms.find((platform) => platform.x < stickFarX && stickFarX < platform.x + platform.w);
-  
   let pArea = getPerfectAreaSize(); 
   if (platformTheStickHits && platformTheStickHits.x + platformTheStickHits.w / 2 - pArea / 2 < stickFarX && stickFarX < platformTheStickHits.x + platformTheStickHits.w / 2 + pArea / 2)
     return [platformTheStickHits, true];
@@ -379,15 +351,11 @@ function draw() {
   ctx.restore();
 }
 
-restartButton.addEventListener("click", (e) => {
-  e.preventDefault();
-  resetGame();
-});
+restartButton.addEventListener("click", (e) => { e.preventDefault(); resetGame(); });
 
-// 🔥 KARANLIK MODA GÖRE KÖPRÜYÜ PARLATMA MANTIĞI EKLENDİ
 function drawSticks() {
   let bg = bgData[currentBg] || bgData["default"];
-  let stickColor = bg.isDark ? "#00ffff" : "black"; // Karanlıkta neon mavi
+  let stickColor = bg.isDark ? "#00ffff" : "black"; 
   let glowEffect = bg.isDark ? 10 : 0;
 
   sticks.forEach((stick) => {
@@ -397,16 +365,8 @@ function drawSticks() {
     ctx.beginPath(); 
     ctx.lineWidth = 3; 
     ctx.strokeStyle = stickColor;
-    
-    // Parlama efekti
-    if(glowEffect > 0) {
-        ctx.shadowBlur = glowEffect;
-        ctx.shadowColor = stickColor;
-    }
-
-    ctx.moveTo(0, 0); 
-    ctx.lineTo(0, -stick.length); 
-    ctx.stroke();
+    if(glowEffect > 0) { ctx.shadowBlur = glowEffect; ctx.shadowColor = stickColor; }
+    ctx.moveTo(0, 0); ctx.lineTo(0, -stick.length); ctx.stroke();
     ctx.restore();
   });
 }
@@ -425,53 +385,36 @@ function drawPlatforms() {
 
 function drawHero() {
   let skin = skinData[currentSkin] || skinData["default"];
-
-  ctx.save();
-  ctx.globalAlpha = skin.alpha; 
-  ctx.fillStyle = skin.body;
+  ctx.save(); ctx.globalAlpha = skin.alpha; ctx.fillStyle = skin.body;
   ctx.translate(heroX - heroWidth / 2, heroY + canvasHeight - platformHeight - heroHeight / 2);
-
   drawRoundedRect(-heroWidth / 2, -heroHeight / 2, heroWidth, heroHeight - 4, 5);
-
   ctx.fillStyle = skin.body; 
   if(skin.body === "#ffffff") ctx.fillStyle = "#cccccc"; 
   const legDistance = 5;
   ctx.beginPath(); ctx.arc(legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill();
   ctx.beginPath(); ctx.arc(-legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill();
-
-  ctx.beginPath();
-  ctx.fillStyle = "white";
+  ctx.beginPath(); ctx.fillStyle = "white";
   if(skin.body === "#ffffff") ctx.fillStyle = "black"; 
-  ctx.arc(5, -7, 3, 0, Math.PI * 2, false);
-  ctx.fill();
-
+  ctx.arc(5, -7, 3, 0, Math.PI * 2, false); ctx.fill();
   ctx.fillStyle = skin.bandana;
   ctx.fillRect(-heroWidth / 2 - 1, -12, heroWidth + 2, 4.5);
   ctx.beginPath(); ctx.moveTo(-9, -14.5); ctx.lineTo(-17, -18.5); ctx.lineTo(-14, -8.5); ctx.fill();
   ctx.beginPath(); ctx.moveTo(-10, -10.5); ctx.lineTo(-15, -3.5); ctx.lineTo(-5, -7); ctx.fill();
-
   ctx.restore();
 }
 
 function drawPet() {
   if (currentPet === "default") return;
   let pet = petData[currentPet];
-  
   ctx.save();
   let bounce = (phase === "walking" || phase === "transitioning") ? Math.abs(Math.sin(Date.now() / 100)) * 6 : 0;
-  
-  let pX = heroX - 28; 
-  let pY = heroY + canvasHeight - platformHeight - 5 - bounce; 
-
-  ctx.translate(pX, pY);
-  ctx.font = "20px Arial";
-  ctx.fillText(pet.emoji, -10, 5); 
+  let pX = heroX - 28; let pY = heroY + canvasHeight - platformHeight - 5 - bounce; 
+  ctx.translate(pX, pY); ctx.font = "20px Arial"; ctx.fillText(pet.emoji, -10, 5); 
   ctx.restore();
 }
 
 function drawRoundedRect(x, y, width, height, radius) {
-  ctx.beginPath();
-  ctx.moveTo(x, y + radius); ctx.lineTo(x, y + height - radius); ctx.arcTo(x, y + height, x + radius, y + height, radius);
+  ctx.beginPath(); ctx.moveTo(x, y + radius); ctx.lineTo(x, y + height - radius); ctx.arcTo(x, y + height, x + radius, y + height, radius);
   ctx.lineTo(x + width - radius, y + height); ctx.arcTo(x + width, y + height, x + width, y + height - radius, radius);
   ctx.lineTo(x + width, y + radius); ctx.arcTo(x + width, y, x + width - radius, y, radius);
   ctx.lineTo(x + radius, y); ctx.arcTo(x, y, x, y + radius, radius); ctx.fill();
@@ -479,16 +422,11 @@ function drawRoundedRect(x, y, width, height, radius) {
 
 function drawBackground() {
   let bg = bgData[currentBg] || bgData["default"];
-
   var gradient = ctx.createLinearGradient(0, 0, 0, window.innerHeight);
-  gradient.addColorStop(0, bg.top); 
-  gradient.addColorStop(1, bg.bottom);
-  ctx.fillStyle = gradient; 
-  ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
-
+  gradient.addColorStop(0, bg.top); gradient.addColorStop(1, bg.bottom);
+  ctx.fillStyle = gradient; ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
   drawHill(hill1BaseHeight, hill1Amplitude, hill1Stretch, bg.hill1);
   drawHill(hill2BaseHeight, hill2Amplitude, hill2Stretch, bg.hill2);
-  
   trees.forEach((tree) => drawTree(tree.x, tree.color, bg.tree));
 }
 
@@ -513,20 +451,16 @@ function getTreeY(x, baseHeight, amplitude) { return Math.sinus(x) * amplitude +
 // MARKET SİSTEMİ VE MODALI
 // ------------------------------------
 document.getElementById("shopBtn").addEventListener("click", (e) => {
-    e.stopPropagation();
-    document.getElementById("shopModal").style.display = "block";
-    renderShop();
+    e.stopPropagation(); document.getElementById("shopModal").style.display = "block"; renderShop();
 });
 
 document.getElementById("closeShop").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("shopModal").style.display = "none"; });
 
 function renderShop() {
     const list = document.getElementById("shopList");
-    
     let html = `<li style="background:#ddd; justify-content:center; padding:5px; font-size:1.1em;">🥷 <b>KOSTÜMLER</b></li>`;
     Object.keys(skinData).forEach(key => {
-        const skin = skinData[key];
-        let actionHTML = "";
+        const skin = skinData[key]; let actionHTML = "";
         if (currentSkin === key) actionHTML = `<span class="equipped-txt">✅</span>`;
         else if (ownedSkins.includes(key)) actionHTML = `<button class="equip-btn" onclick="equipSkin('${key}')">Kuşan</button>`;
         else actionHTML = `<button class="buy-btn" onclick="buySkin('${key}', ${skin.price})">🪙 ${skin.price}</button>`;
@@ -535,8 +469,7 @@ function renderShop() {
 
     html += `<li style="background:#ddd; justify-content:center; padding:5px; font-size:1.1em; margin-top:10px;">🌌 <b>ARKA PLANLAR</b></li>`;
     Object.keys(bgData).forEach(key => {
-        const bg = bgData[key];
-        let actionHTML = "";
+        const bg = bgData[key]; let actionHTML = "";
         if (currentBg === key) actionHTML = `<span class="equipped-txt">✅</span>`;
         else if (ownedBgs.includes(key)) actionHTML = `<button class="equip-btn" onclick="equipBg('${key}')">Kuşan</button>`;
         else actionHTML = `<button class="buy-btn" onclick="buyBg('${key}', ${bg.price})">🪙 ${bg.price}</button>`;
@@ -545,95 +478,72 @@ function renderShop() {
 
     html += `<li style="background:#ddd; justify-content:center; padding:5px; font-size:1.1em; margin-top:10px;">🐾 <b>YOLDAŞLAR (PET)</b></li>`;
     Object.keys(petData).forEach(key => {
-        const pet = petData[key];
-        let actionHTML = "";
+        const pet = petData[key]; let actionHTML = "";
         if (currentPet === key) actionHTML = `<span class="equipped-txt">✅</span>`;
         else if (ownedPets.includes(key)) actionHTML = `<button class="equip-btn" onclick="equipPet('${key}')">Kuşan</button>`;
         else actionHTML = `<button class="buy-btn" onclick="buyPet('${key}', ${pet.price})">🪙 ${pet.price}</button>`;
-        
         let descHtml = pet.desc ? `<br><small style="color:gray; font-size:0.8em;">${pet.desc}</small>` : "";
         html += `<li><span style="line-height:1.2;">${pet.emoji} ${pet.name}${descHtml}</span> ${actionHTML}</li>`;
     });
-
     list.innerHTML = html;
 }
 
+// 🔥 NATIVE TELEGRAM POPUP KULLANIMI EKLENDİ (github.io yazısını kaldırır)
 window.buySkin = function(skinKey, price) {
-    if(playerCoins < price) { alert("Yetersiz Jeton!"); return; }
-    if(confirm(`${skinData[skinKey].name} kostümünü alacaksın. Onaylıyor musun?`)) {
-        fetch('https://ninja-bridge-api.onrender.com/api/score/buyskin', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey, price: price })
-        }).then(res => res.json()).then(data => {
-            if(data.success) { playerCoins -= price; ownedSkins.push(skinKey); updateCoinUI(); renderShop(); }
-        });
-    }
+    if(playerCoins < price) { tg.showAlert("Yetersiz Jeton!"); return; }
+    tg.showConfirm(`${skinData[skinKey].name} kostümünü alacaksın. Onaylıyor musun?`, function(agreed) {
+        if(agreed) {
+            fetch('https://ninja-bridge-api.onrender.com/api/score/buyskin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey, price: price })
+            }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= price; ownedSkins.push(skinKey); updateCoinUI(); renderShop(); } });
+        }
+    });
 }
 
 window.equipSkin = function(skinKey) {
-    fetch('https://ninja-bridge-api.onrender.com/api/score/equipskin', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey })
-    }).then(res => res.json()).then(data => {
-        if(data.success) { currentSkin = skinKey; renderShop(); draw(); }
-    });
+    fetch('https://ninja-bridge-api.onrender.com/api/score/equipskin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey })
+    }).then(res => res.json()).then(data => { if(data.success) { currentSkin = skinKey; renderShop(); draw(); } });
 }
 
 window.buyBg = function(bgKey, price) {
-    if(playerCoins < price) { alert("Yetersiz Jeton!"); return; }
-    if(confirm(`${bgData[bgKey].name} arka planını alacaksın. Onaylıyor musun?`)) {
-        fetch('https://ninja-bridge-api.onrender.com/api/score/buybg', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: bgKey, price: price })
-        }).then(res => res.json()).then(data => {
-            if(data.success) { playerCoins -= price; ownedBgs.push(bgKey); updateCoinUI(); renderShop(); }
-        });
-    }
-}
-
-window.equipBg = function(bgKey) {
-    fetch('https://ninja-bridge-api.onrender.com/api/score/equipbg', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: bgKey })
-    }).then(res => res.json()).then(data => {
-        if(data.success) { currentBg = bgKey; renderShop(); draw(); }
+    if(playerCoins < price) { tg.showAlert("Yetersiz Jeton!"); return; }
+    tg.showConfirm(`${bgData[bgKey].name} arka planını alacaksın. Onaylıyor musun?`, function(agreed) {
+        if(agreed) {
+            fetch('https://ninja-bridge-api.onrender.com/api/score/buybg', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: bgKey, price: price })
+            }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= price; ownedBgs.push(bgKey); updateCoinUI(); renderShop(); } });
+        }
     });
 }
 
+window.equipBg = function(bgKey) {
+    fetch('https://ninja-bridge-api.onrender.com/api/score/equipbg', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: bgKey })
+    }).then(res => res.json()).then(data => { if(data.success) { currentBg = bgKey; renderShop(); draw(); } });
+}
+
 window.buyPet = function(petKey, price) {
-    if(playerCoins < price) { alert("Yetersiz Jeton!"); return; }
-    if(confirm(`${petData[petKey].name} yoldaşını sahipleneceksin. Onaylıyor musun?`)) {
-        fetch('https://ninja-bridge-api.onrender.com/api/score/buypet', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey, price: price })
-        }).then(res => res.json()).then(data => {
-            if(data.success) { playerCoins -= price; ownedPets.push(petKey); updateCoinUI(); renderShop(); }
-        });
-    }
+    if(playerCoins < price) { tg.showAlert("Yetersiz Jeton!"); return; }
+    tg.showConfirm(`${petData[petKey].name} yoldaşını sahipleneceksin. Onaylıyor musun?`, function(agreed) {
+        if(agreed) {
+            fetch('https://ninja-bridge-api.onrender.com/api/score/buypet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey, price: price })
+            }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= price; ownedPets.push(petKey); updateCoinUI(); renderShop(); } });
+        }
+    });
 }
 
 window.equipPet = function(petKey) {
-    fetch('https://ninja-bridge-api.onrender.com/api/score/equippet', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey })
+    fetch('https://ninja-bridge-api.onrender.com/api/score/equippet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey })
     }).then(res => res.json()).then(data => {
-        if(data.success) { 
-            currentPet = petKey; 
-            hasExtraLife = (currentPet === "maymun" && !monkeyUsedThisRun); 
-            renderShop(); 
-            draw(); 
-        }
+        if(data.success) { currentPet = petKey; hasExtraLife = (currentPet === "maymun" && !monkeyUsedThisRun); renderShop(); draw(); }
     });
 }
 
 // LİDERLİK TABLOSU MODALI
 document.getElementById("leaderboardBtn").addEventListener("click", (e) => {
-    e.stopPropagation(); 
-    document.getElementById("leaderboardModal").style.display = "block";
+    e.stopPropagation(); document.getElementById("leaderboardModal").style.display = "block";
     const list = document.getElementById("scoreList");
     list.innerHTML = "<li style='text-align:center;'>Yükleniyor... ⏳</li>";
-    fetch(`https://ninja-bridge-api.onrender.com/api/score/global?t=${Date.now()}`)
-        .then(res => res.json())
-        .then(data => {
-            list.innerHTML = ""; 
-            if(data.length === 0) { list.innerHTML = "<li>Henüz kimse oynamadı!</li>"; return; }
-            data.forEach((item, i) => {
-                list.innerHTML += `<li><span>${i + 1}. ${item.name}</span> <span>${item.score} Puan</span></li>`;
-            });
-        }).catch(err => list.innerHTML = "<li style='color:red;'>Hata oluştu!</li>");
+    fetch(`https://ninja-bridge-api.onrender.com/api/score/global?t=${Date.now()}`).then(res => res.json()).then(data => {
+        list.innerHTML = ""; if(data.length === 0) { list.innerHTML = "<li>Henüz kimse oynamadı!</li>"; return; }
+        data.forEach((item, i) => { list.innerHTML += `<li><span>${i + 1}. ${item.name}</span> <span>${item.score} Puan</span></li>`; });
+    }).catch(err => list.innerHTML = "<li style='color:red;'>Hata oluştu!</li>");
 });
 document.getElementById("closeLeaderboard").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("leaderboardModal").style.display = "none"; });
