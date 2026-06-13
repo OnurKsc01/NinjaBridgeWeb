@@ -152,14 +152,42 @@ function generateTree() {
 }
 
 function generatePlatform() {
-  let difficultyMultiplier = Math.min(score / 50, 0.50); 
-  const minimumGap = 40 + (difficultyMultiplier * 20);
-  const maximumGap = 90 + (difficultyMultiplier * 40); 
-  const minimumWidth = 40;
-  const maximumWidth = Math.max(100 - (difficultyMultiplier * 40), 40);
+  // Başlangıç Değerleri (0 - 499 Puan Arası: Kolay Mod)
+  let minimumGap = 40;
+  let maximumGap = 90;
+  let minimumWidth = 45;
+  let maximumWidth = 85;
+
+  // 🔥 KADEMELİ ZORLUK ALGORİTMASI
+  if (score >= 3000) {
+    // 💀 KADEME 3: Efsanevi Mod (3000 Puan ve Üzeri)
+    minimumGap = 120;
+    maximumGap = 170;
+    minimumWidth = 20; // İpince platformlar
+    maximumWidth = 30;
+  } else if (score >= 1500) {
+    // ⚔️ KADEME 2: Elit Mod (1500 - 2999 Puan Arası)
+    minimumGap = 85;
+    maximumGap = 135;
+    minimumWidth = 28;
+    maximumWidth = 45;
+  } else if (score >= 500) {
+    // 🎯 KADEME 1: Tecrübeli Mod (500 - 1499 Puan Arası)
+    minimumGap = 65;
+    maximumGap = 110;
+    minimumWidth = 35;
+    maximumWidth = 60;
+  }
+
+  // Güvenlik Duvarı: Platformların ekranın sağından dışarı taşmasını engeller (Görüş alanında tutar)
+  let maxScreenGap = window.innerWidth - 130;
+  if (maximumGap > maxScreenGap) {
+    maximumGap = Math.max(minimumGap + 10, maxScreenGap);
+  }
 
   const lastPlatform = platforms[platforms.length - 1];
   let furthestX = lastPlatform.x + lastPlatform.w;
+  
   const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap));
   const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth));
 
