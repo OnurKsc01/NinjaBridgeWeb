@@ -26,6 +26,28 @@ let currentPet = "default";
 let ownedPets = ["default"];
 
 // ------------------------------------
+// SES EFEKTLERİ (FAZ 2)
+// ------------------------------------
+const bgMusic = new Audio('bg.mp3');
+bgMusic.loop = true;
+bgMusic.volume = 0.3; // Arka plan müziği sesi biraz kısık olmalı
+
+const comboSound = new Audio('combo.mp3');
+comboSound.volume = 0.8;
+
+const fallSound = new Audio('dusme.mp3');
+fallSound.volume = 0.8;
+
+let musicStarted = false;
+
+function playBgMusic() {
+    if (!musicStarted) {
+        bgMusic.play().catch(e => console.log("Müzik başlatılamadı (Kullanıcı etkileşimi bekleniyor)."));
+        musicStarted = true;
+    }
+}
+
+// ------------------------------------
 // MARKET VERİTABANI
 // ------------------------------------
 const skinData = {
@@ -40,16 +62,19 @@ const skinData = {
   "buzul": { name: "Buzul Ninja", price: 100, body: "#add8e6", bandana: "#ffffff", alpha: 1 }
 };
 
+// 🔥 YENİ DÜNYALAR VE KARANLIK MOD AYARI EKLENDİ
 const bgData = {
-  "default": { name: "Gündüz Vadisi", price: 0, top: "#BBD691", bottom: "#FEF1E1", hill1: "#95C629", hill2: "#659F1C", tree: "#7D833C", leaves: ["#6D8821", "#8FAC34", "#98B333"] },
-  "gece": { name: "Gece Yarısı", price: 50, top: "#0B1D3A", bottom: "#1A0B2E", hill1: "#1A2A42", hill2: "#0D1B2A", tree: "#1E1E1E", leaves: ["#2B3A42", "#1A2A42", "#3B4A52"] },
-  "kanli": { name: "Kanlı Ay", price: 100, top: "#4A0000", bottom: "#1A0000", hill1: "#590000", hill2: "#330000", tree: "#1A0000", leaves: ["#660000", "#800000", "#4D0000"] },
-  "col": { name: "Çöl Sıcağı", price: 150, top: "#FF8C00", bottom: "#FFD700", hill1: "#CD853F", hill2: "#8B4513", tree: "#5C4033", leaves: ["#D2B48C", "#F4A460", "#DEB887"] }
+  "default": { name: "Gündüz Vadisi", price: 0, top: "#BBD691", bottom: "#FEF1E1", hill1: "#95C629", hill2: "#659F1C", tree: "#7D833C", leaves: ["#6D8821", "#8FAC34", "#98B333"], isDark: false },
+  "gece": { name: "Gece Yarısı", price: 50, top: "#0B1D3A", bottom: "#1A0B2E", hill1: "#1A2A42", hill2: "#0D1B2A", tree: "#1E1E1E", leaves: ["#2B3A42", "#1A2A42", "#3B4A52"], isDark: true },
+  "kanli": { name: "Kanlı Ay", price: 100, top: "#4A0000", bottom: "#1A0000", hill1: "#590000", hill2: "#330000", tree: "#1A0000", leaves: ["#660000", "#800000", "#4D0000"], isDark: true },
+  "col": { name: "Çöl Sıcağı", price: 150, top: "#FF8C00", bottom: "#FFD700", hill1: "#CD853F", hill2: "#8B4513", tree: "#5C4033", leaves: ["#D2B48C", "#F4A460", "#DEB887"], isDark: false },
+  "neon": { name: "Siber Şehir", price: 200, top: "#000000", bottom: "#001a00", hill1: "#003300", hill2: "#001100", tree: "#001100", leaves: ["#00ff00", "#00cc00", "#009900"], isDark: true },
+  "volkan": { name: "Volkanik Dağ", price: 250, top: "#2b0000", bottom: "#1a0000", hill1: "#ff3300", hill2: "#cc0000", tree: "#1a0000", leaves: ["#ff6600", "#ff3300", "#cc0000"], isDark: true }
 };
 
 const petData = {
   "default": { name: "Yok", price: 0, desc: "Yalnız kurt.", emoji: "" },
-  "kopek": { name: "Altın Avcısı", price: 200, desc: "4 Puanda 1 Jeton", emoji: "🐶" },
+  "kopek": { name: "Altın Avcısı", price: 200, desc: "Seviye 1: 9 Puanda 1 Jeton", emoji: "🐶" },
   "kedi": { name: "Gözcü Kedi", price: 250, desc: "Büyük Kombo Alanı", emoji: "🐱" },
   "maymun": { name: "Kuyruklu Maymun", price: 400, desc: "Her Oyunda +1 Can", emoji: "🐒" }
 };
@@ -63,10 +88,8 @@ let heroX, heroY, sceneOffset;
 let platforms = [], sticks = [], trees = [];
 let score = 0;
 let combo = 0; 
-
-// 🔥 HİLE KORUMASI İÇİN DEĞİŞKENLER
 let hasExtraLife = false; 
-let monkeyUsedThisRun = false; // Maymunun bu turda yorulup yorulmadığını takip eder
+let monkeyUsedThisRun = false; 
 
 const canvasWidth = 375, canvasHeight = 375, platformHeight = 100;
 const heroDistanceFromEdge = 10, paddingX = 100;
@@ -122,7 +145,6 @@ function resetGame() {
   score = 0;
   combo = 0; 
   
-  // 🔥 Oyun sıfırlandığında hafızayı temizle ve maymuna hakkını geri ver
   monkeyUsedThisRun = false; 
   hasExtraLife = (currentPet === "maymun");
 
@@ -152,34 +174,19 @@ function generateTree() {
 }
 
 function generatePlatform() {
-  // Başlangıç Değerleri (0 - 499 Puan Arası: Kolay Mod)
   let minimumGap = 40;
   let maximumGap = 90;
   let minimumWidth = 45;
   let maximumWidth = 85;
 
-  // 🔥 KADEMELİ ZORLUK ALGORİTMASI
   if (score >= 3000) {
-    // 💀 KADEME 3: Efsanevi Mod (3000 Puan ve Üzeri)
-    minimumGap = 120;
-    maximumGap = 170;
-    minimumWidth = 20; // İpince platformlar
-    maximumWidth = 30;
+    minimumGap = 120; maximumGap = 170; minimumWidth = 20; maximumWidth = 30;
   } else if (score >= 1500) {
-    // ⚔️ KADEME 2: Elit Mod (1500 - 2999 Puan Arası)
-    minimumGap = 85;
-    maximumGap = 135;
-    minimumWidth = 28;
-    maximumWidth = 45;
+    minimumGap = 85; maximumGap = 135; minimumWidth = 28; maximumWidth = 45;
   } else if (score >= 500) {
-    // 🎯 KADEME 1: Tecrübeli Mod (500 - 1499 Puan Arası)
-    minimumGap = 65;
-    maximumGap = 110;
-    minimumWidth = 35;
-    maximumWidth = 60;
+    minimumGap = 65; maximumGap = 110; minimumWidth = 35; maximumWidth = 60;
   }
 
-  // Güvenlik Duvarı: Platformların ekranın sağından dışarı taşmasını engeller (Görüş alanında tutar)
   let maxScreenGap = window.innerWidth - 130;
   if (maximumGap > maxScreenGap) {
     maximumGap = Math.max(minimumGap + 10, maxScreenGap);
@@ -187,7 +194,6 @@ function generatePlatform() {
 
   const lastPlatform = platforms[platforms.length - 1];
   let furthestX = lastPlatform.x + lastPlatform.w;
-  
   const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap));
   const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth));
 
@@ -208,6 +214,7 @@ function startStretching() {
     lastTimestamp = undefined;
     introductionElement.style.opacity = 0;
     phase = "stretching";
+    playBgMusic(); // 🔥 Oyuncu tıkladığı an müzik başlar
     window.requestAnimationFrame(animate);
 }
 
@@ -245,6 +252,11 @@ function animate(timestamp) {
             score += earnedPoints;
             perfectElement.innerText = `🔥 KUSURSUZ! +${earnedPoints}\n${combo}x COMBO`;
             perfectElement.style.color = "#FFD700"; 
+            
+            // 🔥 TRİNK SESİ ÇALIYOR
+            comboSound.currentTime = 0;
+            comboSound.play().catch(e => {});
+
           } else {
             combo = 0; 
             score += 1;
@@ -274,6 +286,10 @@ function animate(timestamp) {
         if (heroX > maxHeroX) {
           heroX = maxHeroX;
           phase = "falling";
+          
+          // 🔥 DÜŞME SESİ ÇALIYOR
+          fallSound.currentTime = 0;
+          fallSound.play().catch(e => {});
         }
       }
       break;
@@ -295,7 +311,7 @@ function animate(timestamp) {
           
         if (hasExtraLife) {
             hasExtraLife = false;
-            monkeyUsedThisRun = true; // 🔥 Maymunun hakkını kullandığını hafızaya al
+            monkeyUsedThisRun = true; 
             
             phase = "rescued"; 
             heroY = 0;
@@ -368,6 +384,33 @@ restartButton.addEventListener("click", (e) => {
   resetGame();
 });
 
+// 🔥 KARANLIK MODA GÖRE KÖPRÜYÜ PARLATMA MANTIĞI EKLENDİ
+function drawSticks() {
+  let bg = bgData[currentBg] || bgData["default"];
+  let stickColor = bg.isDark ? "#00ffff" : "black"; // Karanlıkta neon mavi
+  let glowEffect = bg.isDark ? 10 : 0;
+
+  sticks.forEach((stick) => {
+    ctx.save();
+    ctx.translate(stick.x, canvasHeight - platformHeight);
+    ctx.rotate((Math.PI / 180) * stick.rotation);
+    ctx.beginPath(); 
+    ctx.lineWidth = 3; 
+    ctx.strokeStyle = stickColor;
+    
+    // Parlama efekti
+    if(glowEffect > 0) {
+        ctx.shadowBlur = glowEffect;
+        ctx.shadowColor = stickColor;
+    }
+
+    ctx.moveTo(0, 0); 
+    ctx.lineTo(0, -stick.length); 
+    ctx.stroke();
+    ctx.restore();
+  });
+}
+
 function drawPlatforms() {
   platforms.forEach(({ x, w }) => {
     ctx.fillStyle = "black";
@@ -432,16 +475,6 @@ function drawRoundedRect(x, y, width, height, radius) {
   ctx.lineTo(x + width - radius, y + height); ctx.arcTo(x + width, y + height, x + width, y + height - radius, radius);
   ctx.lineTo(x + width, y + radius); ctx.arcTo(x + width, y, x + width - radius, y, radius);
   ctx.lineTo(x + radius, y); ctx.arcTo(x, y, x, y + radius, radius); ctx.fill();
-}
-
-function drawSticks() {
-  sticks.forEach((stick) => {
-    ctx.save();
-    ctx.translate(stick.x, canvasHeight - platformHeight);
-    ctx.rotate((Math.PI / 180) * stick.rotation);
-    ctx.beginPath(); ctx.lineWidth = 2; ctx.moveTo(0, 0); ctx.lineTo(0, -stick.length); ctx.stroke();
-    ctx.restore();
-  });
 }
 
 function drawBackground() {
@@ -580,7 +613,6 @@ window.equipPet = function(petKey) {
     }).then(res => res.json()).then(data => {
         if(data.success) { 
             currentPet = petKey; 
-            // 🔥 HİLE KORUMASI: Sadece maymun bu turda hiç KULLANILMADIysa can ver!
             hasExtraLife = (currentPet === "maymun" && !monkeyUsedThisRun); 
             renderShop(); 
             draw(); 
