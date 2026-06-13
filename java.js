@@ -39,7 +39,6 @@ function startDuelPolling() {
     opponentFinished = false;
     if (duelInterval) clearInterval(duelInterval);
     
-    // Her 2 saniyede bir sessizce rakibi kontrol eder (Hızlandırıldı!)
     duelInterval = setInterval(() => {
         if (phase === "waiting" || opponentFinished) return; 
         
@@ -107,7 +106,7 @@ function resetGame() {
   sticks = [{ x: platforms[0].x + platforms[0].w, length: 0, rotation: 0 }]; trees = []; for(let i=0; i<10; i++) generateTree();
   heroX = platforms[0].x + platforms[0].w - heroDistanceFromEdge; heroY = 0; 
   if (duelInterval) clearInterval(duelInterval);
-  startDuelPolling(); // Yeni oyuna başlarken taramayı aç
+  startDuelPolling();
   draw();
 }
 
@@ -174,7 +173,7 @@ function animate(timestamp) {
             draw(); setTimeout(() => { perfectElement.style.opacity = 0; phase = "waiting"; }, 1500); return;
         }
         restartButton.style.display = "block";
-        if (duelInterval) clearInterval(duelInterval); // Oyuncu ölünce kendi taramasını keser
+        if (duelInterval) clearInterval(duelInterval);
 
         fetch('https://ninja-bridge-api.onrender.com/api/score/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: tgGroupId, earnedGems: sessionEarnedGems })
         }).then(res => res.json()).then(data => { if(data.earnedCoins > 0) { playerCoins += data.earnedCoins; updateCoinUI(); } }).catch(err => console.error(err));
@@ -217,7 +216,7 @@ function getHillY(windowX, base, amp, stretch) { return (Math.sinus((sceneOffset
 function getTreeY(x, base, amp) { return Math.sinus(x) * amp + window.innerHeight - base; }
 
 // ------------------------------------
-// MARKET SİSTEMİ
+// MARKET SİSTEMİ (Maks. 4 Seviye, Sadece Elmas ile 1-3-5 Geliştirme)
 // ------------------------------------
 document.getElementById("shopBtn").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("shopModal").style.display = "block"; renderShop(); });
 document.getElementById("closeShop").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("shopModal").style.display = "none"; });
@@ -231,15 +230,76 @@ function renderShop() {
     html += `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; margin-top:6px;">🌌 <b>ARKA PLANLAR</b></li>`;
     Object.keys(bgData).forEach(key => { const bg = bgData[key]; let actionHTML = ""; if (currentBg === key) actionHTML = `<span class="equipped-txt" style="font-size:13px;">✅</span>`; else if (ownedBgs.includes(key)) actionHTML = `<button class="equip-btn" style="padding: 5px 10px; font-size:12px; margin:0;" onclick="equipBg('${key}')">Kuşan</button>`; else actionHTML = `<button class="buy-btn" style="padding: 5px 10px; font-size:12px; margin:0;" onclick="buyBg('${key}', ${bg.price})">🪙 ${bg.price}</button>`; html += `<li style="padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center;"><span><span style="color:${bg.top}; text-shadow: 1px 1px 1px black;">🟩</span> ${bg.name}</span> ${actionHTML}</li>`; });
     html += `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; margin-top:6px;">🐾 <b>YOLDAŞLAR & GELİŞTİRME</b></li>`;
-    Object.keys(petData).forEach(key => { const pet = petData[key]; let isOwned = ownedPets.hasOwnProperty(key); let level = isOwned ? ownedPets[key] : 0; if (!isOwned) { let actionHTML = `<button class="buy-btn" style="padding: 5px 10px; font-size:12px; margin:0;" onclick="buyPet('${key}', ${pet.price})">🪙 ${pet.price}</button>`; html += `<li style="padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center;"><span style="line-height:1.2;">${pet.emoji} ${pet.name} (Sv.1)<br><small style="color:gray; font-size:11px;">${pet.desc}</small></span> ${actionHTML}</li>`; } else { let eqBtn = (currentPet === key) ? `<span class="equipped-txt" style="font-size:13px;">✅</span>` : `<button class="equip-btn" style="padding: 5px 10px; font-size:12px; margin:0;" onclick="equipPet('${key}')">Kuşan</button>`; let upgBtn = ""; if (level < 6) { let costType = (level < 2) ? "coins" : "gems"; let costVal = (level < 2) ? 500 : (level === 2 ? 1 : level === 3 ? 2 : level === 4 ? 3 : 5); let icon = costType === "coins" ? "🪙" : "💎"; upgBtn = `<button class="buy-btn" style="background:#e67e22; margin-top:4px; padding: 4px 8px; font-size:11px;" onclick="upgradePet('${key}', ${level+1}, '${costType}', ${costVal})">⬆️ ${icon} ${costVal}</button>`; } else { upgBtn = `<span style="font-size:11px; color:red; margin-top:4px; font-weight:bold;">MAX SV.</span>`; } html += `<li style="padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center;"><span style="line-height:1.2;">${pet.emoji} ${pet.name} (Sv.${level})<br><small style="color:gray; font-size:11px;">${pet.desc}</small></span> <div style="display:flex; flex-direction:column; align-items:flex-end;">${eqBtn}${upgBtn}</div></li>`; } }); list.innerHTML = html;
+    Object.keys(petData).forEach(key => { 
+        const pet = petData[key]; let isOwned = ownedPets.hasOwnProperty(key); let level = isOwned ? ownedPets[key] : 0; 
+        if (!isOwned) { 
+            let actionHTML = `<button class="buy-btn" style="padding: 5px 10px; font-size:12px; margin:0;" onclick="buyPet('${key}', ${pet.price})">🪙 ${pet.price}</button>`; 
+            html += `<li style="padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center;"><span style="line-height:1.2;">${pet.emoji} ${pet.name} (Sv.1)<br><small style="color:gray; font-size:11px;">${pet.desc}</small></span> ${actionHTML}</li>`; 
+        } else { 
+            let eqBtn = (currentPet === key) ? `<span class="equipped-txt" style="font-size:13px;">✅</span>` : `<button class="equip-btn" style="padding: 5px 10px; font-size:12px; margin:0;" onclick="equipPet('${key}')">Kuşan</button>`; 
+            let upgBtn = ""; 
+            if (level < 4) { 
+                let costVal = (level === 1) ? 1 : (level === 2) ? 3 : 5; 
+                upgBtn = `<button class="buy-btn" style="background:#e67e22; margin-top:4px; padding: 4px 8px; font-size:11px;" onclick="upgradePet('${key}', ${level+1}, 'gems', ${costVal})">⬆️ 💎 ${costVal}</button>`; 
+            } else { 
+                upgBtn = `<span style="font-size:11px; color:red; margin-top:4px; font-weight:bold;">MAX SV.</span>`; 
+            } 
+            html += `<li style="padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center;"><span style="line-height:1.2;">${pet.emoji} ${pet.name} (Sv.${level})<br><small style="color:gray; font-size:11px;">${pet.desc}</small></span> <div style="display:flex; flex-direction:column; align-items:flex-end;">${eqBtn}${upgBtn}</div></li>`; 
+        } 
+    }); 
+    list.innerHTML = html;
 }
 
-window.convertGems = function() { if(playerCoins < 1000) { tg.showAlert("1000 Jetonun yok!"); return; } tg.showConfirm("1000 Jetonunu verip 1 Elmas 💎 alacaksın. Onaylıyor musun?", function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/convert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= 1000; playerGems += 1; updateCoinUI(); renderShop(); tg.showAlert("💎 Elmas Eklendi!"); } }); } }); }
-window.upgradePet = function(petKey, nextLevel, costType, costVal) { if (costType === "coins" && playerCoins < costVal) { tg.showAlert("Yetersiz Jeton!"); return; } if (costType === "gems" && playerGems < costVal) { tg.showAlert("Yetersiz Elmas!"); return; } tg.showConfirm(`${petData[petKey].name} yoldaşını Seviye ${nextLevel} yapacaksın. Onaylıyor musun?`, function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/upgradepet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, petName: petKey, coinCost: costType === "coins" ? costVal : 0, gemCost: costType === "gems" ? costVal : 0, nextLevel: nextLevel }) }).then(res => res.json()).then(data => { if(data.success) { if(costType === "coins") playerCoins -= costVal; if(costType === "gems") playerGems -= costVal; ownedPets[petKey] = nextLevel; updateCoinUI(); renderShop(); tg.showAlert(`Geliştirme Başarılı! ⬆️`); } }); } }); }
-window.buySkin = function(skinKey, price) { if(playerCoins < price) { tg.showAlert("Yetersiz Jeton!"); return; } tg.showConfirm(`${skinData[skinKey].name} kostümünü alacaksın. Onaylıyor musun?`, function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/buyskin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey, price: price }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= price; ownedSkins.push(skinKey); updateCoinUI(); renderShop(); } }); } }); }
+window.convertGems = function() { 
+    if(playerCoins < 1000) { tg.showAlert("1000 Jetonun yok!"); return; } 
+    tg.showConfirm("1000 Jetonunu verip 1 Elmas 💎 alacaksın. Onaylıyor musun?", function(agreed) { 
+        if(agreed) { 
+            fetch('https://ninja-bridge-api.onrender.com/api/score/convert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId }) })
+            .then(res => res.json()).then(data => { 
+                if(data.success) { playerCoins -= 1000; playerGems += 1; updateCoinUI(); renderShop(); } 
+            }); 
+        } 
+    }); 
+}
+
+window.upgradePet = function(petKey, nextLevel, costType, costVal) { 
+    if (costType === "coins" && playerCoins < costVal) { tg.showAlert("Yetersiz Jeton!"); return; } 
+    if (costType === "gems" && playerGems < costVal) { tg.showAlert("Yetersiz Elmas!"); return; } 
+    tg.showConfirm(`${petData[petKey].name} yoldaşını Seviye ${nextLevel} yapacaksın. Onaylıyor musun?`, function(agreed) { 
+        if(agreed) { 
+            fetch('https://ninja-bridge-api.onrender.com/api/score/upgradepet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, petName: petKey, coinCost: costType === "coins" ? costVal : 0, gemCost: costType === "gems" ? costVal : 0, nextLevel: nextLevel }) })
+            .then(res => res.json()).then(data => { 
+                if(data.success) { 
+                    if(costType === "coins") playerCoins -= costVal; 
+                    if(costType === "gems") playerGems -= costVal; 
+                    ownedPets[petKey] = nextLevel; updateCoinUI(); renderShop(); 
+                } 
+            }); 
+        } 
+    }); 
+}
+
+window.buySkin = function(skinKey, price) { 
+    if(playerCoins < price) { tg.showAlert("Yetersiz Jeton!"); return; } 
+    tg.showConfirm(`${skinData[skinKey].name} kostümünü alacaksın. Onaylıyor musun?`, function(agreed) { 
+        if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/buyskin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey, price: price }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= price; ownedSkins.push(skinKey); updateCoinUI(); renderShop(); } }); } 
+    }); 
+}
 window.equipSkin = function(skinKey) { fetch('https://ninja-bridge-api.onrender.com/api/score/equipskin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey }) }).then(res => res.json()).then(data => { if(data.success) { currentSkin = skinKey; renderShop(); draw(); } }); }
-window.buyBg = function(bgKey, price) { if(playerCoins < price) { tg.showAlert("Yetersiz Jeton!"); return; } tg.showConfirm(`${bgData[bgKey].name} arka planını alacaksın. Onaylıyor musun?`, function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/buybg', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: bgKey, price: price }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= price; ownedBgs.push(bgKey); updateCoinUI(); renderShop(); } }); } }); }
+window.buyBg = function(bgKey, price) { 
+    if(playerCoins < price) { tg.showAlert("Yetersiz Jeton!"); return; } 
+    tg.showConfirm(`${bgData[bgKey].name} arka planını alacaksın. Onaylıyor musun?`, function(agreed) { 
+        if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/buybg', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: bgKey, price: price }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= price; ownedBgs.push(bgKey); updateCoinUI(); renderShop(); } }); } 
+    }); 
+}
 window.equipBg = function(bgKey) { fetch('https://ninja-bridge-api.onrender.com/api/score/equipbg', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: bgKey }) }).then(res => res.json()).then(data => { if(data.success) { currentBg = bgKey; renderShop(); draw(); } }); }
-window.buyPet = function(petKey, price) { if(playerCoins < price) { tg.showAlert("Yetersiz Jeton!"); return; } tg.showConfirm(`${petData[petKey].name} yoldaşını sahipleneceksin. Onaylıyor musun?`, function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/buypet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey, price: price }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= price; ownedPets[petKey] = 1; updateCoinUI(); renderShop(); } }); } }); }
+window.buyPet = function(petKey, price) { 
+    if(playerCoins < price) { tg.showAlert("Yetersiz Jeton!"); return; } 
+    tg.showConfirm(`${petData[petKey].name} yoldaşını sahipleneceksin. Onaylıyor musun?`, function(agreed) { 
+        if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/buypet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey, price: price }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= price; ownedPets[petKey] = 1; updateCoinUI(); renderShop(); } }); } 
+    }); 
+}
 window.equipPet = function(petKey) { fetch('https://ninja-bridge-api.onrender.com/api/score/equippet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey }) }).then(res => res.json()).then(data => { if(data.success) { currentPet = petKey; renderShop(); draw(); } }); }
-document.getElementById("leaderboardBtn").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("leaderboardModal").style.display = "block"; const list = document.getElementById("scoreList"); list.innerHTML = "<li style='text-align:center;'>Yükleniyor... ⏳</li>"; fetch(`https://ninja-bridge-api.onrender.com/api/score/global?t=${Date.now()}`).then(res => res.json()).then(data => { list.innerHTML = ""; if(data.length === 0) { list.innerHTML = "<li>Henüz kimse oynamadı!</li>"; return; } data.forEach((item, i) => { list.innerHTML += `<li><span>${i + 1}. ${item.name}</span> <span>${item.score} Puan</span></li>`; }); }).catch(err => list.innerHTML = "<li style='color:red;'>Hata oluştu!</li>"); }); document.getElementById("closeLeaderboard").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("leaderboardModal").style.display = "none"; });
+
+document.getElementById("leaderboardBtn").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("leaderboardModal").style.display = "block"; const list = document.getElementById("scoreList"); list.innerHTML = "<li style='text-align:center;'>Yükleniyor... ⏳</li>"; fetch(`https://ninja-bridge-api.onrender.com/api/score/global?t=${Date.now()}`).then(res => res.json()).then(data => { list.innerHTML = ""; if(data.length === 0) { list.innerHTML = "<li>Henüz kimse oynamadı!</li>"; return; } data.forEach((item, i) => { list.innerHTML += `<li><span>${i + 1}. ${item.name}</span> <span>${item.score} Puan</span></li>`; }); }).catch(err => list.innerHTML = "<li style='color:red;'>Hata oluştu!</li>"); }); 
+document.getElementById("closeLeaderboard").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("leaderboardModal").style.display = "none"; });
