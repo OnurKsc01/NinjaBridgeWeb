@@ -33,18 +33,22 @@ let adController = null;
 let adRetryCount = 0;
 
 function initAdsGram() {
-    if (window.Adsgram) {
-        adController = window.Adsgram.createAdController({ blockId: "35103" });
-    } else if (adRetryCount < 10) {
-        // Reklam engelleyici (Adblock) varsa sonsuza kadar döngüye girmemesi için 10 defa dener ve bırakır.
-        adRetryCount++;
-        setTimeout(initAdsGram, 500);
+    try {
+        if (window.Adsgram) {
+            // 🔥 HATALI KOD DÜZELTİLDİ: Doğru komut init'tir.
+            adController = window.Adsgram.init({ blockId: "35103" });
+        } else if (adRetryCount < 10) {
+            adRetryCount++;
+            setTimeout(initAdsGram, 500);
+        }
+    } catch (err) {
+        console.warn("Reklam sistemi başlatılamadı, oyun devam ediyor:", err);
     }
 }
 
 function checkAdStatus() {
     const watchAdBtn = document.getElementById("watchAdBtn");
-    if (!watchAdBtn) return; // HTML'de buton yoksa kodun çökmesini engeller
+    if (!watchAdBtn) return; 
     
     fetch(`https://ninja-bridge-api.onrender.com/api/score/adstatus/${tgUserId}`)
         .then(res => res.json())
@@ -63,34 +67,37 @@ function checkAdStatus() {
         }).catch(() => { watchAdBtn.style.display = "none"; });
 }
 
-// Buton varsa tıklama özelliğini ekle (Yoksa oyunu çökertme)
 const watchAdBtnElement = document.getElementById("watchAdBtn");
 if (watchAdBtnElement) {
     watchAdBtnElement.addEventListener("click", () => {
         if (!adController) {
-            if(tg && tg.showAlert) tg.showAlert("Reklam yüklenemedi (Reklam engelleyici açık olabilir veya bağlantı yavaş).");
+            if(tg && tg.showAlert) tg.showAlert("Reklam yüklenemedi. Lütfen internetinizi kontrol edip tekrar deneyin.");
             return;
         }
         
-        adController.show().then((result) => {
-            if (result.done) {
-                fetch('https://ninja-bridge-api.onrender.com/api/score/watchad', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: tgUserId })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    playerCoins = data.totalCoins;
-                    playerGems = data.totalGems;
-                    updateCoinUI();
-                    checkAdStatus(); 
-                    if(tg && tg.showAlert) tg.showAlert(`🎉 Reklam Tamamlandı!\nHesabına +${data.earnedCoins} Jeton eklendi!`);
-                });
-            }
-        }).catch(() => {
-            if(tg && tg.showAlert) tg.showAlert("Reklam ödülü alınamadı. Lütfen videoyu sonuna kadar izleyin.");
-        });
+        try {
+            adController.show().then((result) => {
+                if (result.done) {
+                    fetch('https://ninja-bridge-api.onrender.com/api/score/watchad', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId: tgUserId })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        playerCoins = data.totalCoins;
+                        playerGems = data.totalGems;
+                        updateCoinUI();
+                        checkAdStatus(); 
+                        if(tg && tg.showAlert) tg.showAlert(`🎉 Reklam Tamamlandı!\nHesabına +${data.earnedCoins} Jeton eklendi!`);
+                    });
+                }
+            }).catch(() => {
+                if(tg && tg.showAlert) tg.showAlert("Reklam ödülü alınamadı. Lütfen videoyu sonuna kadar izleyin.");
+            });
+        } catch (e) {
+            if(tg && tg.showAlert) tg.showAlert("Şu anda reklam gösterilemiyor.");
+        }
     });
 }
 
@@ -154,9 +161,9 @@ const introductionElement = document.getElementById("introduction"); const perfe
 const restartButton = document.getElementById("restart"); const scoreElement = document.getElementById("score");
 const coinCountElement = document.getElementById("coinCount"); const shopCoinCountElement = document.getElementById("shopCoinCount");
 
-// Başlangıç Yüklemeleri
-initAdsGram();
-resetGame(); // Hata olsa da olmasa da ekranı ilk saniyede çizer!
+// Başlangıç Yüklemeleri (Try-Catch Korumalı)
+try { initAdsGram(); } catch(e) {}
+resetGame(); 
 loadPlayerData();
 
 function loadPlayerData() {
@@ -176,7 +183,7 @@ function loadPlayerData() {
             
             if (phase === "waiting") {
                 if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; }
-                draw(); // Veriler gelince arka planı güncelle
+                draw(); 
             }
         }).catch(err => {
             console.warn("API Gecikmesi, oyun yine de devam ediyor:", err);
