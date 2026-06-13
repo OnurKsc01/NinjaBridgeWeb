@@ -26,7 +26,7 @@ function unlockSounds() {
     }
 }
 
-// 🔥 FAZ 5: CANLI DÜELLO BİLDİRİM EKRANI (HTML'ye dokunmadan oluşturuyoruz)
+// 🔥 FAZ 5: CANLI DÜELLO BİLDİRİM EKRANI
 const duelNotif = document.createElement("div");
 duelNotif.id = "duelNotification";
 duelNotif.style.cssText = "position:absolute; top:70px; left:50%; transform:translateX(-50%); background:rgba(220, 20, 60, 0.9); color:white; padding:10px 20px; border-radius:10px; font-weight:bold; font-size:14px; z-index:100; display:none; text-align:center; box-shadow:0 4px 8px rgba(0,0,0,0.3); pointer-events:none; text-shadow:1px 1px 2px black;";
@@ -39,7 +39,7 @@ function startDuelPolling() {
     opponentFinished = false;
     if (duelInterval) clearInterval(duelInterval);
     
-    // Her 5 saniyede bir sessizce rakibi kontrol eder
+    // Her 2 saniyede bir sessizce rakibi kontrol eder (Hızlandırıldı!)
     duelInterval = setInterval(() => {
         if (phase === "waiting" || opponentFinished) return; 
         
@@ -52,7 +52,6 @@ function startDuelPolling() {
                     duelNotif.style.display = "block";
                     duelNotif.style.opacity = 1;
                     
-                    // 5 saniye sonra yavaşça kaybolsun
                     setTimeout(() => {
                         let fade = setInterval(() => {
                             duelNotif.style.opacity -= 0.1;
@@ -63,7 +62,7 @@ function startDuelPolling() {
                     clearInterval(duelInterval);
                 }
             }).catch(e => {});
-    }, 5000); 
+    }, 2000); 
 }
 
 const skinData = {
@@ -106,7 +105,10 @@ function resetGame() {
   introductionElement.style.opacity = 1; perfectElement.style.opacity = 0; restartButton.style.display = "none"; scoreElement.innerText = score;
   platforms = [{ x: 50, w: 50 }]; for(let i=0; i<4; i++) generatePlatform();
   sticks = [{ x: platforms[0].x + platforms[0].w, length: 0, rotation: 0 }]; trees = []; for(let i=0; i<10; i++) generateTree();
-  heroX = platforms[0].x + platforms[0].w - heroDistanceFromEdge; heroY = 0; draw();
+  heroX = platforms[0].x + platforms[0].w - heroDistanceFromEdge; heroY = 0; 
+  if (duelInterval) clearInterval(duelInterval);
+  startDuelPolling(); // Yeni oyuna başlarken taramayı aç
+  draw();
 }
 
 function generateTree() { let bg = bgData[currentBg] || bgData["default"]; const minimumGap = 30, maximumGap = 150; let furthestX = trees.length > 0 ? trees.last().x : 0; const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap)); trees.push({ x, color: bg.leaves[Math.floor(Math.random() * 3)] }); }
@@ -126,7 +128,6 @@ window.addEventListener("touchend", () => { if (phase == "stretching") phase = "
 
 function startStretching() { 
     lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); 
-    if(score === 0) startDuelPolling(); // 🔥 FAZ 5: Oyun başladığı an rakibi dikizlemeye başlar
     window.requestAnimationFrame(animate); 
 }
 window.addEventListener("resize", () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; draw(); });
@@ -173,7 +174,7 @@ function animate(timestamp) {
             draw(); setTimeout(() => { perfectElement.style.opacity = 0; phase = "waiting"; }, 1500); return;
         }
         restartButton.style.display = "block";
-        if (duelInterval) clearInterval(duelInterval); // 🔥 Oyuncu öldüğünde taramayı kes
+        if (duelInterval) clearInterval(duelInterval); // Oyuncu ölünce kendi taramasını keser
 
         fetch('https://ninja-bridge-api.onrender.com/api/score/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: tgGroupId, earnedGems: sessionEarnedGems })
         }).then(res => res.json()).then(data => { if(data.earnedCoins > 0) { playerCoins += data.earnedCoins; updateCoinUI(); } }).catch(err => console.error(err));
