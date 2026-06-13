@@ -31,7 +31,6 @@ function unlockSounds() {
 // ------------------------------------
 let adController = null;
 function initAdsGram() {
-    // Sitenin reklam kodunu çekmesi 1-2 saniye sürebilir, bekleyip tekrar dener
     if (window.Adsgram) {
         adController = window.Adsgram.createAdController({ blockId: "35103" });
     } else {
@@ -147,10 +146,11 @@ const introductionElement = document.getElementById("introduction"); const perfe
 const restartButton = document.getElementById("restart"); const scoreElement = document.getElementById("score");
 const coinCountElement = document.getElementById("coinCount"); const shopCoinCountElement = document.getElementById("shopCoinCount");
 
+// 🔥 YENİ MANTIK: Sunucuyu beklemeden oyunu ANINDA ekrana çiz!
 initAdsGram();
+resetGame(); 
 loadPlayerData();
 
-// 🔥 HATA KORUMALI VERİ YÜKLEME FONKSİYONU
 function loadPlayerData() {
     fetch(`https://ninja-bridge-api.onrender.com/api/score/player/${tgUserId}`)
         .then(res => {
@@ -158,14 +158,22 @@ function loadPlayerData() {
             return res.json();
         })
         .then(data => {
-            playerCoins = data.coins || 0; playerGems = data.gems || 0; currentSkin = data.currentSkin || "default"; ownedSkins = data.ownedSkins || ["default"]; currentBg = data.currentBackground || "default"; ownedBgs = data.ownedBackgrounds || ["default"]; currentPet = data.currentPet || "default"; ownedPets = data.ownedPets || {}; 
+            playerCoins = data.coins || 0; playerGems = data.gems || 0; 
+            currentSkin = data.currentSkin || "default"; ownedSkins = data.ownedSkins || ["default"]; 
+            currentBg = data.currentBackground || "default"; ownedBgs = data.ownedBackgrounds || ["default"]; 
+            currentPet = data.currentPet || "default"; ownedPets = data.ownedPets || {}; 
+            
             updateCoinUI(); 
             checkAdStatus(); 
-            resetGame();
+            
+            // Eğer oyuncu henüz oynamaya başlamadıysa arka planı ve karakteri güncelle
+            if (phase === "waiting") {
+                if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; }
+                draw();
+            }
         }).catch(err => {
             console.error("API Bağlantı Hatası:", err);
-            // Sunucu çökse bile oyun donmasın, başlasın!
-            resetGame();
+            // Hata olsa bile oyun zaten resetGame ile çizilmiş oldu!
         });
 }
 
