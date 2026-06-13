@@ -156,13 +156,14 @@ body {
 #coinCount {
     position: absolute;
     top: 15px;
-    right: 15px; /* Çakışmayı önlemek için sağ üst köşeye aldık */
-    background: rgba(255, 255, 255, 0.9);
-    padding: 5px 10px;
+    right: 15px; 
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    background-image: none !important; 
+    padding: 6px 12px;
     border-radius: 15px;
-    font-size: 13px; /* Yazı boyutunu kibarlaştırdık */
+    font-size: 14px;
     font-weight: bold;
     box-shadow: 0 2px 4px rgba(0,0,0,0.3);
     z-index: 100;
-    white-space: nowrap; /* Yazının alt satıra kaymasını engeller */
+    white-space: nowrap; 
 }
