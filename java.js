@@ -372,9 +372,31 @@ function drawSticks() {
 }
 
 function drawPlatforms() {
+  let bg = bgData[currentBg] || bgData["default"];
+  let platformColor = bg.isDark ? "#1a1a1a" : "black"; // Karanlık modda koyu gri zemin
+  let glowColor = bg.isDark ? "#00ffff" : "transparent"; // Karanlık modda neon mavi parlama
+
   platforms.forEach(({ x, w }) => {
-    ctx.fillStyle = "black";
+    ctx.save();
+    ctx.fillStyle = platformColor;
+    
+    // Platformun etrafına neon ışık saçma efekti
+    if(bg.isDark) {
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = glowColor;
+        ctx.strokeStyle = glowColor;
+        ctx.lineWidth = 2;
+    }
+
     ctx.fillRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2);
+    
+    // Dış çerçeveyi neon çizme
+    if(bg.isDark) {
+        ctx.strokeRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2);
+    }
+    ctx.restore();
+
+    // Kırmızı Kusursuz Vuruş Noktası
     if (sticks.last().x < x) {
       ctx.fillStyle = "red";
       let pArea = getPerfectAreaSize();
