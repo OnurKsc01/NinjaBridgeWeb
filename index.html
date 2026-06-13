@@ -6,7 +6,10 @@
   <title>Ninja Bridge</title>
   <link rel="stylesheet" href="css.css">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="java.js?v=6" defer></script>
+  
+  <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+  
+  <script src="java.js?v=7" defer></script>
 </head>
 <body>
   <div class="container">
@@ -15,9 +18,10 @@
         <div id="ui-left" style="display: flex; flex-direction: column; gap: 8px; pointer-events: auto;">
             <button id="leaderboardBtn" style="background:#f1c40f; border:none; padding:6px 12px; border-radius:8px; font-weight:bold; font-size:12px; box-shadow:0 2px 4px rgba(0,0,0,0.2); cursor:pointer;">🏆 Skor</button>
             <button id="shopBtn" style="background:#2ecc71; color:white; border:none; padding:6px 12px; border-radius:8px; font-weight:bold; font-size:12px; box-shadow:0 2px 4px rgba(0,0,0,0.2); cursor:pointer;">🛒 Market</button>
+            <button id="watchAdBtn" style="background:#e74c3c; color:white; border:none; padding:6px 12px; border-radius:8px; font-weight:bold; font-size:12px; box-shadow:0 2px 4px rgba(0,0,0,0.2); cursor:pointer; display:none;">📺 Yükleniyor...</button>
         </div>
         <div id="ui-right" style="pointer-events: auto;">
-            <div id="coinCount" style="background:rgba(255,255,255,0.9); padding:6px 10px; border-radius:12px; font-weight:bold; font-size:12px; box-shadow:0 2px 4px rgba(0,0,0,0.2); white-space: nowrap;">🪙 0 | 💎 0</div>
+            <div id="coinCount" style="background:rgba(255,255,255,0.9) !important; background-image:none !important; padding:6px 10px; border-radius:12px; font-weight:bold; font-size:12px; box-shadow:0 2px 4px rgba(0,0,0,0.2); white-space: nowrap;">🪙 0 | 💎 0</div>
         </div>
     </div>
 
