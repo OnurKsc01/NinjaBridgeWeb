@@ -274,42 +274,42 @@ document.getElementById("closeShop").addEventListener("click", (e) => { e.stopPr
 function renderShop() {
     const list = document.getElementById("shopList");
     
-    let html = `<li style="background:#ddd; justify-content:center; padding:2px; font-size:11px;">💎 <b>ELMAS BORSASI</b></li>`;
-    html += `<li style="padding: 3px 5px; font-size:11px; display:flex; justify-content:space-between; align-items:center;"><span>🪙 1000 Jeton Bozdur</span> <button class="buy-btn" style="background:#9b59b6; padding: 3px 6px; font-size:10px; margin:0;" onclick="convertGems()">💎 1 Al</button></li>`;
+    let html = `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px;">💎 <b>ELMAS BORSASI</b></li>`;
+    html += `<li style="padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center;"><span>🪙 1000 Jeton Bozdur</span> <button class="buy-btn" style="background:#9b59b6; padding: 5px 10px; font-size:12px; margin:0;" onclick="convertGems()">💎 1 Al</button></li>`;
 
-    html += `<li style="background:#ddd; justify-content:center; padding:2px; font-size:11px; margin-top:4px;">🥷 <b>KOSTÜMLER</b></li>`;
+    html += `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; margin-top:6px;">🥷 <b>KOSTÜMLER</b></li>`;
     Object.keys(skinData).forEach(key => {
         const skin = skinData[key]; let actionHTML = "";
-        if (currentSkin === key) actionHTML = `<span class="equipped-txt" style="font-size:10px;">✅</span>`;
-        else if (ownedSkins.includes(key)) actionHTML = `<button class="equip-btn" style="padding: 3px 6px; font-size:10px; margin:0;" onclick="equipSkin('${key}')">Kuşan</button>`;
-        else actionHTML = `<button class="buy-btn" style="padding: 3px 6px; font-size:10px; margin:0;" onclick="buySkin('${key}', ${skin.price})">🪙 ${skin.price}</button>`;
-        html += `<li style="padding: 3px 5px; font-size:11px; display:flex; justify-content:space-between; align-items:center;"><span><span style="color:${skin.body}; text-shadow: 1px 1px 1px black;">⬤</span> ${skin.name}</span> ${actionHTML}</li>`;
+        if (currentSkin === key) actionHTML = `<span class="equipped-txt" style="font-size:13px;">✅</span>`;
+        else if (ownedSkins.includes(key)) actionHTML = `<button class="equip-btn" style="padding: 5px 10px; font-size:12px; margin:0;" onclick="equipSkin('${key}')">Kuşan</button>`;
+        else actionHTML = `<button class="buy-btn" style="padding: 5px 10px; font-size:12px; margin:0;" onclick="buySkin('${key}', ${skin.price})">🪙 ${skin.price}</button>`;
+        html += `<li style="padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center;"><span><span style="color:${skin.body}; text-shadow: 1px 1px 1px black;">⬤</span> ${skin.name}</span> ${actionHTML}</li>`;
     });
 
-    html += `<li style="background:#ddd; justify-content:center; padding:2px; font-size:11px; margin-top:4px;">🌌 <b>ARKA PLANLAR</b></li>`;
+    html += `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; margin-top:6px;">🌌 <b>ARKA PLANLAR</b></li>`;
     Object.keys(bgData).forEach(key => {
         const bg = bgData[key]; let actionHTML = "";
-        if (currentBg === key) actionHTML = `<span class="equipped-txt" style="font-size:10px;">✅</span>`;
-        else if (ownedBgs.includes(key)) actionHTML = `<button class="equip-btn" style="padding: 3px 6px; font-size:10px; margin:0;" onclick="equipBg('${key}')">Kuşan</button>`;
-        else actionHTML = `<button class="buy-btn" style="padding: 3px 6px; font-size:10px; margin:0;" onclick="buyBg('${key}', ${bg.price})">🪙 ${bg.price}</button>`;
-        html += `<li style="padding: 3px 5px; font-size:11px; display:flex; justify-content:space-between; align-items:center;"><span><span style="color:${bg.top}; text-shadow: 1px 1px 1px black;">🟩</span> ${bg.name}</span> ${actionHTML}</li>`;
+        if (currentBg === key) actionHTML = `<span class="equipped-txt" style="font-size:13px;">✅</span>`;
+        else if (ownedBgs.includes(key)) actionHTML = `<button class="equip-btn" style="padding: 5px 10px; font-size:12px; margin:0;" onclick="equipBg('${key}')">Kuşan</button>`;
+        else actionHTML = `<button class="buy-btn" style="padding: 5px 10px; font-size:12px; margin:0;" onclick="buyBg('${key}', ${bg.price})">🪙 ${bg.price}</button>`;
+        html += `<li style="padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center;"><span><span style="color:${bg.top}; text-shadow: 1px 1px 1px black;">🟩</span> ${bg.name}</span> ${actionHTML}</li>`;
     });
 
-    html += `<li style="background:#ddd; justify-content:center; padding:2px; font-size:11px; margin-top:4px;">🐾 <b>YOLDAŞLAR & GELİŞTİRME</b></li>`;
+    html += `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; margin-top:6px;">🐾 <b>YOLDAŞLAR & GELİŞTİRME</b></li>`;
     Object.keys(petData).forEach(key => {
         const pet = petData[key]; let isOwned = ownedPets.hasOwnProperty(key); let level = isOwned ? ownedPets[key] : 0;
         
         if (!isOwned) {
-            let actionHTML = `<button class="buy-btn" style="padding: 3px 6px; font-size:10px; margin:0;" onclick="buyPet('${key}', ${pet.price})">🪙 ${pet.price}</button>`;
-            html += `<li style="padding: 3px 5px; font-size:11px; display:flex; justify-content:space-between; align-items:center;"><span style="line-height:1.1;">${pet.emoji} ${pet.name} (Sv.1)<br><small style="color:gray; font-size:9px;">${pet.desc}</small></span> ${actionHTML}</li>`;
+            let actionHTML = `<button class="buy-btn" style="padding: 5px 10px; font-size:12px; margin:0;" onclick="buyPet('${key}', ${pet.price})">🪙 ${pet.price}</button>`;
+            html += `<li style="padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center;"><span style="line-height:1.2;">${pet.emoji} ${pet.name} (Sv.1)<br><small style="color:gray; font-size:11px;">${pet.desc}</small></span> ${actionHTML}</li>`;
         } else {
-            let eqBtn = (currentPet === key) ? `<span class="equipped-txt" style="font-size:10px;">✅</span>` : `<button class="equip-btn" style="padding: 3px 6px; font-size:10px; margin:0;" onclick="equipPet('${key}')">Kuşan</button>`;
+            let eqBtn = (currentPet === key) ? `<span class="equipped-txt" style="font-size:13px;">✅</span>` : `<button class="equip-btn" style="padding: 5px 10px; font-size:12px; margin:0;" onclick="equipPet('${key}')">Kuşan</button>`;
             let upgBtn = "";
             if (level < 6) {
                 let costType = (level < 2) ? "coins" : "gems"; let costVal = (level < 2) ? 500 : (level === 2 ? 1 : level === 3 ? 2 : level === 4 ? 3 : 5); let icon = costType === "coins" ? "🪙" : "💎";
-                upgBtn = `<button class="buy-btn" style="background:#e67e22; margin-top:2px; padding: 2px 5px; font-size:9px;" onclick="upgradePet('${key}', ${level+1}, '${costType}', ${costVal})">⬆️ ${icon} ${costVal}</button>`;
-            } else { upgBtn = `<span style="font-size:9px; color:red; margin-top:2px; font-weight:bold;">MAX SV.</span>`; }
-            html += `<li style="padding: 3px 5px; font-size:11px; display:flex; justify-content:space-between; align-items:center;"><span style="line-height:1.1;">${pet.emoji} ${pet.name} (Sv.${level})<br><small style="color:gray; font-size:9px;">${pet.desc}</small></span> <div style="display:flex; flex-direction:column; align-items:flex-end;">${eqBtn}${upgBtn}</div></li>`;
+                upgBtn = `<button class="buy-btn" style="background:#e67e22; margin-top:4px; padding: 4px 8px; font-size:11px;" onclick="upgradePet('${key}', ${level+1}, '${costType}', ${costVal})">⬆️ ${icon} ${costVal}</button>`;
+            } else { upgBtn = `<span style="font-size:11px; color:red; margin-top:4px; font-weight:bold;">MAX SV.</span>`; }
+            html += `<li style="padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center;"><span style="line-height:1.2;">${pet.emoji} ${pet.name} (Sv.${level})<br><small style="color:gray; font-size:11px;">${pet.desc}</small></span> <div style="display:flex; flex-direction:column; align-items:flex-end;">${eqBtn}${upgBtn}</div></li>`;
         }
     });
     list.innerHTML = html;
