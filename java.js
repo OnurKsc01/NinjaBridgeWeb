@@ -33,7 +33,7 @@ let adController = null;
 function initAdsGram() {
     if (window.Adsgram) {
         // 🔥 NOT: AdsGram'dan alacağın "int-XXXX" formatındaki ID'yi buraya yazmalısın
-        adController = window.Adsgram.createAdController({ blockId: "YOUR_ADSGRAM_BLOCK_ID" });
+        adController = window.Adsgram.createAdController({ blockId: "35103" });
     }
 }
 
