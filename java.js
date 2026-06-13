@@ -216,7 +216,7 @@ function getHillY(windowX, base, amp, stretch) { return (Math.sinus((sceneOffset
 function getTreeY(x, base, amp) { return Math.sinus(x) * amp + window.innerHeight - base; }
 
 // ------------------------------------
-// MARKET SİSTEMİ (Maks. 4 Seviye, Sadece Elmas ile 1-3-5 Geliştirme)
+// MARKET SİSTEMİ (Maks. 4 Seviye, Sadece Elmas ile 1-3-5 Geliştirme, HIZLI ELMAS ALIMI)
 // ------------------------------------
 document.getElementById("shopBtn").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("shopModal").style.display = "block"; renderShop(); });
 document.getElementById("closeShop").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("shopModal").style.display = "none"; });
@@ -224,11 +224,14 @@ document.getElementById("closeShop").addEventListener("click", (e) => { e.stopPr
 function renderShop() {
     const list = document.getElementById("shopList");
     let html = `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px;">💎 <b>ELMAS BORSASI</b></li>`;
-    html += `<li style="padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center;"><span>🪙 1000 Jeton Bozdur</span> <button class="buy-btn" style="background:#9b59b6; padding: 5px 10px; font-size:12px; margin:0;" onclick="convertGems()">💎 1 Al</button></li>`;
+    html += `<li style="padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center;"><span>🪙 1000 Jeton Bozdur</span> <button id="gemBuyBtn" class="buy-btn" style="background:#9b59b6; padding: 5px 10px; font-size:12px; margin:0;" onclick="convertGems()">💎 1 Al</button></li>`;
+    
     html += `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; margin-top:6px;">🥷 <b>KOSTÜMLER</b></li>`;
     Object.keys(skinData).forEach(key => { const skin = skinData[key]; let actionHTML = ""; if (currentSkin === key) actionHTML = `<span class="equipped-txt" style="font-size:13px;">✅</span>`; else if (ownedSkins.includes(key)) actionHTML = `<button class="equip-btn" style="padding: 5px 10px; font-size:12px; margin:0;" onclick="equipSkin('${key}')">Kuşan</button>`; else actionHTML = `<button class="buy-btn" style="padding: 5px 10px; font-size:12px; margin:0;" onclick="buySkin('${key}', ${skin.price})">🪙 ${skin.price}</button>`; html += `<li style="padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center;"><span><span style="color:${skin.body}; text-shadow: 1px 1px 1px black;">⬤</span> ${skin.name}</span> ${actionHTML}</li>`; });
+    
     html += `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; margin-top:6px;">🌌 <b>ARKA PLANLAR</b></li>`;
     Object.keys(bgData).forEach(key => { const bg = bgData[key]; let actionHTML = ""; if (currentBg === key) actionHTML = `<span class="equipped-txt" style="font-size:13px;">✅</span>`; else if (ownedBgs.includes(key)) actionHTML = `<button class="equip-btn" style="padding: 5px 10px; font-size:12px; margin:0;" onclick="equipBg('${key}')">Kuşan</button>`; else actionHTML = `<button class="buy-btn" style="padding: 5px 10px; font-size:12px; margin:0;" onclick="buyBg('${key}', ${bg.price})">🪙 ${bg.price}</button>`; html += `<li style="padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center;"><span><span style="color:${bg.top}; text-shadow: 1px 1px 1px black;">🟩</span> ${bg.name}</span> ${actionHTML}</li>`; });
+    
     html += `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; margin-top:6px;">🐾 <b>YOLDAŞLAR & GELİŞTİRME</b></li>`;
     Object.keys(petData).forEach(key => { 
         const pet = petData[key]; let isOwned = ownedPets.hasOwnProperty(key); let level = isOwned ? ownedPets[key] : 0; 
@@ -250,15 +253,34 @@ function renderShop() {
     list.innerHTML = html;
 }
 
+// 🔥 DONMAYI ENGELLEYEN YENİ HIZLI ELMAS ALMA FONKSİYONU
+let isConverting = false;
 window.convertGems = function() { 
-    if(playerCoins < 1000) { tg.showAlert("1000 Jetonun yok!"); return; } 
-    tg.showConfirm("1000 Jetonunu verip 1 Elmas 💎 alacaksın. Onaylıyor musun?", function(agreed) { 
-        if(agreed) { 
-            fetch('https://ninja-bridge-api.onrender.com/api/score/convert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId }) })
-            .then(res => res.json()).then(data => { 
-                if(data.success) { playerCoins -= 1000; playerGems += 1; updateCoinUI(); renderShop(); } 
-            }); 
-        } 
+    if(playerCoins < 1000) { 
+        if (tg && tg.showAlert) tg.showAlert("1000 Jetonun yok!"); else alert("1000 Jetonun yok!"); 
+        return; 
+    } 
+    
+    if (isConverting) return; // Arka arkaya hızlı tıklamaları engeller (spam koruması)
+    isConverting = true;
+    
+    let btn = document.getElementById("gemBuyBtn");
+    if(btn) btn.innerText = "⏳"; // Butonu işlem yapılıyor ikonuna çevir
+    
+    fetch('https://ninja-bridge-api.onrender.com/api/score/convert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId }) })
+    .then(res => res.json()).then(data => { 
+        isConverting = false;
+        if(data.success) { 
+            playerCoins -= 1000; 
+            playerGems += 1; 
+            updateCoinUI(); 
+            renderShop(); 
+        } else {
+            if(btn) btn.innerText = "💎 1 Al";
+        }
+    }).catch(err => {
+        isConverting = false;
+        if(btn) btn.innerText = "💎 1 Al";
     }); 
 }
 
