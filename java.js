@@ -16,14 +16,14 @@ let startParam = tg?.initDataUnsafe?.start_param;
 let tgGroupId = startParam ? Number(startParam) : 0;
 
 let playerCoins = 0;
-let playerGems = 0; // 🔥 YENİ: ELMAS
+let playerGems = 0; 
 let sessionEarnedGems = 0; 
 let currentSkin = "default";
 let ownedSkins = ["default"];
 let currentBg = "default";
 let ownedBgs = ["default"];
 let currentPet = "default";
-let ownedPets = {}; // 🔥 YENİ: Sözlük yapısı (örn: { "kedi": 2 })
+let ownedPets = {}; 
 
 const bgMusic = new Audio('bg.mp3'); bgMusic.loop = true; bgMusic.volume = 0.3; 
 const comboSound = new Audio('combo.mp3'); comboSound.volume = 0.8;
@@ -112,24 +112,22 @@ function loadPlayerData() {
 }
 
 function updateCoinUI() {
-    // UI'da hem Jeton hem Elmas gösterimi
     coinCountElement.innerHTML = `🪙 ${playerCoins} | 💎 ${playerGems}`;
     shopCoinCountElement.innerHTML = `🪙 ${playerCoins} | 💎 ${playerGems}`;
 }
 
-// 🔥 PET GÜÇLERİ SEVİYEYE GÖRE DİNAMİKLEŞTİ
 function getPerfectAreaSize() {
     if (currentPet === "kedi") {
         let lvl = ownedPets["kedi"] || 1;
-        return 20 + (lvl * 5); // Sv1:25, Sv2:30, Sv6:50
+        return 20 + (lvl * 5); 
     }
     return 10;
 }
 
 function getMonkeyStats() {
     let lvl = ownedPets["maymun"] || 1;
-    let lives = Math.floor((lvl - 1) / 2) + 1; // Sv1-2: 1 Can, Sv3-4: 2 Can, Sv5-6: 3 Can
-    let bonus = (lvl % 2 === 0) ? lvl * 5 : 0; // Çift seviyelerde kurtarınca bonus jeton
+    let lives = Math.floor((lvl - 1) / 2) + 1; 
+    let bonus = (lvl % 2 === 0) ? lvl * 5 : 0; 
     return { lives: lives, bonusCoins: bonus };
 }
 
@@ -198,7 +196,6 @@ function animate(timestamp) {
           if (perfectHit) {
             combo++; score += 1 + combo; 
             
-            // 🔥 ELMAS KAZANMA SİSTEMİ (Her 50 comboda 1 Elmas)
             if (combo % 50 === 0) {
                 playerGems += 1;
                 sessionEarnedGems += 1;
@@ -241,7 +238,6 @@ function animate(timestamp) {
       heroY += (timestamp - lastTimestamp) / fallingSpeed;
       if (heroY > platformHeight + 100 + (window.innerHeight - canvasHeight) / 2) {
         
-        // 🔥 MAYMUN SEVİYE SİSTEMİ
         if (currentMonkeyLives > 0) {
             currentMonkeyLives--;
             let mStats = getMonkeyStats();
@@ -336,7 +332,7 @@ function getHillY(windowX, base, amp, stretch) { return (Math.sinus((sceneOffset
 function getTreeY(x, base, amp) { return Math.sinus(x) * amp + window.innerHeight - base; }
 
 // ------------------------------------
-// MARKET VE GÜNCELLEME SİSTEMİ (FAZ 4)
+// MARKET VE GÜNCELLEME SİSTEMİ (FAZ 4) - KÜÇÜLTÜLMÜŞ TASARIM
 // ------------------------------------
 document.getElementById("shopBtn").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("shopModal").style.display = "block"; renderShop(); });
 document.getElementById("closeShop").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("shopModal").style.display = "none"; });
@@ -344,55 +340,53 @@ document.getElementById("closeShop").addEventListener("click", (e) => { e.stopPr
 function renderShop() {
     const list = document.getElementById("shopList");
     
-    // 🔥 ELMAS BORSASI
-    let html = `<li style="background:#ddd; justify-content:center; padding:5px; font-size:1.1em;">💎 <b>ELMAS BORSASI</b></li>`;
-    html += `<li><span><span style="font-size:1.5em;">🪙</span> 1000 Jeton Bozdur</span> <button class="buy-btn" style="background:#9b59b6;" onclick="convertGems()">💎 1 Al</button></li>`;
+    let html = `<li style="background:#ddd; justify-content:center; padding:3px; font-size:0.9em;">💎 <b>ELMAS BORSASI</b></li>`;
+    html += `<li style="padding: 5px; font-size:0.9em;"><span>🪙 1000 Jeton Bozdur</span> <button class="buy-btn" style="background:#9b59b6; padding: 4px 8px; font-size:0.9em;" onclick="convertGems()">💎 1 Al</button></li>`;
 
-    html += `<li style="background:#ddd; justify-content:center; padding:5px; font-size:1.1em; margin-top:10px;">🥷 <b>KOSTÜMLER</b></li>`;
+    html += `<li style="background:#ddd; justify-content:center; padding:3px; font-size:0.9em; margin-top:5px;">🥷 <b>KOSTÜMLER</b></li>`;
     Object.keys(skinData).forEach(key => {
         const skin = skinData[key]; let actionHTML = "";
-        if (currentSkin === key) actionHTML = `<span class="equipped-txt">✅</span>`;
-        else if (ownedSkins.includes(key)) actionHTML = `<button class="equip-btn" onclick="equipSkin('${key}')">Kuşan</button>`;
-        else actionHTML = `<button class="buy-btn" onclick="buySkin('${key}', ${skin.price})">🪙 ${skin.price}</button>`;
-        html += `<li><span><span style="color:${skin.body}; text-shadow: 1px 1px 1px black;">⬤</span> ${skin.name}</span> ${actionHTML}</li>`;
+        if (currentSkin === key) actionHTML = `<span class="equipped-txt" style="font-size:0.9em;">✅</span>`;
+        else if (ownedSkins.includes(key)) actionHTML = `<button class="equip-btn" style="padding: 4px 8px; font-size:0.9em;" onclick="equipSkin('${key}')">Kuşan</button>`;
+        else actionHTML = `<button class="buy-btn" style="padding: 4px 8px; font-size:0.9em;" onclick="buySkin('${key}', ${skin.price})">🪙 ${skin.price}</button>`;
+        html += `<li style="padding: 5px; font-size:0.9em;"><span><span style="color:${skin.body}; text-shadow: 1px 1px 1px black;">⬤</span> ${skin.name}</span> ${actionHTML}</li>`;
     });
 
-    html += `<li style="background:#ddd; justify-content:center; padding:5px; font-size:1.1em; margin-top:10px;">🌌 <b>ARKA PLANLAR</b></li>`;
+    html += `<li style="background:#ddd; justify-content:center; padding:3px; font-size:0.9em; margin-top:5px;">🌌 <b>ARKA PLANLAR</b></li>`;
     Object.keys(bgData).forEach(key => {
         const bg = bgData[key]; let actionHTML = "";
-        if (currentBg === key) actionHTML = `<span class="equipped-txt">✅</span>`;
-        else if (ownedBgs.includes(key)) actionHTML = `<button class="equip-btn" onclick="equipBg('${key}')">Kuşan</button>`;
-        else actionHTML = `<button class="buy-btn" onclick="buyBg('${key}', ${bg.price})">🪙 ${bg.price}</button>`;
-        html += `<li><span><span style="color:${bg.top}; text-shadow: 1px 1px 1px black;">🟩</span> ${bg.name}</span> ${actionHTML}</li>`;
+        if (currentBg === key) actionHTML = `<span class="equipped-txt" style="font-size:0.9em;">✅</span>`;
+        else if (ownedBgs.includes(key)) actionHTML = `<button class="equip-btn" style="padding: 4px 8px; font-size:0.9em;" onclick="equipBg('${key}')">Kuşan</button>`;
+        else actionHTML = `<button class="buy-btn" style="padding: 4px 8px; font-size:0.9em;" onclick="buyBg('${key}', ${bg.price})">🪙 ${bg.price}</button>`;
+        html += `<li style="padding: 5px; font-size:0.9em;"><span><span style="color:${bg.top}; text-shadow: 1px 1px 1px black;">🟩</span> ${bg.name}</span> ${actionHTML}</li>`;
     });
 
-    html += `<li style="background:#ddd; justify-content:center; padding:5px; font-size:1.1em; margin-top:10px;">🐾 <b>YOLDAŞLAR (PET) & GELİŞTİRME</b></li>`;
+    html += `<li style="background:#ddd; justify-content:center; padding:3px; font-size:0.9em; margin-top:5px;">🐾 <b>YOLDAŞLAR & GELİŞTİRME</b></li>`;
     Object.keys(petData).forEach(key => {
         const pet = petData[key]; 
         let isOwned = ownedPets.hasOwnProperty(key);
         let level = isOwned ? ownedPets[key] : 0;
         
         if (!isOwned) {
-            let actionHTML = `<button class="buy-btn" onclick="buyPet('${key}', ${pet.price})">🪙 ${pet.price}</button>`;
-            html += `<li><span style="line-height:1.2;">${pet.emoji} ${pet.name} (Sv.1)<br><small style="color:gray; font-size:0.8em;">${pet.desc}</small></span> ${actionHTML}</li>`;
+            let actionHTML = `<button class="buy-btn" style="padding: 4px 8px; font-size:0.9em;" onclick="buyPet('${key}', ${pet.price})">🪙 ${pet.price}</button>`;
+            html += `<li style="padding: 5px; font-size:0.9em;"><span style="line-height:1.1;">${pet.emoji} ${pet.name} (Sv.1)<br><small style="color:gray; font-size:0.75em;">${pet.desc}</small></span> ${actionHTML}</li>`;
         } else {
-            let eqBtn = (currentPet === key) ? `<span class="equipped-txt">✅</span>` : `<button class="equip-btn" onclick="equipPet('${key}')">Kuşan</button>`;
+            let eqBtn = (currentPet === key) ? `<span class="equipped-txt" style="font-size:0.9em;">✅</span>` : `<button class="equip-btn" style="padding: 4px 8px; font-size:0.9em;" onclick="equipPet('${key}')">Kuşan</button>`;
             let upgBtn = "";
             if (level < 6) {
                 let costType = (level < 2) ? "coins" : "gems";
                 let costVal = (level < 2) ? 500 : (level === 2 ? 1 : level === 3 ? 2 : level === 4 ? 3 : 5);
                 let icon = costType === "coins" ? "🪙" : "💎";
-                upgBtn = `<button class="buy-btn" style="background:#e67e22; margin-top:5px;" onclick="upgradePet('${key}', ${level+1}, '${costType}', ${costVal})">⬆️ ${icon} ${costVal}</button>`;
+                upgBtn = `<button class="buy-btn" style="background:#e67e22; margin-top:3px; padding: 4px 8px; font-size:0.85em;" onclick="upgradePet('${key}', ${level+1}, '${costType}', ${costVal})">⬆️ ${icon} ${costVal}</button>`;
             } else {
-                upgBtn = `<span style="font-size:0.8em; color:red; margin-top:5px; font-weight:bold;">MAX SV.</span>`;
+                upgBtn = `<span style="font-size:0.8em; color:red; margin-top:3px; font-weight:bold;">MAX SV.</span>`;
             }
-            html += `<li><span style="line-height:1.2;">${pet.emoji} ${pet.name} (Sv.${level})<br><small style="color:gray; font-size:0.8em;">${pet.desc}</small></span> <div style="display:flex; flex-direction:column; align-items:flex-end;">${eqBtn}${upgBtn}</div></li>`;
+            html += `<li style="padding: 5px; font-size:0.9em;"><span style="line-height:1.1;">${pet.emoji} ${pet.name} (Sv.${level})<br><small style="color:gray; font-size:0.75em;">${pet.desc}</small></span> <div style="display:flex; flex-direction:column; align-items:flex-end;">${eqBtn}${upgBtn}</div></li>`;
         }
     });
     list.innerHTML = html;
 }
 
-// 🔥 ELMAS BOZDURMA
 window.convertGems = function() {
     if(playerCoins < 1000) { tg.showAlert("1000 Jetonun yok!"); return; }
     tg.showConfirm("1000 Jetonunu verip 1 Elmas 💎 alacaksın. Onaylıyor musun?", function(agreed) {
@@ -403,7 +397,6 @@ window.convertGems = function() {
     });
 }
 
-// 🔥 PET SEVİYE ATLATMA
 window.upgradePet = function(petKey, nextLevel, costType, costVal) {
     if (costType === "coins" && playerCoins < costVal) { tg.showAlert("Yetersiz Jeton!"); return; }
     if (costType === "gems" && playerGems < costVal) { tg.showAlert("Yetersiz Elmas!"); return; }
