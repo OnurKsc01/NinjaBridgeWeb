@@ -172,12 +172,25 @@ function processPetSteps() {
 function showGameOver() {
     restartButton.style.display = "block"; if (duelInterval) clearInterval(duelInterval);
     
-    // 🔥 FİX: "earnedCoins" verisi eklendi. Artık kasada birikenler anında sunucuya gidiyor!
+    // 🔥 FİX: Veri paketi kurşun geçirmez hale getirildi, tarayıcının veriyi kesmesi engellendi.
     fetch('https://ninja-bridge-api.onrender.com/api/score/save', { 
         method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: tgGroupId, earnedCoins: sessionEarnedCoins, earnedGems: sessionEarnedGems }) 
-    }).catch(e => {});
+        headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }, 
+        body: JSON.stringify({ 
+            userId: tgUserId, 
+            firstName: tgUserName, 
+            score: score, 
+            groupId: tgGroupId, 
+            earnedCoins: sessionEarnedCoins, 
+            earnedGems: sessionEarnedGems 
+        }) 
+    })
+    .then(res => res.json())
+    .then(data => { console.log("Skor ve jetonlar başarıyla buluta işlendi!"); })
+    .catch(e => { console.error("Kayıt hatası:", e); });
 }
 
 function resetGame() {
