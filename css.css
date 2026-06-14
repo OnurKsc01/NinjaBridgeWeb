@@ -182,3 +182,8 @@ body {
     z-index: 100;
     white-space: nowrap; 
 }
+
+/* Dünyalar Menüsü ve Geçiş Onay Ekranı İçin CSS Desteği */
+#prestigeConfirmModal {
+    display: none;
+}
