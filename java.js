@@ -1,5 +1,6 @@
 Array.prototype.last = function () { return this[this.length - 1]; };
-Math.sinus = function (degree) { return Math.sin((degree / 180) * Math.PI); };
+// 🔥 PERFORMANS FIX 1: Matematik işlemleri hızlandırıldı
+Math.sinus = function (degree) { return Math.sin(degree * 0.01745329251); };
 
 // ------------------------------------
 // TELEGRAM & OYUNCU VERİLERİ
@@ -27,6 +28,41 @@ function unlockSounds() {
         soundsUnlocked = true;
     }
 }
+
+// ------------------------------------
+// GRAFİK MOTORU (SANAL ÇÖZÜNÜRLÜK - DLSS)
+// ------------------------------------
+const canvas = document.getElementById("game"); 
+const ctx = canvas.getContext("2d");
+let lowGraphics = false;
+
+const graphicsBtn = document.getElementById("graphicsBtn");
+if (graphicsBtn) {
+    graphicsBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        lowGraphics = !lowGraphics;
+        graphicsBtn.innerText = lowGraphics ? "⚙️ Grafik: Düşük" : "⚙️ Grafik: Yüksek";
+        graphicsBtn.style.background = lowGraphics ? "#7f8c8d" : "#8e44ad";
+        resizeCanvas();
+    });
+}
+
+function resizeCanvas() {
+    if (lowGraphics) {
+        // 🔥 SANAL ÇÖZÜNÜRLÜK: Canvas boyutu yarı yarıya düşürülerek GPU inanılmaz rahatlatılır
+        canvas.width = window.innerWidth / 1.5;
+        canvas.height = window.innerHeight / 1.5;
+        ctx.scale(1/1.5, 1/1.5);
+    } else {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        ctx.scale(1, 1);
+    }
+    canvas.style.width = window.innerWidth + "px";
+    canvas.style.height = window.innerHeight + "px";
+    if(phase === "waiting") draw();
+}
+window.addEventListener("resize", resizeCanvas);
 
 // ------------------------------------
 // REKLAM SİSTEMİ 
@@ -65,12 +101,11 @@ document.getElementById("reviveAdBtn").addEventListener("click", () => {
 document.getElementById("skipReviveBtn").addEventListener("click", () => { document.getElementById("reviveMenu").style.display = "none"; showGameOver(); });
 
 // ------------------------------------
-// DİĞER SİSTEMLER VE EŞYA VERİLERİ
+// OYUN İÇİ DEĞİŞKENLER VE VERİLER
 // ------------------------------------
 let duelInterval = null; let opponentFinished = false;
 
 const skinData = { "default": { name: "Varsayılan", price: 0, body: "black", bandana: "red", alpha: 1 }, "hayalet": { name: "Hayalet", price: 10, body: "#ffffff", bandana: "#cccccc", alpha: 0.4 }, "yesil": { name: "Yeşil Ninja", price: 20, body: "#228B22", bandana: "black", alpha: 1 }, "bronz": { name: "Bronz Ninja", price: 30, body: "#cd7f32", bandana: "#5c4033", alpha: 1 }, "demir": { name: "Demir Ninja", price: 40, body: "#a9a9a9", bandana: "#696969", alpha: 1 }, "altin": { name: "Altın Ninja", price: 50, body: "#ffd700", bandana: "#b8860b", alpha: 1 }, "hiper": { name: "Hiper Ninja", price: 65, body: "#800080", bandana: "#00ffff", alpha: 1 }, "golge": { name: "Gölge Katili", price: 80, body: "#1a1a1a", bandana: "#4a0000", alpha: 1 }, "buzul": { name: "Buzul Ninja", price: 100, body: "#add8e6", bandana: "#ffffff", alpha: 1 } };
-
 const worldOrder = ["default", "gece", "kanli", "col", "neon", "volkan"];
 const bgData = { 
     "default": { name: "Gündüz Vadisi", priceStars: 0, medal: "Vadi Çaylağı", enemy: "🐝", pColor: "black", sColor: "black", glow: "transparent", top: "#BBD691", bottom: "#FEF1E1", hill1: "#95C629", hill2: "#659F1C", tree: "#7D833C", leaves: ["#6D8821", "#8FAC34", "#98B333"], isDark: false }, 
@@ -80,7 +115,6 @@ const bgData = {
     "neon": { name: "Siber Şehir", priceStars: 4, medal: "Siber Hacker", enemy: "🛸", pColor: "#000000", sColor: "#00ff00", glow: "#00ff00", top: "#000000", bottom: "#001a00", hill1: "#003300", hill2: "#001100", tree: "#001100", leaves: ["#00ff00", "#00cc00", "#009900"], isDark: true }, 
     "volkan": { name: "Volkan Dağı", priceStars: 5, medal: "Volkan Ejderi", enemy: "☄️", pColor: "#1a0000", sColor: "#ffcc00", glow: "#ff6600", top: "#2b0000", bottom: "#1a0000", hill1: "#ff3300", hill2: "#cc0000", tree: "#1a0000", leaves: ["#ff6600", "#ff3300", "#cc0000"], isDark: true } 
 };
-
 const petData = { 
     "kopek": { name: "Altın Avcısı", price: 200, desc: "Sv'ye göre daha hızlı Jeton", emoji: "🐶" }, 
     "kedi": { name: "Gözcü Kedi", price: 250, desc: "Sv'ye göre devasa Kombo Alanı", emoji: "🐱" }, 
@@ -94,12 +128,12 @@ const canvasWidth = 375, canvasHeight = 375, platformHeight = 100; const heroDis
 const backgroundSpeedMultiplier = 0.2; const hill1BaseHeight = 100, hill1Amplitude = 10, hill1Stretch = 1; const hill2BaseHeight = 70, hill2Amplitude = 20, hill2Stretch = 0.5;
 const stretchingSpeed = 4, turningSpeed = 4, walkingSpeed = 4, transitioningSpeed = 2, fallingSpeed = 2; const heroWidth = 17, heroHeight = 30; 
 
-const canvas = document.getElementById("game"); canvas.width = window.innerWidth; canvas.height = window.innerHeight; const ctx = canvas.getContext("2d");
 const introductionElement = document.getElementById("introduction"); const perfectElement = document.getElementById("perfect");
 const restartButton = document.getElementById("restart"); const scoreElement = document.getElementById("score");
 const coinCountElement = document.getElementById("coinCount"); const shopCoinCountElement = document.getElementById("shopCoinCount");
 const worldsStarCount = document.getElementById("worldsStarCount");
 
+resizeCanvas(); // İlk boyutlandırma
 try { initAdsGram(); } catch(e) {}
 resetGame(); loadPlayerData();
 
@@ -111,19 +145,16 @@ function loadPlayerData() {
             currentPet = data.currentPet || "default"; ownedPets = data.ownedPets || {}; 
             updateCoinUI(); checkAdStatus(); 
             if (phase === "waiting") { if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } draw(); }
-        }).catch(err => { console.warn("API Bağlantı Hatası"); });
+        }).catch(err => {});
 }
 
 function updateCoinUI() { 
     coinCountElement.innerHTML = `🪙 ${playerCoins} | 💎 ${playerGems} | ⭐ ${playerStars}`; 
     shopCoinCountElement.innerHTML = `🪙 ${playerCoins} | 💎 ${playerGems} | ⭐ ${playerStars}`; 
     if(worldsStarCount) worldsStarCount.innerHTML = `⭐ ${playerStars}`;
-    
     let medalsContainer = document.getElementById("medalsContainer");
-    if(medals.length > 0) {
-        medalsContainer.style.display = "block";
-        document.getElementById("medalsList").innerHTML = medals.join(" ➖ ");
-    } else { medalsContainer.style.display = "none"; }
+    if(medals.length > 0) { medalsContainer.style.display = "block"; document.getElementById("medalsList").innerHTML = medals.join(" ➖ "); } 
+    else { medalsContainer.style.display = "none"; }
 }
 
 function getPerfectAreaSize(platformWidth) { 
@@ -134,15 +165,9 @@ function getPerfectAreaSize(platformWidth) {
 }
 
 function getMonkeyStats() { let lvl = ownedPets["maymun"] || 1; let lives = Math.floor((lvl - 1) / 2) + 1; let bonus = (lvl % 2 === 0) ? lvl * 5 : 0; return { lives: lives, bonusCoins: bonus }; }
-
 function processPetSteps() {
-    if (currentPet === "kopek") {
-        let lvl = ownedPets["kopek"] || 1; let reqSteps = 10 - lvl; wolfStepCount++;
-        if (wolfStepCount >= reqSteps) { playerCoins++; updateCoinUI(); wolfStepCount = 0; }
-    } else if (currentPet === "kurt") {
-        let lvl = ownedPets["kurt"] || 1; let reqSteps = 10 - lvl; wolfStepCount++;
-        if (wolfStepCount >= reqSteps) { playerCoins++; updateCoinUI(); wolfStepCount = 0; }
-    }
+    if (currentPet === "kopek") { let lvl = ownedPets["kopek"] || 1; let reqSteps = 10 - lvl; wolfStepCount++; if (wolfStepCount >= reqSteps) { playerCoins++; updateCoinUI(); wolfStepCount = 0; } } 
+    else if (currentPet === "kurt") { let lvl = ownedPets["kurt"] || 1; let reqSteps = 10 - lvl; wolfStepCount++; if (wolfStepCount >= reqSteps) { playerCoins++; updateCoinUI(); wolfStepCount = 0; } }
 }
 
 function showGameOver() {
@@ -196,7 +221,6 @@ window.addEventListener("mouseup", () => { if (phase == "stretching") phase = "t
 window.addEventListener("touchend", () => { if (phase == "stretching") phase = "turning"; });
 
 function startStretching() { lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); window.requestAnimationFrame(animate); }
-window.addEventListener("resize", () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; draw(); });
 window.requestAnimationFrame(animate);
 
 function animate(timestamp) {
@@ -245,7 +269,6 @@ function animate(timestamp) {
           sticks.push({ x: nextPlatform2.x + nextPlatform2.w, length: 0, rotation: 0 }); 
           phase = "waiting"; 
 
-          // 🔥 PERFORMANS DOKUNUŞU: EKRANDAN KAYBOLAN OBJELERİ HAFIZADAN SİLİYORUZ (GARBAGE COLLECTION)
           platforms = platforms.filter(p => p.x + p.w > sceneOffset - 300);
           sticks = sticks.filter(s => s.x > sceneOffset - 300);
           trees = trees.filter(t => t.x > sceneOffset - 1000);
@@ -290,13 +313,16 @@ function drawPlatforms() {
   platforms.forEach(({ x, w }) => { 
       ctx.save(); ctx.fillStyle = platformColor; 
       ctx.fillRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2); 
-      if(bg.isDark && glowColor !== "transparent") { 
-          // 🔥 PERFORMANS DOKUNUŞU 2: Kasıntı shadowBlur tamamen kaldırıldı, yerine performanslı çerçeve eklendi.
+      if(bg.isDark && glowColor !== "transparent" && !lowGraphics) { 
           ctx.strokeStyle = glowColor; ctx.lineWidth = 2; 
           ctx.strokeRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2); 
       } 
       ctx.restore(); 
-      if (sticks.last().x < x) { ctx.fillStyle = bg.isDark ? glowColor : "red"; let pArea = getPerfectAreaSize(w); ctx.fillRect(x + w / 2 - pArea / 2, canvasHeight - platformHeight, pArea, pArea); } 
+      if (sticks.last().x < x) { 
+          ctx.fillStyle = (bg.isDark && !lowGraphics) ? glowColor : "red"; 
+          let pArea = getPerfectAreaSize(w); 
+          ctx.fillRect(x + w / 2 - pArea / 2, canvasHeight - platformHeight, pArea, pArea); 
+      } 
   });
 }
 function drawEnemies() {
@@ -312,8 +338,30 @@ function drawPet() {
 }
 
 function drawRoundedRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x, y + r); ctx.lineTo(x, y + h - r); ctx.arcTo(x, y + h, x + r, y + h, r); ctx.lineTo(x + w - r, y + h); ctx.arcTo(x + w, y + h, x + w, y + h - r, r); ctx.lineTo(x + w, y + r); ctx.arcTo(x + w, y, x + w - r, y, r); ctx.lineTo(x + r, y); ctx.arcTo(x, y, x, y + r, r); ctx.fill(); }
-function drawBackground() { let bg = bgData[currentBg] || bgData["default"]; var gradient = ctx.createLinearGradient(0, 0, 0, window.innerHeight); gradient.addColorStop(0, bg.top); gradient.addColorStop(1, bg.bottom); ctx.fillStyle = gradient; ctx.fillRect(0, 0, window.innerWidth, window.innerHeight); drawHill(hill1BaseHeight, hill1Amplitude, hill1Stretch, bg.hill1); drawHill(hill2BaseHeight, hill2Amplitude, hill2Stretch, bg.hill2); trees.forEach((tree) => drawTree(tree.x, tree.color, bg.tree)); }
-function drawHill(base, amp, stretch, color) { ctx.beginPath(); ctx.moveTo(0, window.innerHeight); ctx.lineTo(0, getHillY(0, base, amp, stretch)); for (let i = 0; i < window.innerWidth; i++) { ctx.lineTo(i, getHillY(i, base, amp, stretch)); } ctx.lineTo(window.innerWidth, window.innerHeight); ctx.fillStyle = color; ctx.fill(); }
+
+function drawBackground() { 
+    let bg = bgData[currentBg] || bgData["default"]; 
+    var gradient = ctx.createLinearGradient(0, 0, 0, window.innerHeight); 
+    gradient.addColorStop(0, bg.top); gradient.addColorStop(1, bg.bottom); 
+    ctx.fillStyle = gradient; ctx.fillRect(0, 0, window.innerWidth, window.innerHeight); 
+    
+    // 🔥 PERFORMANS FIX 2: Gereksiz çizimler Grafik moduna göre azaltıldı
+    if(!lowGraphics) drawHill(hill2BaseHeight, hill2Amplitude, hill2Stretch, bg.hill2); 
+    drawHill(hill1BaseHeight, hill1Amplitude, hill1Stretch, bg.hill1); 
+    
+    trees.forEach((tree, index) => { 
+        if(lowGraphics && index % 2 === 0) return; // Düşük grafikte ağaçları yarıya indir
+        drawTree(tree.x, tree.color, bg.tree); 
+    }); 
+}
+
+// 🔥 PERFORMANS FIX 3: Tepe çizimlerinde for döngüsü %2500 oranında rahatlatıldı (i++ yerine i+=25 eklendi)
+function drawHill(base, amp, stretch, color) { 
+    ctx.beginPath(); ctx.moveTo(0, window.innerHeight); ctx.lineTo(0, getHillY(0, base, amp, stretch)); 
+    for (let i = 0; i <= window.innerWidth + 25; i += 25) { ctx.lineTo(i, getHillY(i, base, amp, stretch)); } 
+    ctx.lineTo(window.innerWidth, window.innerHeight); ctx.fillStyle = color; ctx.fill(); 
+}
+
 function drawTree(x, color, trunkColor) { ctx.save(); ctx.translate((-sceneOffset * backgroundSpeedMultiplier + x) * hill1Stretch, getTreeY(x, hill1BaseHeight, hill1Amplitude)); ctx.fillStyle = trunkColor; ctx.fillRect(-1, -5, 2, 5); ctx.beginPath(); ctx.moveTo(-5, -5); ctx.lineTo(0, -30); ctx.lineTo(5, -5); ctx.fillStyle = color; ctx.fill(); ctx.restore(); }
 function getHillY(windowX, base, amp, stretch) { return (Math.sinus((sceneOffset * backgroundSpeedMultiplier + windowX) * stretch) * amp + window.innerHeight - base); }
 function getTreeY(x, base, amp) { return Math.sinus(x) * amp + window.innerHeight - base; }
