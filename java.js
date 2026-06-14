@@ -53,7 +53,6 @@ function applyCanvasSize() {
     canvas.style.width = window.innerWidth + "px";
     canvas.style.height = window.innerHeight + "px";
     lastCanvasHeight = 0; 
-    // GÜVENLİK KİLİDİ: Ninja ve platformlar yoksa boşuna çizmeye çalışma!
     if (phase === "waiting" && platforms.length > 0) draw();
 }
 
@@ -107,17 +106,12 @@ document.getElementById("skipReviveBtn").addEventListener("click", () => { docum
 let duelInterval = null; let opponentFinished = false;
 
 const skinData = { "default": { name: "Varsayılan", price: 0, body: "black", bandana: "red", alpha: 1 }, "hayalet": { name: "Hayalet", price: 10, body: "#ffffff", bandana: "#cccccc", alpha: 0.4 }, "yesil": { name: "Yeşil Ninja", price: 20, body: "#228B22", bandana: "black", alpha: 1 }, "bronz": { name: "Bronz Ninja", price: 30, body: "#cd7f32", bandana: "#5c4033", alpha: 1 }, "demir": { name: "Demir Ninja", price: 40, body: "#a9a9a9", bandana: "#696969", alpha: 1 }, "altin": { name: "Altın Ninja", price: 50, body: "#ffd700", bandana: "#b8860b", alpha: 1 }, "hiper": { name: "Hiper Ninja", price: 65, body: "#800080", bandana: "#00ffff", alpha: 1 }, "golge": { name: "Gölge Katili", price: 80, body: "#1a1a1a", bandana: "#4a0000", alpha: 1 }, "buzul": { name: "Buzul Ninja", price: 100, body: "#add8e6", bandana: "#ffffff", alpha: 1 } };
+// 🔥 Gündüz, Gece ve Kanlı Ay aktif. Düşmanlar silindi.
 const worldOrder = ["default", "gece", "kanli"];
 const bgData = { 
     "default": { name: "Gündüz Vadisi", priceStars: 0, medal: "Vadi Çaylağı", enemy: "🐝", pColor: "black", sColor: "black", glow: "transparent", top: "#BBD691", bottom: "#FEF1E1", hill1: "#95C629", hill2: "#659F1C", tree: "#7D833C", leaves: ["#6D8821", "#8FAC34", "#98B333"], isDark: false }, 
     "gece": { name: "Gece Yarısı", priceStars: 1, medal: "Gece Fatihi", enemy: "🦇", pColor: "#1a1a1a", sColor: "#00ffff", glow: "#00ffff", top: "#0B1D3A", bottom: "#1A0B2E", hill1: "#1A2A42", hill2: "#0D1B2A", tree: "#1E1E1E", leaves: ["#2B3A42", "#1A2A42", "#3B4A52"], isDark: true }, 
     "kanli": { name: "Kanlı Ay", priceStars: 2, medal: "Kanlı Ay Şövalyesi", enemy: "🕷️", pColor: "#2a0000", sColor: "#ff0000", glow: "#ff0000", top: "#4A0000", bottom: "#1A0000", hill1: "#590000", hill2: "#330000", tree: "#1A0000", leaves: ["#660000", "#800000", "#4D0000"], isDark: true }
-    
-    /* GİZLENEN DÜNYALAR (İleride sadece başındaki ve sonundaki /* işaretlerini sil
-    , "col": { name: "Çöl Sıcağı", priceStars: 3, medal: "Çöl Gezgini", enemy: "🦂", pColor: "#4a2500", sColor: "#8B0000", glow: "#FF8C00", top: "#FF8C00", bottom: "#FFD700", hill1: "#CD853F", hill2: "#8B4513", tree: "#5C4033", leaves: ["#D2B48C", "#F4A460", "#DEB887"], isDark: true }, 
-    "neon": { name: "Siber Şehir", priceStars: 4, medal: "Siber Hacker", enemy: "🛸", pColor: "#000000", sColor: "#00ff00", glow: "#00ff00", top: "#000000", bottom: "#001a00", hill1: "#003300", hill2: "#001100", tree: "#001100", leaves: ["#00ff00", "#00cc00", "#009900"], isDark: true }, 
-    "volkan": { name: "Volkan Dağı", priceStars: 5, medal: "Volkan Ejderi", enemy: "☄️", pColor: "#1a0000", sColor: "#ffcc00", glow: "#ff6600", top: "#2b0000", bottom: "#1a0000", hill1: "#ff3300", hill2: "#cc0000", tree: "#1a0000", leaves: ["#ff6600", "#ff3300", "#cc0000"], isDark: true } 
-    */
 };
 const petData = { 
     "kopek": { name: "Altın Avcısı", price: 200, desc: "Sv'ye göre daha hızlı Jeton", emoji: "🐶" }, 
@@ -126,9 +120,8 @@ const petData = {
     "kurt": { name: "Gölge Kurdu", price: 750, desc: "Jeton Üretimi + Dev Kırmızı Alan", emoji: "🐺" } 
 };
 
-// GÜVENLİK KİLİDİ: Değerler NaN olmasın diye başta sıfırlandı
 let phase = "waiting"; let lastTimestamp; let heroX = 0, heroY = 0, sceneOffset = 0; 
-let platforms = [], sticks = [], trees = [], enemies = []; 
+let platforms = [], sticks = [], trees = []; // 🔥 Düşman dizisi silindi
 let score = 0, combo = 0; let currentMonkeyLives = 0; let wolfStepCount = 0;
 const canvasWidth = 375, canvasHeight = 375, platformHeight = 100; const heroDistanceFromEdge = 10, paddingX = 100;
 const backgroundSpeedMultiplier = 0.2; const hill1BaseHeight = 100, hill1Amplitude = 10, hill1Stretch = 1; const hill2BaseHeight = 70, hill2Amplitude = 20, hill2Stretch = 0.5;
@@ -179,7 +172,7 @@ function showGameOver() {
 
 function resetGame() {
   phase = "waiting"; lastTimestamp = undefined; sceneOffset = 0; score = 0; combo = 0; sessionEarnedGems = 0;
-  adReviveUsedThisRun = false; wolfStepCount = 0; enemies = [];
+  adReviveUsedThisRun = false; wolfStepCount = 0; 
   document.getElementById("reviveMenu").style.display = "none"; restartButton.style.display = "none";
   if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } else { currentMonkeyLives = 0; }
   introductionElement.style.opacity = 1; perfectElement.style.opacity = 0; scoreElement.innerText = score;
@@ -204,15 +197,7 @@ function generatePlatform() {
   const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap)); 
   const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth)); 
   platforms.push({ x, w });
-
-  if (score >= 500 && platforms.length > 1) {
-      let spawnChance = 0.2 + (score / 15000);
-      if (Math.random() < spawnChance) {
-          let currentBgData = bgData[currentBg] || bgData["default"];
-          let gapStartX = lastPlatform.x + lastPlatform.w; let gapEndX = x;
-          enemies.push({ x: gapStartX + (gapEndX - gapStartX)/2, baseY: canvasHeight - platformHeight, offsetY: 0, speed: 1.5 + (score/3000), emoji: currentBgData.enemy });
-      }
-  }
+  // 🔥 Düşman yaratma kodu tamamen silindi
 }
 
 function isMenuOpen() { return document.getElementById("shopModal").style.display === "block" || document.getElementById("leaderboardModal").style.display === "block" || document.getElementById("worldsModal").style.display === "block" || document.getElementById("prestigeConfirmModal").style.display === "flex" || document.getElementById("reviveMenu").style.display === "flex"; }
@@ -230,10 +215,6 @@ function animate(timestamp) {
   
   let dt = timestamp - lastTimestamp;
   if (dt > 32) dt = 16; 
-
-  if (enemies.length > 0 && phase !== "dead_options") {
-      enemies.forEach(e => { e.offsetY = Math.sin(timestamp / (400 / e.speed)) * 60 - 20; });
-  }
 
   switch (phase) {
     case "waiting": break; 
@@ -259,14 +240,9 @@ function animate(timestamp) {
     case "walking":
       heroX += dt / walkingSpeed; 
       
-      let hitEnemy = enemies.find(e => { let eY = e.baseY + e.offsetY; return Math.abs(heroX - e.x) < 20 && Math.abs((heroY + canvasHeight - platformHeight - heroHeight/2) - eY) < 30; });
-      if (hitEnemy) { phase = "falling"; fallSound.currentTime = 0; fallSound.play().catch(e=>{}); }
-
-      if(phase !== "falling") {
-          const [nextPlatform] = thePlatformTheStickHits();
-          if (nextPlatform) { const maxHeroX = nextPlatform.x + nextPlatform.w - heroDistanceFromEdge; if (heroX > maxHeroX) { heroX = maxHeroX; phase = "transitioning"; } } 
-          else { const maxHeroX = sticks.last().x + sticks.last().length + heroWidth; if (heroX > maxHeroX) { heroX = maxHeroX; phase = "falling"; fallSound.currentTime = 0; fallSound.play().catch(e => {}); } }
-      }
+      const [nextPlatform] = thePlatformTheStickHits();
+      if (nextPlatform) { const maxHeroX = nextPlatform.x + nextPlatform.w - heroDistanceFromEdge; if (heroX > maxHeroX) { heroX = maxHeroX; phase = "transitioning"; } } 
+      else { const maxHeroX = sticks.last().x + sticks.last().length + heroWidth; if (heroX > maxHeroX) { heroX = maxHeroX; phase = "falling"; fallSound.currentTime = 0; fallSound.play().catch(e => {}); } }
       break;
     case "transitioning":
       sceneOffset += dt / transitioningSpeed; const [nextPlatform2] = thePlatformTheStickHits();
@@ -276,7 +252,6 @@ function animate(timestamp) {
           platforms = platforms.filter(p => p.x + p.w > sceneOffset - 300);
           sticks = sticks.filter(s => s.x > sceneOffset - 300);
           trees = trees.filter(t => t.x > sceneOffset - 1000);
-          enemies = enemies.filter(e => e.x > sceneOffset - 300);
       }
       break;
     case "falling":
@@ -306,11 +281,11 @@ function draw() {
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight); 
     drawBackground(); 
     
-    let transX = (window.innerWidth - canvasWidth) / 2 - sceneOffset;
-    let transY = (window.innerHeight - canvasHeight) / 2;
+    let transX = Math.floor((window.innerWidth - canvasWidth) / 2 - sceneOffset);
+    let transY = Math.floor((window.innerHeight - canvasHeight) / 2);
     ctx.translate(transX, transY); 
     
-    drawPlatforms(); drawEnemies(); drawPet(); drawHero(); drawSticks(); 
+    drawPlatforms(); drawPet(); drawHero(); drawSticks(); 
     ctx.restore(); 
 }
 restartButton.addEventListener("click", (e) => { e.preventDefault(); resetGame(); });
@@ -318,38 +293,35 @@ restartButton.addEventListener("click", (e) => { e.preventDefault(); resetGame()
 function drawSticks() {
   let bg = bgData[currentBg] || bgData["default"]; let stickColor = bg.sColor; 
   sticks.forEach((stick) => { 
-      ctx.save(); ctx.translate(stick.x, canvasHeight - platformHeight); ctx.rotate((Math.PI / 180) * stick.rotation); 
+      ctx.save(); ctx.translate(Math.floor(stick.x), canvasHeight - platformHeight); ctx.rotate((Math.PI / 180) * stick.rotation); 
       ctx.beginPath(); ctx.lineWidth = 3; ctx.strokeStyle = stickColor; 
-      ctx.moveTo(0, 0); ctx.lineTo(0, -stick.length); ctx.stroke(); ctx.restore(); 
+      ctx.moveTo(0, 0); ctx.lineTo(0, -Math.floor(stick.length)); ctx.stroke(); ctx.restore(); 
   });
 }
 function drawPlatforms() {
   let bg = bgData[currentBg] || bgData["default"]; let platformColor = bg.pColor; let glowColor = bg.glow;
   platforms.forEach(({ x, w }) => { 
+      let fx = Math.floor(x); let fw = Math.floor(w);
       ctx.save(); ctx.fillStyle = platformColor; 
-      ctx.fillRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2); 
+      ctx.fillRect(fx, canvasHeight - platformHeight, fw, platformHeight + (window.innerHeight - canvasHeight) / 2); 
       if(bg.isDark && glowColor !== "transparent" && !lowGraphics) { 
           ctx.strokeStyle = glowColor; ctx.lineWidth = 2; 
-          ctx.strokeRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2); 
+          ctx.strokeRect(fx, canvasHeight - platformHeight, fw, platformHeight + (window.innerHeight - canvasHeight) / 2); 
       } 
       ctx.restore(); 
-      if (sticks.last() && sticks.last().x < x) { 
+      if (sticks.last().x < x) { 
           ctx.fillStyle = (bg.isDark && !lowGraphics) ? glowColor : "red"; 
-          let pArea = getPerfectAreaSize(w); 
-          ctx.fillRect(x + w / 2 - pArea / 2, canvasHeight - platformHeight, pArea, pArea); 
+          let pArea = Math.floor(getPerfectAreaSize(w)); 
+          ctx.fillRect(Math.floor(x + w / 2 - pArea / 2), canvasHeight - platformHeight, pArea, pArea); 
       } 
   });
 }
-function drawEnemies() {
-  ctx.save(); ctx.font = "28px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  enemies.forEach(e => { let eY = e.baseY + e.offsetY; ctx.fillText(e.emoji, e.x, eY); });
-  ctx.restore();
-}
+
 function drawHero() {
-  let skin = skinData[currentSkin] || skinData["default"]; ctx.save(); ctx.globalAlpha = skin.alpha; ctx.fillStyle = skin.body; ctx.translate(heroX - heroWidth / 2, heroY + canvasHeight - platformHeight - heroHeight / 2); drawRoundedRect(-heroWidth / 2, -heroHeight / 2, heroWidth, heroHeight - 4, 5); ctx.fillStyle = skin.body; if(skin.body === "#ffffff") ctx.fillStyle = "#cccccc"; const legDistance = 5; ctx.beginPath(); ctx.arc(legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.beginPath(); ctx.arc(-legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.beginPath(); ctx.fillStyle = "white"; if(skin.body === "#ffffff") ctx.fillStyle = "black"; ctx.arc(5, -7, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.fillStyle = skin.bandana; ctx.fillRect(-heroWidth / 2 - 1, -12, heroWidth + 2, 4.5); ctx.beginPath(); ctx.moveTo(-9, -14.5); ctx.lineTo(-17, -18.5); ctx.lineTo(-14, -8.5); ctx.fill(); ctx.beginPath(); ctx.moveTo(-10, -10.5); ctx.lineTo(-15, -3.5); ctx.lineTo(-5, -7); ctx.fill(); ctx.restore();
+  let skin = skinData[currentSkin] || skinData["default"]; ctx.save(); ctx.globalAlpha = skin.alpha; ctx.fillStyle = skin.body; ctx.translate(Math.floor(heroX - heroWidth / 2), Math.floor(heroY + canvasHeight - platformHeight - heroHeight / 2)); drawRoundedRect(Math.floor(-heroWidth / 2), Math.floor(-heroHeight / 2), heroWidth, heroHeight - 4, 5); ctx.fillStyle = skin.body; if(skin.body === "#ffffff") ctx.fillStyle = "#cccccc"; const legDistance = 5; ctx.beginPath(); ctx.arc(legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.beginPath(); ctx.arc(-legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.beginPath(); ctx.fillStyle = "white"; if(skin.body === "#ffffff") ctx.fillStyle = "black"; ctx.arc(5, -7, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.fillStyle = skin.bandana; ctx.fillRect(Math.floor(-heroWidth / 2 - 1), -12, heroWidth + 2, 4.5); ctx.beginPath(); ctx.moveTo(-9, -14.5); ctx.lineTo(-17, -18.5); ctx.lineTo(-14, -8.5); ctx.fill(); ctx.beginPath(); ctx.moveTo(-10, -10.5); ctx.lineTo(-15, -3.5); ctx.lineTo(-5, -7); ctx.fill(); ctx.restore();
 }
 function drawPet() {
-  if (currentPet === "default") return; let pet = petData[currentPet]; ctx.save(); let bounce = (phase === "walking" || phase === "transitioning") ? Math.abs(Math.sin(Date.now() / 100)) * 6 : 0; ctx.translate(heroX - 28, heroY + canvasHeight - platformHeight - 5 - bounce); ctx.font = "20px Arial"; ctx.fillText(pet.emoji, -10, 5); ctx.restore();
+  if (currentPet === "default") return; let pet = petData[currentPet]; ctx.save(); let bounce = (phase === "walking" || phase === "transitioning") ? Math.floor(Math.abs(Math.sin(Date.now() / 100)) * 6) : 0; ctx.translate(Math.floor(heroX - 28), Math.floor(heroY + canvasHeight - platformHeight - 5 - bounce)); ctx.font = "20px Arial"; ctx.fillText(pet.emoji, -10, 5); ctx.restore();
 }
 
 function drawRoundedRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x, y + r); ctx.lineTo(x, y + h - r); ctx.arcTo(x, y + h, x + r, y + h, r); ctx.lineTo(x + w - r, y + h); ctx.arcTo(x + w, y + h, x + w, y + h - r, r); ctx.lineTo(x + w, y + r); ctx.arcTo(x + w, y, x + w - r, y, r); ctx.lineTo(x + r, y); ctx.arcTo(x, y, x, y + r, r); ctx.fill(); }
@@ -369,12 +341,12 @@ function drawBackground() {
 }
 
 function drawHill(base, amp, stretch, color) { 
-    ctx.beginPath(); ctx.moveTo(0, window.innerHeight); ctx.lineTo(0, getHillY(0, base, amp, stretch)); 
-    for (let i = 0; i <= window.innerWidth + 25; i += 25) { ctx.lineTo(i, getHillY(i, base, amp, stretch)); } 
+    ctx.beginPath(); ctx.moveTo(0, window.innerHeight); ctx.lineTo(0, Math.floor(getHillY(0, base, amp, stretch))); 
+    for (let i = 0; i <= window.innerWidth + 25; i += 25) { ctx.lineTo(i, Math.floor(getHillY(i, base, amp, stretch))); } 
     ctx.lineTo(window.innerWidth, window.innerHeight); ctx.fillStyle = color; ctx.fill(); 
 }
 
-function drawTree(x, color, trunkColor) { ctx.save(); ctx.translate((-sceneOffset * backgroundSpeedMultiplier + x) * hill1Stretch, getTreeY(x, hill1BaseHeight, hill1Amplitude)); ctx.fillStyle = trunkColor; ctx.fillRect(-1, -5, 2, 5); ctx.beginPath(); ctx.moveTo(-5, -5); ctx.lineTo(0, -30); ctx.lineTo(5, -5); ctx.fillStyle = color; ctx.fill(); ctx.restore(); }
+function drawTree(x, color, trunkColor) { ctx.save(); ctx.translate(Math.floor((-sceneOffset * backgroundSpeedMultiplier + x) * hill1Stretch), Math.floor(getTreeY(x, hill1BaseHeight, hill1Amplitude))); ctx.fillStyle = trunkColor; ctx.fillRect(-1, -5, 2, 5); ctx.beginPath(); ctx.moveTo(-5, -5); ctx.lineTo(0, -30); ctx.lineTo(5, -5); ctx.fillStyle = color; ctx.fill(); ctx.restore(); }
 function getHillY(windowX, base, amp, stretch) { return (Math.sinus((sceneOffset * backgroundSpeedMultiplier + windowX) * stretch) * amp + window.innerHeight - base); }
 function getTreeY(x, base, amp) { return Math.sinus(x) * amp + window.innerHeight - base; }
 
@@ -466,8 +438,7 @@ window.equipPet = function(petKey) { fetch('https://ninja-bridge-api.onrender.co
 document.getElementById("leaderboardBtn").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("leaderboardModal").style.display = "block"; const list = document.getElementById("scoreList"); list.innerHTML = "<li style='text-align:center;'>Yükleniyor... ⏳</li>"; fetch(`https://ninja-bridge-api.onrender.com/api/score/global?t=${Date.now()}`).then(res => res.json()).then(data => { list.innerHTML = ""; if(data.length === 0) { list.innerHTML = "<li>Henüz kimse oynamadı!</li>"; return; } data.forEach((item, i) => { list.innerHTML += `<li><span>${i + 1}. ${item.name}</span> <span>${item.score} Puan</span></li>`; }); }).catch(() => list.innerHTML = "<li style='color:red;'>Hata oluştu!</li>"); }); 
 document.getElementById("closeLeaderboard").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("leaderboardModal").style.display = "none"; });
 
-// 🔥 GÜVENLİK KİLİDİ: Motor Çalıştırma Sırası Düzeltildi
 try { initAdsGram(); } catch(e) {}
-resetGame(); // 1. Önce Ninjayı ve Platformları Yaratır
-applyCanvasSize(); // 2. Sonra Güvenle Ekranı Boyutlandırıp Çizer
-loadPlayerData(); // 3. Sunucudan verileri çeker
+resetGame(); 
+applyCanvasSize(); 
+loadPlayerData();
