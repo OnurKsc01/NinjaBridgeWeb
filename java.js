@@ -11,7 +11,10 @@ let tgUserName = user ? user.first_name : "Test Oyuncusu";
 let startParam = tg?.initDataUnsafe?.start_param;
 let tgGroupId = startParam ? Number(startParam) : 0;
 
-let playerCoins = 0; let playerGems = 0; let playerStars = 0; let sessionEarnedGems = 0; 
+// 🔥 FİX: Oynanış esnasında kazanılan Jetonu takip eden değişken eklendi
+let playerCoins = 0; let playerGems = 0; let playerStars = 0; 
+let sessionEarnedGems = 0; let sessionEarnedCoins = 0; 
+
 let currentSkin = "default"; let ownedSkins = ["default"]; 
 let currentBg = "default"; let unlockedWorlds = ["default"]; let medals = [];
 let currentPet = "default"; let ownedPets = {}; 
@@ -29,7 +32,7 @@ function unlockSounds() {
 }
 
 // ------------------------------------
-// GRAFİK MOTORU VE CACHE (KASMA SORUNU KÖKTEN ÇÖZÜLDÜ)
+// GRAFİK MOTORU VE CACHE
 // ------------------------------------
 const canvas = document.getElementById("game"); 
 const ctx = canvas.getContext("2d");
@@ -106,7 +109,6 @@ document.getElementById("skipReviveBtn").addEventListener("click", () => { docum
 let duelInterval = null; let opponentFinished = false;
 
 const skinData = { "default": { name: "Varsayılan", price: 0, body: "black", bandana: "red", alpha: 1 }, "hayalet": { name: "Hayalet", price: 10, body: "#ffffff", bandana: "#cccccc", alpha: 0.4 }, "yesil": { name: "Yeşil Ninja", price: 20, body: "#228B22", bandana: "black", alpha: 1 }, "bronz": { name: "Bronz Ninja", price: 30, body: "#cd7f32", bandana: "#5c4033", alpha: 1 }, "demir": { name: "Demir Ninja", price: 40, body: "#a9a9a9", bandana: "#696969", alpha: 1 }, "altin": { name: "Altın Ninja", price: 50, body: "#ffd700", bandana: "#b8860b", alpha: 1 }, "hiper": { name: "Hiper Ninja", price: 65, body: "#800080", bandana: "#00ffff", alpha: 1 }, "golge": { name: "Gölge Katili", price: 80, body: "#1a1a1a", bandana: "#4a0000", alpha: 1 }, "buzul": { name: "Buzul Ninja", price: 100, body: "#add8e6", bandana: "#ffffff", alpha: 1 } };
-// 🔥 Gündüz, Gece ve Kanlı Ay aktif. Düşmanlar silindi.
 const worldOrder = ["default", "gece", "kanli"];
 const bgData = { 
     "default": { name: "Gündüz Vadisi", priceStars: 0, medal: "Vadi Çaylağı", enemy: "🐝", pColor: "black", sColor: "black", glow: "transparent", top: "#BBD691", bottom: "#FEF1E1", hill1: "#95C629", hill2: "#659F1C", tree: "#7D833C", leaves: ["#6D8821", "#8FAC34", "#98B333"], isDark: false }, 
@@ -121,7 +123,7 @@ const petData = {
 };
 
 let phase = "waiting"; let lastTimestamp; let heroX = 0, heroY = 0, sceneOffset = 0; 
-let platforms = [], sticks = [], trees = []; // 🔥 Düşman dizisi silindi
+let platforms = [], sticks = [], trees = []; 
 let score = 0, combo = 0; let currentMonkeyLives = 0; let wolfStepCount = 0;
 const canvasWidth = 375, canvasHeight = 375, platformHeight = 100; const heroDistanceFromEdge = 10, paddingX = 100;
 const backgroundSpeedMultiplier = 0.2; const hill1BaseHeight = 100, hill1Amplitude = 10, hill1Stretch = 1; const hill2BaseHeight = 70, hill2Amplitude = 20, hill2Stretch = 0.5;
@@ -160,18 +162,27 @@ function getPerfectAreaSize(platformWidth) {
 }
 
 function getMonkeyStats() { let lvl = ownedPets["maymun"] || 1; let lives = Math.floor((lvl - 1) / 2) + 1; let bonus = (lvl % 2 === 0) ? lvl * 5 : 0; return { lives: lives, bonusCoins: bonus }; }
+
+// 🔥 FİX: Petler jeton bulduğunda hem ekranda anında artar, hem de sunucuya yollanmak için kasada birikir
 function processPetSteps() {
-    if (currentPet === "kopek") { let lvl = ownedPets["kopek"] || 1; let reqSteps = 10 - lvl; wolfStepCount++; if (wolfStepCount >= reqSteps) { playerCoins++; updateCoinUI(); wolfStepCount = 0; } } 
-    else if (currentPet === "kurt") { let lvl = ownedPets["kurt"] || 1; let reqSteps = 10 - lvl; wolfStepCount++; if (wolfStepCount >= reqSteps) { playerCoins++; updateCoinUI(); wolfStepCount = 0; } }
+    if (currentPet === "kopek") { let lvl = ownedPets["kopek"] || 1; let reqSteps = 10 - lvl; wolfStepCount++; if (wolfStepCount >= reqSteps) { sessionEarnedCoins++; playerCoins++; updateCoinUI(); wolfStepCount = 0; } } 
+    else if (currentPet === "kurt") { let lvl = ownedPets["kurt"] || 1; let reqSteps = 10 - lvl; wolfStepCount++; if (wolfStepCount >= reqSteps) { sessionEarnedCoins++; playerCoins++; updateCoinUI(); wolfStepCount = 0; } }
 }
 
 function showGameOver() {
     restartButton.style.display = "block"; if (duelInterval) clearInterval(duelInterval);
-    fetch('https://ninja-bridge-api.onrender.com/api/score/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: tgGroupId, earnedGems: sessionEarnedGems }) }).then(res => res.json()).then(data => { if(data.earnedCoins > 0) { playerCoins += data.earnedCoins; updateCoinUI(); } }).catch(e => {});
+    
+    // 🔥 FİX: "earnedCoins" verisi eklendi. Artık kasada birikenler anında sunucuya gidiyor!
+    fetch('https://ninja-bridge-api.onrender.com/api/score/save', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: tgGroupId, earnedCoins: sessionEarnedCoins, earnedGems: sessionEarnedGems }) 
+    }).catch(e => {});
 }
 
 function resetGame() {
-  phase = "waiting"; lastTimestamp = undefined; sceneOffset = 0; score = 0; combo = 0; sessionEarnedGems = 0;
+  phase = "waiting"; lastTimestamp = undefined; sceneOffset = 0; score = 0; combo = 0; 
+  sessionEarnedGems = 0; sessionEarnedCoins = 0; // 🔥 Kasa sıfırlandı
   adReviveUsedThisRun = false; wolfStepCount = 0; 
   document.getElementById("reviveMenu").style.display = "none"; restartButton.style.display = "none";
   if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } else { currentMonkeyLives = 0; }
@@ -197,7 +208,6 @@ function generatePlatform() {
   const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap)); 
   const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth)); 
   platforms.push({ x, w });
-  // 🔥 Düşman yaratma kodu tamamen silindi
 }
 
 function isMenuOpen() { return document.getElementById("shopModal").style.display === "block" || document.getElementById("leaderboardModal").style.display === "block" || document.getElementById("worldsModal").style.display === "block" || document.getElementById("prestigeConfirmModal").style.display === "flex" || document.getElementById("reviveMenu").style.display === "flex"; }
@@ -227,10 +237,24 @@ function animate(timestamp) {
         if (nextPlatform) {
           processPetSteps();
           if (perfectHit) {
-            combo++; score += 1 + combo; 
-            if (combo % 50 === 0) { playerGems += 1; sessionEarnedGems += 1; updateCoinUI(); perfectElement.innerText = `💎 50x COMBO!\n+1 ELMAS KAZANDIN!`; perfectElement.style.color = "#00ffff"; } else { perfectElement.innerText = `🔥 KUSURSUZ! +${1 + combo}\n${combo}x COMBO`; perfectElement.style.color = "#FFD700"; }
+            combo++; 
+            let pts = 1 + combo; // 🔥 FİX: Skor ve Jeton Puanı Hesaplaması
+            score += pts; 
+            sessionEarnedCoins += pts; // Kasaya jeton ekle
+            playerCoins += pts; // UI üzerinde jetonu anında göster
+            
+            if (combo % 50 === 0) { playerGems += 1; sessionEarnedGems += 1; perfectElement.innerText = `💎 50x COMBO!\n+1 ELMAS KAZANDIN!`; perfectElement.style.color = "#00ffff"; } 
+            else { perfectElement.innerText = `🔥 KUSURSUZ! +${pts}\n${combo}x COMBO`; perfectElement.style.color = "#FFD700"; }
             comboSound.currentTime = 0; comboSound.play().catch(e => {});
-          } else { combo = 0; score += 1; perfectElement.innerText = ""; }
+          } else { 
+            combo = 0; 
+            score += 1; 
+            sessionEarnedCoins += 1; // Kasaya jeton ekle
+            playerCoins += 1; // UI üzerinde jetonu anında göster
+            perfectElement.innerText = ""; 
+          }
+          updateCoinUI(); // Sağ üstteki cüzdanı canlı güncelle!
+          
           scoreElement.innerText = score; if (perfectHit) { perfectElement.style.opacity = 1; setTimeout(() => (perfectElement.style.opacity = 0), 1200); }
           generatePlatform(); generateTree(); generateTree();
         }
@@ -259,7 +283,12 @@ function animate(timestamp) {
       heroY += dt / fallingSpeed;
       if (heroY > platformHeight + 100 + (window.innerHeight - canvasHeight) / 2) {
         if (currentMonkeyLives > 0) {
-            currentMonkeyLives--; let mStats = getMonkeyStats(); if (mStats.bonusCoins > 0) { playerCoins += mStats.bonusCoins; updateCoinUI(); }
+            currentMonkeyLives--; let mStats = getMonkeyStats(); 
+            if (mStats.bonusCoins > 0) { 
+                sessionEarnedCoins += mStats.bonusCoins; 
+                playerCoins += mStats.bonusCoins; // Canlı güncelleme
+                updateCoinUI(); 
+            }
             phase = "rescued"; heroY = 0; heroX = sticks.last().x - heroDistanceFromEdge; sticks.last().length = 0; sticks.last().rotation = 0; perfectElement.innerText = mStats.bonusCoins > 0 ? `🐒 KURTARILDI!\n+${mStats.bonusCoins} Jeton Bonus!` : `🐒 MAYMUN KURTARDI!`; perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1; draw(); setTimeout(() => { perfectElement.style.opacity = 0; phase = "waiting"; }, 1500); return;
         }
         if (!adReviveUsedThisRun) { phase = "dead_options"; document.getElementById("reviveMenu").style.display = "flex"; return; }
@@ -309,7 +338,7 @@ function drawPlatforms() {
           ctx.strokeRect(fx, canvasHeight - platformHeight, fw, platformHeight + (window.innerHeight - canvasHeight) / 2); 
       } 
       ctx.restore(); 
-      if (sticks.last().x < x) { 
+      if (sticks.last() && sticks.last().x < x) { 
           ctx.fillStyle = (bg.isDark && !lowGraphics) ? glowColor : "red"; 
           let pArea = Math.floor(getPerfectAreaSize(w)); 
           ctx.fillRect(Math.floor(x + w / 2 - pArea / 2), canvasHeight - platformHeight, pArea, pArea); 
@@ -375,70 +404,4 @@ function renderShop() {
             let eqBtn = (currentPet === key) ? `<span class="equipped-txt" style="font-size:13px;">✅</span>` : `<button class="equip-btn" style="padding: 5px 10px; font-size:12px; margin:0;" onclick="equipPet('${key}')">Kuşan</button>`; 
             let upgBtn = ""; 
             if (level < 5 && key === "kurt") { let costVal = level * 2; upgBtn = `<button class="buy-btn" style="background:#e67e22; margin-top:4px; padding: 4px 8px; font-size:11px;" onclick="upgradePet('${key}', ${level+1}, 'gems', ${costVal})">⬆️ 💎 ${costVal}</button>`; }
-            else if (level < 4 && key !== "kurt") { let costVal = (level === 1) ? 1 : (level === 2) ? 3 : 5; upgBtn = `<button class="buy-btn" style="background:#e67e22; margin-top:4px; padding: 4px 8px; font-size:11px;" onclick="upgradePet('${key}', ${level+1}, 'gems', ${costVal})">⬆️ 💎 ${costVal}</button>`; } 
-            else { upgBtn = `<span style="font-size:11px; color:red; margin-top:4px; font-weight:bold;">MAX SV.</span>`; } 
-            html += `<li style="padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center;"><span style="line-height:1.2;">${pet.emoji} ${pet.name} (Sv.${level})<br><small style="color:gray; font-size:11px;">${pet.desc}</small></span> <div style="display:flex; flex-direction:column; align-items:flex-end;">${eqBtn}${upgBtn}</div></li>`; 
-        } 
-    }); list.innerHTML = html;
-}
-
-function renderWorlds() {
-    const list = document.getElementById("worldsList"); let html = "";
-    worldOrder.forEach((key, index) => {
-        const bg = bgData[key]; let isUnlocked = unlockedWorlds.includes(key);
-        let prevUnlocked = (index === 0) || unlockedWorlds.includes(worldOrder[index-1]);
-        
-        let actionHTML = "";
-        if (currentBg === key) { actionHTML = `<span class="equipped-txt" style="font-size:13px;">✅ Aktif</span>`; }
-        else if (isUnlocked) { actionHTML = `<button class="equip-btn" style="padding: 5px 10px; font-size:12px; margin:0;" onclick="equipBg('${key}')">Seyahat Et</button>`; }
-        else if (prevUnlocked) { actionHTML = `<button class="buy-btn" style="background:#f39c12; padding: 5px 10px; font-size:12px; margin:0;" onclick="promptPrestige('${key}', '${bg.medal}')">Geçiş Yap ⭐ ${bg.priceStars}</button>`; }
-        else { actionHTML = `<span style="color:gray; font-size:11px;">🔒 Kilitli</span>`; }
-
-        html += `<li style="padding: 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; background:${isUnlocked ? '#fff' : '#f4f4f4'}; border-left: 4px solid ${bg.top};">
-            <span style="line-height:1.3;"><b>${bg.name}</b><br><small style="color:gray;">Mühür: ${bg.enemy} | Madalya: ${bg.medal}</small></span>
-            ${actionHTML}
-        </li>`;
-    });
-    list.innerHTML = html;
-}
-
-let isConverting = false;
-window.convertGems = function() { if(playerCoins < 1000) { if(tg && tg.showAlert) tg.showAlert("1000 Jetonun yok!"); return; } if (isConverting) return; isConverting = true; fetch('https://ninja-bridge-api.onrender.com/api/score/convert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId }) }).then(res => res.json()).then(data => { isConverting = false; if(data.success) { playerCoins -= 1000; playerGems += 1; updateCoinUI(); renderShop(); } }).catch(() => { isConverting = false; }); }
-window.convertStars = function() { if(playerGems < 30) { if(tg && tg.showAlert) tg.showAlert("30 Elmasın yok!"); return; } if (isConverting) return; isConverting = true; fetch('https://ninja-bridge-api.onrender.com/api/score/convertstar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId }) }).then(res => res.json()).then(data => { isConverting = false; if(data.success) { playerGems -= 30; playerStars += 1; updateCoinUI(); renderShop(); renderWorlds(); } }).catch(() => { isConverting = false; }); }
-
-let pendingWorld = null; let pendingMedal = null;
-window.promptPrestige = function(worldKey, medal) {
-    if (playerStars < bgData[worldKey].priceStars) { if(tg && tg.showAlert) tg.showAlert(`Yetersiz Yıldız! ${bgData[worldKey].priceStars} Yıldız gerekli.`); return; }
-    pendingWorld = worldKey; pendingMedal = medal;
-    document.getElementById("prestigeConfirmModal").style.display = "flex";
-}
-document.getElementById("cancelPrestigeBtn").addEventListener("click", () => { document.getElementById("prestigeConfirmModal").style.display = "none"; });
-document.getElementById("confirmPrestigeBtn").addEventListener("click", () => {
-    let btn = document.getElementById("confirmPrestigeBtn"); btn.innerText = "Geçiş Yapılıyor..."; btn.style.pointerEvents = "none";
-    fetch('https://ninja-bridge-api.onrender.com/api/score/prestige', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, worldKey: pendingWorld, medalName: pendingMedal }) })
-    .then(res => res.json()).then(data => {
-        if(data.success) {
-            playerCoins = 0; playerGems = 0; playerStars -= bgData[pendingWorld].priceStars;
-            unlockedWorlds.push(pendingWorld); medals.push(pendingMedal); currentBg = pendingWorld; score = 0;
-            document.getElementById("prestigeConfirmModal").style.display = "none";
-            updateCoinUI(); renderWorlds(); resetGame();
-            if(tg && tg.showAlert) tg.showAlert(`🌌 ${bgData[pendingWorld].name} dünyasına geçiş başarılı! Her şey sıfırlandı ama ${pendingMedal} madalyasını kazandın!`);
-        }
-        btn.innerText = "Evet, Sıfırla ve Geç!"; btn.style.pointerEvents = "auto";
-    }).catch(()=>{ btn.innerText = "Evet, Sıfırla ve Geç!"; btn.style.pointerEvents = "auto"; });
-});
-
-window.upgradePet = function(petKey, nextLevel, costType, costVal) { if (costType === "gems" && playerGems < costVal) { tg.showAlert("Yetersiz Elmas!"); return; } tg.showConfirm(`${petData[petKey].name} yoldaşını Seviye ${nextLevel} yapacaksın. Onaylıyor musun?`, function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/upgradepet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, petName: petKey, coinCost: 0, gemCost: costVal, nextLevel: nextLevel }) }).then(res => res.json()).then(data => { if(data.success) { playerGems -= costVal; ownedPets[petKey] = nextLevel; updateCoinUI(); renderShop(); } }); } }); }
-window.buySkin = function(skinKey, price) { if(playerCoins < price) { tg.showAlert("Yetersiz Jeton!"); return; } tg.showConfirm(`${skinData[skinKey].name} kostümünü alacaksın. Onaylıyor musun?`, function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/buyskin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey, price: price }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= price; ownedSkins.push(skinKey); updateCoinUI(); renderShop(); } }); } }); }
-window.equipSkin = function(skinKey) { fetch('https://ninja-bridge-api.onrender.com/api/score/equipskin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey }) }).then(res => res.json()).then(data => { if(data.success) { currentSkin = skinKey; renderShop(); draw(); } }); }
-window.equipBg = function(bgKey) { fetch('https://ninja-bridge-api.onrender.com/api/score/equipbg', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: bgKey }) }).then(res => res.json()).then(data => { if(data.success) { currentBg = bgKey; renderWorlds(); draw(); } }); }
-window.buyPet = function(petKey, price) { if(playerCoins < price) { tg.showAlert("Yetersiz Jeton!"); return; } tg.showConfirm(`${petData[petKey].name} yoldaşını sahipleneceksin. Onaylıyor musun?`, function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/buypet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey, price: price }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= price; ownedPets[petKey] = 1; updateCoinUI(); renderShop(); } }); } }); }
-window.equipPet = function(petKey) { fetch('https://ninja-bridge-api.onrender.com/api/score/equippet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey }) }).then(res => res.json()).then(data => { if(data.success) { currentPet = petKey; renderShop(); draw(); } }); }
-
-document.getElementById("leaderboardBtn").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("leaderboardModal").style.display = "block"; const list = document.getElementById("scoreList"); list.innerHTML = "<li style='text-align:center;'>Yükleniyor... ⏳</li>"; fetch(`https://ninja-bridge-api.onrender.com/api/score/global?t=${Date.now()}`).then(res => res.json()).then(data => { list.innerHTML = ""; if(data.length === 0) { list.innerHTML = "<li>Henüz kimse oynamadı!</li>"; return; } data.forEach((item, i) => { list.innerHTML += `<li><span>${i + 1}. ${item.name}</span> <span>${item.score} Puan</span></li>`; }); }).catch(() => list.innerHTML = "<li style='color:red;'>Hata oluştu!</li>"); }); 
-document.getElementById("closeLeaderboard").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("leaderboardModal").style.display = "none"; });
-
-try { initAdsGram(); } catch(e) {}
-resetGame(); 
-applyCanvasSize(); 
-loadPlayerData();
+            else if (level < 4 && key !== "kurt") { let costVal = (level === 1) ? 1 : (level === 2) ? 3 : 5; upgBtn = `<button class="buy-btn" style="background:#e67e22; margin-top:4px; padding: 4px 8px; font-size
