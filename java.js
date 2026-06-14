@@ -35,7 +35,6 @@ const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 let lowGraphics = false;
 
-// 🔥 FIX 1: Grafik Butonu Global Fonksiyonu (HTML'den Tetiklenir)
 window.toggleGraphics = function() {
     lowGraphics = !lowGraphics;
     const btn = document.getElementById("graphicsBtn");
@@ -47,18 +46,17 @@ window.toggleGraphics = function() {
 }
 
 function applyCanvasSize() {
-    // 🔥 FIX 2: Sanal Çözünürlük (DLSS) - Düşük grafikte ekranın piksel yükünü %40 hafifletir.
     let scale = lowGraphics ? 0.6 : 1; 
     canvas.width = window.innerWidth * scale;
     canvas.height = window.innerHeight * scale;
     ctx.scale(scale, scale);
     canvas.style.width = window.innerWidth + "px";
     canvas.style.height = window.innerHeight + "px";
-    lastCanvasHeight = 0; // Gradienti yenilemek için zorla
-    if (phase === "waiting") draw();
+    lastCanvasHeight = 0; 
+    // GÜVENLİK KİLİDİ: Ninja ve platformlar yoksa boşuna çizmeye çalışma!
+    if (phase === "waiting" && platforms.length > 0) draw();
 }
 
-// 🔥 FIX 3: Gradient Önbelleği (Saniyede 60 kez oluşturulmasını engeller)
 let cachedGradient = null; let lastBgKey = null; let lastCanvasHeight = 0;
 function getCachedGradient(bg) {
     if(cachedGradient && lastBgKey === currentBg && lastCanvasHeight === canvas.height) return cachedGradient;
@@ -68,7 +66,7 @@ function getCachedGradient(bg) {
     return cachedGradient;
 }
 
-applyCanvasSize(); // İlk açılışta boyutu ayarla (Sürekli çalışan resize event'i kaldırıldı!)
+window.addEventListener("resize", applyCanvasSize);
 
 // ------------------------------------
 // REKLAM SİSTEMİ 
@@ -125,7 +123,9 @@ const petData = {
     "kurt": { name: "Gölge Kurdu", price: 750, desc: "Jeton Üretimi + Dev Kırmızı Alan", emoji: "🐺" } 
 };
 
-let phase = "waiting"; let lastTimestamp; let heroX, heroY, sceneOffset; let platforms = [], sticks = [], trees = [], enemies = []; 
+// GÜVENLİK KİLİDİ: Değerler NaN olmasın diye başta sıfırlandı
+let phase = "waiting"; let lastTimestamp; let heroX = 0, heroY = 0, sceneOffset = 0; 
+let platforms = [], sticks = [], trees = [], enemies = []; 
 let score = 0, combo = 0; let currentMonkeyLives = 0; let wolfStepCount = 0;
 const canvasWidth = 375, canvasHeight = 375, platformHeight = 100; const heroDistanceFromEdge = 10, paddingX = 100;
 const backgroundSpeedMultiplier = 0.2; const hill1BaseHeight = 100, hill1Amplitude = 10, hill1Stretch = 1; const hill2BaseHeight = 70, hill2Amplitude = 20, hill2Stretch = 0.5;
@@ -135,9 +135,6 @@ const introductionElement = document.getElementById("introduction"); const perfe
 const restartButton = document.getElementById("restart"); const scoreElement = document.getElementById("score");
 const coinCountElement = document.getElementById("coinCount"); const shopCoinCountElement = document.getElementById("shopCoinCount");
 const worldsStarCount = document.getElementById("worldsStarCount");
-
-try { initAdsGram(); } catch(e) {}
-resetGame(); loadPlayerData();
 
 function loadPlayerData() {
     fetch(`https://ninja-bridge-api.onrender.com/api/score/player/${tgUserId}`).then(res => res.json()).then(data => {
@@ -228,7 +225,6 @@ window.requestAnimationFrame(animate);
 function animate(timestamp) {
   if (!lastTimestamp) { lastTimestamp = timestamp; window.requestAnimationFrame(animate); return; }
   
-  // 🔥 FIX 4: Işınlanma Koruması. dt 32'ye sabitlendi. (Oyun takılırsa ninja 5 metre ileri ışınlanmaz, fizik bozulmaz)
   let dt = timestamp - lastTimestamp;
   if (dt > 32) dt = 16; 
 
@@ -302,7 +298,6 @@ function thePlatformTheStickHits() {
   if (platformTheStickHits) { let pArea = getPerfectAreaSize(platformTheStickHits.w); if (platformTheStickHits.x + platformTheStickHits.w / 2 - pArea / 2 < stickFarX && stickFarX < platformTheStickHits.x + platformTheStickHits.w / 2 + pArea / 2) { return [platformTheStickHits, true]; } } return [platformTheStickHits, false];
 }
 
-// 🔥 FIX 5: Tüm Math.floor (Yuvarlama) işlemleri silindi! Alt-piksel pürüzsüzlüğü geri geldi!
 function draw() { 
     ctx.save(); 
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight); 
@@ -335,7 +330,7 @@ function drawPlatforms() {
           ctx.strokeRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2); 
       } 
       ctx.restore(); 
-      if (sticks.last().x < x) { 
+      if (sticks.last() && sticks.last().x < x) { 
           ctx.fillStyle = (bg.isDark && !lowGraphics) ? glowColor : "red"; 
           let pArea = getPerfectAreaSize(w); 
           ctx.fillRect(x + w / 2 - pArea / 2, canvasHeight - platformHeight, pArea, pArea); 
@@ -467,3 +462,9 @@ window.equipPet = function(petKey) { fetch('https://ninja-bridge-api.onrender.co
 
 document.getElementById("leaderboardBtn").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("leaderboardModal").style.display = "block"; const list = document.getElementById("scoreList"); list.innerHTML = "<li style='text-align:center;'>Yükleniyor... ⏳</li>"; fetch(`https://ninja-bridge-api.onrender.com/api/score/global?t=${Date.now()}`).then(res => res.json()).then(data => { list.innerHTML = ""; if(data.length === 0) { list.innerHTML = "<li>Henüz kimse oynamadı!</li>"; return; } data.forEach((item, i) => { list.innerHTML += `<li><span>${i + 1}. ${item.name}</span> <span>${item.score} Puan</span></li>`; }); }).catch(() => list.innerHTML = "<li style='color:red;'>Hata oluştu!</li>"); }); 
 document.getElementById("closeLeaderboard").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("leaderboardModal").style.display = "none"; });
+
+// 🔥 GÜVENLİK KİLİDİ: Motor Çalıştırma Sırası Düzeltildi
+try { initAdsGram(); } catch(e) {}
+resetGame(); // 1. Önce Ninjayı ve Platformları Yaratır
+applyCanvasSize(); // 2. Sonra Güvenle Ekranı Boyutlandırıp Çizer
+loadPlayerData(); // 3. Sunucudan verileri çeker
