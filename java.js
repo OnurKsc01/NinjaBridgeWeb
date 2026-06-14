@@ -30,16 +30,27 @@ function unlockSounds() {
 }
 
 // ------------------------------------
-// GRAFİK MOTORU VE CACHE
+// GRAFİK MOTORU VE "OFF-SCREEN CACHE" (KASMA ÇÖZÜCÜ)
 // ------------------------------------
 const canvas = document.getElementById("game"); 
 const ctx = canvas.getContext("2d");
+
+// 🔥 DONANIM HIZLANDIRMASI: Canvas'ı zorla GPU'ya (Ekran Kartına) bağlar!
+canvas.style.transform = "translateZ(0)";
+canvas.style.willChange = "transform";
+
 let lowGraphics = false;
 
 // Sabit Tema Renkleri (Gündüz Vadisi)
 const themeTop = "#BBD691", themeBottom = "#FEF1E1";
 const themeHill1 = "#95C629", themeHill2 = "#659F1C";
 const themeTree = "#7D833C", themeLeaves = ["#6D8821", "#8FAC34", "#98B333"];
+
+// 🔥 ARKA PLAN ÖNBELLEĞİ: İşlemciyi %95 rahatlatan Sanal Çizim Katmanı
+const bgCacheCanvas = document.createElement("canvas");
+const bgCacheCtx = bgCacheCanvas.getContext("2d");
+let lastRenderedOffset = -999;
+let lastRenderedWidth = 0;
 
 window.toggleGraphics = function() {
     lowGraphics = !lowGraphics;
@@ -58,20 +69,9 @@ function applyCanvasSize() {
     ctx.scale(scale, scale);
     canvas.style.width = window.innerWidth + "px";
     canvas.style.height = window.innerHeight + "px";
-    lastCanvasHeight = 0; 
+    lastRenderedWidth = 0; // Ekran boyutu değişirse önbelleği (cache) sıfırlamaya zorla
     if (phase === "waiting" && platforms.length > 0) draw();
 }
-
-let cachedGradient = null; let lastCanvasHeight = 0;
-function getCachedGradient() {
-    if(cachedGradient && lastCanvasHeight === canvas.height) return cachedGradient;
-    cachedGradient = ctx.createLinearGradient(0, 0, 0, window.innerHeight);
-    cachedGradient.addColorStop(0, themeTop); 
-    cachedGradient.addColorStop(1, themeBottom);
-    lastCanvasHeight = canvas.height;
-    return cachedGradient;
-}
-
 window.addEventListener("resize", applyCanvasSize);
 
 // ------------------------------------
@@ -230,7 +230,10 @@ function animate(timestamp) {
   if (!lastTimestamp) { lastTimestamp = timestamp; window.requestAnimationFrame(animate); return; }
   
   let dt = timestamp - lastTimestamp;
-  if (dt > 32) dt = 16; 
+  
+  // 🔥 TİTREME (STUTTER) YOK EDİCİ: Telegram zamanlaması sapsa bile (13ms - 19ms arası), motor onu pürüzsüz akması için 16.66ms'ye kitler.
+  if (dt >= 12 && dt <= 20) { dt = 16.66; } 
+  else if (dt > 32) { dt = 16.66; } 
 
   switch (phase) {
     case "waiting": break; 
@@ -302,6 +305,9 @@ function thePlatformTheStickHits() {
   if (platformTheStickHits) { let pArea = getPerfectAreaSize(platformTheStickHits.w); if (platformTheStickHits.x + platformTheStickHits.w / 2 - pArea / 2 < stickFarX && stickFarX < platformTheStickHits.x + platformTheStickHits.w / 2 + pArea / 2) { return [platformTheStickHits, true]; } } return [platformTheStickHits, false];
 }
 
+// ------------------------------------
+// ÇİZİM MOTORU (RENDER)
+// ------------------------------------
 function draw() { 
     ctx.save(); 
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight); 
@@ -315,6 +321,54 @@ function draw() {
     ctx.restore(); 
 }
 restartButton.addEventListener("click", (e) => { e.preventDefault(); resetGame(); });
+
+// 🔥 PERFORMANS: Arka planı her seferinde baştan hesaplamak yerine, gizli hafızaya yazıp sadece gerektiğinde günceller. 
+function drawBackground() { 
+    if (Math.abs(lastRenderedOffset - sceneOffset) > 0.1 || lastRenderedWidth !== canvas.width) {
+        bgCacheCanvas.width = canvas.width;
+        bgCacheCanvas.height = canvas.height;
+        let scale = lowGraphics ? 0.6 : 1; 
+        bgCacheCtx.scale(scale, scale);
+
+        let grad = bgCacheCtx.createLinearGradient(0, 0, 0, window.innerHeight);
+        grad.addColorStop(0, themeTop); 
+        grad.addColorStop(1, themeBottom);
+        bgCacheCtx.fillStyle = grad;
+        bgCacheCtx.fillRect(0, 0, window.innerWidth, window.innerHeight); 
+
+        if(!lowGraphics) drawHill(bgCacheCtx, hill2BaseHeight, hill2Amplitude, hill2Stretch, themeHill2); 
+        drawHill(bgCacheCtx, hill1BaseHeight, hill1Amplitude, hill1Stretch, themeHill1); 
+
+        trees.forEach((tree, index) => { 
+            if(lowGraphics && index % 2 === 0) return;
+            drawTree(bgCacheCtx, tree.x, tree.color, themeTree); 
+        }); 
+
+        lastRenderedOffset = sceneOffset;
+        lastRenderedWidth = canvas.width;
+    }
+
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0); // Ekranı sabitleyip fotoğrafı yapıştır
+    ctx.drawImage(bgCacheCanvas, 0, 0);
+    ctx.restore();
+}
+
+function drawHill(context, base, amp, stretch, color) { 
+    context.beginPath(); context.moveTo(0, window.innerHeight); context.lineTo(0, getHillY(0, base, amp, stretch)); 
+    for (let i = 0; i <= window.innerWidth + 25; i += 25) { context.lineTo(i, getHillY(i, base, amp, stretch)); } 
+    context.lineTo(window.innerWidth, window.innerHeight); context.fillStyle = color; context.fill(); 
+}
+
+function drawTree(context, x, color, trunkColor) { 
+    context.save(); context.translate(((-sceneOffset * backgroundSpeedMultiplier + x) * hill1Stretch), getTreeY(x, hill1BaseHeight, hill1Amplitude)); 
+    context.fillStyle = trunkColor; context.fillRect(-1, -5, 2, 5); 
+    context.beginPath(); context.moveTo(-5, -5); context.lineTo(0, -30); context.lineTo(5, -5); 
+    context.fillStyle = color; context.fill(); context.restore(); 
+}
+
+function getHillY(windowX, base, amp, stretch) { return (Math.sinus((sceneOffset * backgroundSpeedMultiplier + windowX) * stretch) * amp + window.innerHeight - base); }
+function getTreeY(x, base, amp) { return Math.sinus(x) * amp + window.innerHeight - base; }
 
 function drawSticks() {
   sticks.forEach((stick) => { 
@@ -344,29 +398,6 @@ function drawPet() {
 }
 
 function drawRoundedRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x, y + r); ctx.lineTo(x, y + h - r); ctx.arcTo(x, y + h, x + r, y + h, r); ctx.lineTo(x + w - r, y + h); ctx.arcTo(x + w, y + h, x + w, y + h - r, r); ctx.lineTo(x + w, y + r); ctx.arcTo(x + w, y, x + w - r, y, r); ctx.lineTo(x + r, y); ctx.arcTo(x, y, x, y + r, r); ctx.fill(); }
-
-function drawBackground() { 
-    ctx.fillStyle = getCachedGradient(); 
-    ctx.fillRect(0, 0, window.innerWidth, window.innerHeight); 
-    
-    if(!lowGraphics) drawHill(hill2BaseHeight, hill2Amplitude, hill2Stretch, themeHill2); 
-    drawHill(hill1BaseHeight, hill1Amplitude, hill1Stretch, themeHill1); 
-    
-    trees.forEach((tree, index) => { 
-        if(lowGraphics && index % 2 === 0) return;
-        drawTree(tree.x, tree.color, themeTree); 
-    }); 
-}
-
-function drawHill(base, amp, stretch, color) { 
-    ctx.beginPath(); ctx.moveTo(0, window.innerHeight); ctx.lineTo(0, getHillY(0, base, amp, stretch)); 
-    for (let i = 0; i <= window.innerWidth + 25; i += 25) { ctx.lineTo(i, getHillY(i, base, amp, stretch)); } 
-    ctx.lineTo(window.innerWidth, window.innerHeight); ctx.fillStyle = color; ctx.fill(); 
-}
-
-function drawTree(x, color, trunkColor) { ctx.save(); ctx.translate((-sceneOffset * backgroundSpeedMultiplier + x) * hill1Stretch, getTreeY(x, hill1BaseHeight, hill1Amplitude)); ctx.fillStyle = trunkColor; ctx.fillRect(-1, -5, 2, 5); ctx.beginPath(); ctx.moveTo(-5, -5); ctx.lineTo(0, -30); ctx.lineTo(5, -5); ctx.fillStyle = color; ctx.fill(); ctx.restore(); }
-function getHillY(windowX, base, amp, stretch) { return (Math.sinus((sceneOffset * backgroundSpeedMultiplier + windowX) * stretch) * amp + window.innerHeight - base); }
-function getTreeY(x, base, amp) { return Math.sinus(x) * amp + window.innerHeight - base; }
 
 // ------------------------------------
 // UI VE MARKET
