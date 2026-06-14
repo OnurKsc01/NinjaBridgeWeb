@@ -294,7 +294,7 @@ function drawPlatforms() {
   let bg = bgData[currentBg] || bgData["default"]; let platformColor = bg.pColor; let glowColor = bg.glow;
   platforms.forEach(({ x, w }) => { 
       ctx.save(); ctx.fillStyle = platformColor; 
-      if(bg.isDark) { ctx.shadowBlur = 15; ctx.shadowColor = glowColor; ctx.strokeStyle = glowColor; ctx.lineWidth = 2; } 
+      if(bg.isDark) { ctx.shadowBlur = 5; ctx.shadowColor = glowColor; ctx.strokeStyle = glowColor; ctx.lineWidth = 2; } 
       ctx.fillRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2); 
       if(bg.isDark && glowColor !== "transparent") { ctx.strokeRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2); } 
       ctx.restore(); 
