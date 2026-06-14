@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Ninja Bridge</title>
-  <link rel="stylesheet" href="css.css">
+  <link rel="stylesheet" href="css.css?v=2">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   
   <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
@@ -44,7 +44,21 @@
     
     <div id="introduction">Köprüyü oluşturmak için ekrana basılı tutun.</div>
     <div id="perfect">2X SKOR</div>
-    <button id="restart">TEKRAR DENE</button>
+    
+    <div id="reviveMenu" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); flex-direction:column; gap:12px; z-index:50; width: 220px; text-align:center;">
+        <button id="reviveAdBtn" style="background:#8e44ad; color:white; border:none; padding:15px; border-radius:10px; font-weight:bold; font-size:16px; cursor:pointer; box-shadow:0 4px 6px rgba(0,0,0,0.4); animation: pulse 1.5s infinite;">📺 İzle & Devam Et</button>
+        <button id="skipReviveBtn" style="background:#c0392b; color:white; border:none; padding:10px; border-radius:10px; font-weight:bold; font-size:14px; cursor:pointer; box-shadow:0 4px 6px rgba(0,0,0,0.4);">❌ Hayır, Tekrar Dene</button>
+    </div>
+    
+    <button id="restart" style="z-index:45;">TEKRAR DENE</button>
   </div>
+
+  <style>
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+  </style>
 </body>
 </html>
