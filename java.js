@@ -11,7 +11,6 @@ let tgUserName = user ? user.first_name : "Test Oyuncusu";
 let startParam = tg?.initDataUnsafe?.start_param;
 let tgGroupId = startParam ? Number(startParam) : 0;
 
-// 🔥 FİX: Oynanış esnasında kazanılan Jetonu takip eden değişken eklendi
 let playerCoins = 0; let playerGems = 0; let playerStars = 0; 
 let sessionEarnedGems = 0; let sessionEarnedCoins = 0; 
 
@@ -124,7 +123,11 @@ const petData = {
 
 let phase = "waiting"; let lastTimestamp; let heroX = 0, heroY = 0, sceneOffset = 0; 
 let platforms = [], sticks = [], trees = []; 
-let score = 0, combo = 0; let currentMonkeyLives = 0; let wolfStepCount = 0;
+let score = 0, combo = 0; let currentMonkeyLives = 0; 
+
+// 🔥 FİX: Kurt veya Köpek fark etmeksizin adım sayısını tutan genel sayaç
+let stepCount = 0; 
+
 const canvasWidth = 375, canvasHeight = 375, platformHeight = 100; const heroDistanceFromEdge = 10, paddingX = 100;
 const backgroundSpeedMultiplier = 0.2; const hill1BaseHeight = 100, hill1Amplitude = 10, hill1Stretch = 1; const hill2BaseHeight = 70, hill2Amplitude = 20, hill2Stretch = 0.5;
 const stretchingSpeed = 4, turningSpeed = 4, walkingSpeed = 4, transitioningSpeed = 2, fallingSpeed = 2; const heroWidth = 17, heroHeight = 30; 
@@ -163,40 +166,38 @@ function getPerfectAreaSize(platformWidth) {
 
 function getMonkeyStats() { let lvl = ownedPets["maymun"] || 1; let lives = Math.floor((lvl - 1) / 2) + 1; let bonus = (lvl % 2 === 0) ? lvl * 5 : 0; return { lives: lives, bonusCoins: bonus }; }
 
-// 🔥 FİX: Petler jeton bulduğunda hem ekranda anında artar, hem de sunucuya yollanmak için kasada birikir
-function processPetSteps() {
-    if (currentPet === "kopek") { let lvl = ownedPets["kopek"] || 1; let reqSteps = 10 - lvl; wolfStepCount++; if (wolfStepCount >= reqSteps) { sessionEarnedCoins++; playerCoins++; updateCoinUI(); wolfStepCount = 0; } } 
-    else if (currentPet === "kurt") { let lvl = ownedPets["kurt"] || 1; let reqSteps = 10 - lvl; wolfStepCount++; if (wolfStepCount >= reqSteps) { sessionEarnedCoins++; playerCoins++; updateCoinUI(); wolfStepCount = 0; } }
+// 🔥 FİX: Enflasyondan Arındırılmış Jeton Üretim Motoru
+function processCoinGeneration() {
+    stepCount++; 
+    let reqSteps = 8; // VARSAYILAN: Herkese her 8 başarılı adımda 1 Jeton garanti
+
+    // EĞER KÖPEK VEYA KURT VARSA ADIM SAYISINI AŞAĞI ÇEK (8 - Sv)
+    if (currentPet === "kopek" || currentPet === "kurt") { 
+        let lvl = ownedPets[currentPet] || 1; 
+        reqSteps = Math.max(1, 8 - lvl); // Örnek: Seviye 1 ise 7 adımda bir. Seviye 5 ise 3 adımda bir!
+    } 
+
+    if (stepCount >= reqSteps) { 
+        sessionEarnedCoins++; 
+        playerCoins++; 
+        updateCoinUI(); // Cüzdanı anında güncelle
+        stepCount = 0; // Sonraki jeton için sıfırla
+    }
 }
 
 function showGameOver() {
     restartButton.style.display = "block"; if (duelInterval) clearInterval(duelInterval);
-    
-    // 🔥 FİX: Veri paketi kurşun geçirmez hale getirildi, tarayıcının veriyi kesmesi engellendi.
     fetch('https://ninja-bridge-api.onrender.com/api/score/save', { 
         method: 'POST', 
-        headers: { 
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-        }, 
-        body: JSON.stringify({ 
-            userId: tgUserId, 
-            firstName: tgUserName, 
-            score: score, 
-            groupId: tgGroupId, 
-            earnedCoins: sessionEarnedCoins, 
-            earnedGems: sessionEarnedGems 
-        }) 
-    })
-    .then(res => res.json())
-    .then(data => { console.log("Skor ve jetonlar başarıyla buluta işlendi!"); })
-    .catch(e => { console.error("Kayıt hatası:", e); });
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, 
+        body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: tgGroupId, earnedCoins: sessionEarnedCoins, earnedGems: sessionEarnedGems }) 
+    }).catch(e => {});
 }
 
 function resetGame() {
   phase = "waiting"; lastTimestamp = undefined; sceneOffset = 0; score = 0; combo = 0; 
-  sessionEarnedGems = 0; sessionEarnedCoins = 0; // 🔥 Kasa sıfırlandı
-  adReviveUsedThisRun = false; wolfStepCount = 0; 
+  sessionEarnedGems = 0; sessionEarnedCoins = 0; 
+  adReviveUsedThisRun = false; stepCount = 0; // Sayaç temizlendi
   document.getElementById("reviveMenu").style.display = "none"; restartButton.style.display = "none";
   if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } else { currentMonkeyLives = 0; }
   introductionElement.style.opacity = 1; perfectElement.style.opacity = 0; scoreElement.innerText = score;
@@ -248,25 +249,20 @@ function animate(timestamp) {
       if (sticks.last().rotation > 90) {
         sticks.last().rotation = 90; const [nextPlatform, perfectHit] = thePlatformTheStickHits();
         if (nextPlatform) {
-          processPetSteps();
+          
+          processCoinGeneration(); // 🔥 FİX: Jeton kontrolü burada (Puan sisteminden bağımsız olarak sadece atılan adıma bakar)
+          
           if (perfectHit) {
             combo++; 
-            let pts = 1 + combo; // 🔥 FİX: Skor ve Jeton Puanı Hesaplaması
-            score += pts; 
-            sessionEarnedCoins += pts; // Kasaya jeton ekle
-            playerCoins += pts; // UI üzerinde jetonu anında göster
-            
-            if (combo % 50 === 0) { playerGems += 1; sessionEarnedGems += 1; perfectElement.innerText = `💎 50x COMBO!\n+1 ELMAS KAZANDIN!`; perfectElement.style.color = "#00ffff"; } 
-            else { perfectElement.innerText = `🔥 KUSURSUZ! +${pts}\n${combo}x COMBO`; perfectElement.style.color = "#FFD700"; }
+            score += 1 + combo; // Yalnızca skor artar, jeton değil!
+            if (combo % 50 === 0) { playerGems += 1; sessionEarnedGems += 1; updateCoinUI(); perfectElement.innerText = `💎 50x COMBO!\n+1 ELMAS KAZANDIN!`; perfectElement.style.color = "#00ffff"; } 
+            else { perfectElement.innerText = `🔥 KUSURSUZ! +${1 + combo}\n${combo}x COMBO`; perfectElement.style.color = "#FFD700"; }
             comboSound.currentTime = 0; comboSound.play().catch(e => {});
           } else { 
             combo = 0; 
             score += 1; 
-            sessionEarnedCoins += 1; // Kasaya jeton ekle
-            playerCoins += 1; // UI üzerinde jetonu anında göster
             perfectElement.innerText = ""; 
           }
-          updateCoinUI(); // Sağ üstteki cüzdanı canlı güncelle!
           
           scoreElement.innerText = score; if (perfectHit) { perfectElement.style.opacity = 1; setTimeout(() => (perfectElement.style.opacity = 0), 1200); }
           generatePlatform(); generateTree(); generateTree();
@@ -299,7 +295,7 @@ function animate(timestamp) {
             currentMonkeyLives--; let mStats = getMonkeyStats(); 
             if (mStats.bonusCoins > 0) { 
                 sessionEarnedCoins += mStats.bonusCoins; 
-                playerCoins += mStats.bonusCoins; // Canlı güncelleme
+                playerCoins += mStats.bonusCoins; 
                 updateCoinUI(); 
             }
             phase = "rescued"; heroY = 0; heroX = sticks.last().x - heroDistanceFromEdge; sticks.last().length = 0; sticks.last().rotation = 0; perfectElement.innerText = mStats.bonusCoins > 0 ? `🐒 KURTARILDI!\n+${mStats.bonusCoins} Jeton Bonus!` : `🐒 MAYMUN KURTARDI!`; perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1; draw(); setTimeout(() => { perfectElement.style.opacity = 0; phase = "waiting"; }, 1500); return;
