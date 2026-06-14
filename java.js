@@ -31,7 +31,7 @@ function unlockSounds() {
 // ------------------------------------
 let adController = null;
 let adRetryCount = 0;
-let adReviveUsedThisRun = false; // 🔥 HİYERARŞİ: Bu turda reklamla canlanıldı mı?
+let adReviveUsedThisRun = false; 
 
 function initAdsGram() {
     try {
@@ -67,7 +67,7 @@ function checkAdStatus() {
         }).catch(() => { watchAdBtn.style.display = "none"; });
 }
 
-// Standart (Sağ Üstteki) Ödüllü Reklam
+// Standart Ödüllü Reklam
 const watchAdBtnElement = document.getElementById("watchAdBtn");
 if (watchAdBtnElement) {
     watchAdBtnElement.addEventListener("click", () => {
@@ -90,7 +90,7 @@ if (watchAdBtnElement) {
     });
 }
 
-// 🔥 YENİ: Düşünce Çıkan "Reklamla Canlanma" Butonları
+// Reklamla Canlanma Butonları
 document.getElementById("reviveAdBtn").addEventListener("click", () => {
     if (!adController) {
         if(tg && tg.showAlert) tg.showAlert("Şu an reklam bulunamadı. Lütfen tekrar deneyin.");
@@ -102,7 +102,6 @@ document.getElementById("reviveAdBtn").addEventListener("click", () => {
             adReviveUsedThisRun = true;
             document.getElementById("reviveMenu").style.display = "none";
             
-            // Karakteri Son Platforma Geri Koy
             phase = "rescued"; heroY = 0; heroX = sticks.last().x - heroDistanceFromEdge; 
             sticks.last().length = 0; sticks.last().rotation = 0;
             
@@ -116,10 +115,9 @@ document.getElementById("reviveAdBtn").addEventListener("click", () => {
     });
 });
 
-// "Hayır, Tekrar Dene" Butonu
 document.getElementById("skipReviveBtn").addEventListener("click", () => {
     document.getElementById("reviveMenu").style.display = "none";
-    showGameOver(); // Kesin ölümü tetikle
+    showGameOver(); 
 });
 
 // ------------------------------------
@@ -177,10 +175,16 @@ function loadPlayerData() {
 }
 
 function updateCoinUI() { coinCountElement.innerHTML = `🪙 ${playerCoins} | 💎 ${playerGems}`; shopCoinCountElement.innerHTML = `🪙 ${playerCoins} | 💎 ${playerGems}`; }
-function getPerfectAreaSize() { if (currentPet === "kedi") { let lvl = ownedPets["kedi"] || 1; return 20 + (lvl * 5); } return 10; }
+
+// 🔥 YENİ: Kırmızı alan asla siyah alandan büyük olamaz! Estetik için siyah alanın %80'ine limitlendi.
+function getPerfectAreaSize(platformWidth) { 
+    let baseArea = 10; 
+    if (currentPet === "kedi") { let lvl = ownedPets["kedi"] || 1; baseArea = 20 + (lvl * 5); } 
+    return Math.min(baseArea, platformWidth * 0.8); 
+}
+
 function getMonkeyStats() { let lvl = ownedPets["maymun"] || 1; let lives = Math.floor((lvl - 1) / 2) + 1; let bonus = (lvl % 2 === 0) ? lvl * 5 : 0; return { lives: lives, bonusCoins: bonus }; }
 
-// API'ye skor kaydetme ve bitiş ekranı
 function showGameOver() {
     restartButton.style.display = "block";
     if (duelInterval) clearInterval(duelInterval);
@@ -193,7 +197,7 @@ function showGameOver() {
 
 function resetGame() {
   phase = "waiting"; lastTimestamp = undefined; sceneOffset = 0; score = 0; combo = 0; sessionEarnedGems = 0;
-  adReviveUsedThisRun = false; // 🔥 HİYERARŞİ: Yeni turda canlanma hakkını sıfırla
+  adReviveUsedThisRun = false; 
   
   document.getElementById("reviveMenu").style.display = "none";
   restartButton.style.display = "none";
@@ -209,11 +213,24 @@ function resetGame() {
 }
 
 function generateTree() { let bg = bgData[currentBg] || bgData["default"]; const minimumGap = 30, maximumGap = 150; let furthestX = trees.length > 0 ? trees.last().x : 0; const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap)); trees.push({ x, color: bg.leaves[Math.floor(Math.random() * 3)] }); }
+
+// 🔥 YENİ: 5 Kademeli Gelişmiş Zorluk Sistemi
 function generatePlatform() {
   let minimumGap = 40, maximumGap = 90, minimumWidth = 45, maximumWidth = 85;
-  if (score >= 3000) { minimumGap = 120; maximumGap = 170; minimumWidth = 20; maximumWidth = 30; } else if (score >= 1500) { minimumGap = 85; maximumGap = 135; minimumWidth = 28; maximumWidth = 45; } else if (score >= 500) { minimumGap = 65; maximumGap = 110; minimumWidth = 35; maximumWidth = 60; }
-  let maxScreenGap = window.innerWidth - 130; if (maximumGap > maxScreenGap) { maximumGap = Math.max(minimumGap + 10, maxScreenGap); }
-  const lastPlatform = platforms.last(); let furthestX = lastPlatform.x + lastPlatform.w; const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap)); const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth)); platforms.push({ x, w });
+  
+  if (score >= 5000) { minimumGap = 150; maximumGap = 200; minimumWidth = 10; maximumWidth = 20; } 
+  else if (score >= 4000) { minimumGap = 130; maximumGap = 180; minimumWidth = 15; maximumWidth = 25; } 
+  else if (score >= 3000) { minimumGap = 110; maximumGap = 160; minimumWidth = 20; maximumWidth = 30; } 
+  else if (score >= 1500) { minimumGap = 85; maximumGap = 135; minimumWidth = 28; maximumWidth = 45; } 
+  else if (score >= 500) { minimumGap = 65; maximumGap = 110; minimumWidth = 35; maximumWidth = 60; }
+  
+  let maxScreenGap = window.innerWidth - 130; 
+  if (maximumGap > maxScreenGap) { maximumGap = Math.max(minimumGap + 10, maxScreenGap); }
+  
+  const lastPlatform = platforms.last(); let furthestX = lastPlatform.x + lastPlatform.w; 
+  const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap)); 
+  const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth)); 
+  platforms.push({ x, w });
 }
 
 function isMenuOpen() { return document.getElementById("shopModal").style.display === "block" || document.getElementById("leaderboardModal").style.display === "block" || document.getElementById("reviveMenu").style.display === "flex"; }
@@ -231,7 +248,7 @@ function animate(timestamp) {
   if (!lastTimestamp) { lastTimestamp = timestamp; window.requestAnimationFrame(animate); return; }
   switch (phase) {
     case "waiting": return; 
-    case "dead_options": return; // HİYERARŞİ: Seçim ekranındayken oyunu dondur
+    case "dead_options": return; 
     case "stretching": sticks.last().length += (timestamp - lastTimestamp) / Math.max(stretchingSpeed - (score * 0.015), 2.8); break;
     case "turning":
       sticks.last().rotation += (timestamp - lastTimestamp) / turningSpeed;
@@ -263,7 +280,6 @@ function animate(timestamp) {
       heroY += (timestamp - lastTimestamp) / fallingSpeed;
       if (heroY > platformHeight + 100 + (window.innerHeight - canvasHeight) / 2) {
         
-        // 🔥 HİYERARŞİ ADIM 1: MAYMUN KONTROLÜ
         if (currentMonkeyLives > 0) {
             currentMonkeyLives--; let mStats = getMonkeyStats(); if (mStats.bonusCoins > 0) { playerCoins += mStats.bonusCoins; updateCoinUI(); }
             phase = "rescued"; heroY = 0; heroX = sticks.last().x - heroDistanceFromEdge; sticks.last().length = 0; sticks.last().rotation = 0;
@@ -271,14 +287,12 @@ function animate(timestamp) {
             draw(); setTimeout(() => { perfectElement.style.opacity = 0; phase = "waiting"; }, 1500); return;
         }
 
-        // 🔥 HİYERARŞİ ADIM 2: REKLAMLA CANLANMA KONTROLÜ
         if (!adReviveUsedThisRun) {
-            phase = "dead_options"; // Oyunu dondur ve menüyü aç
+            phase = "dead_options"; 
             document.getElementById("reviveMenu").style.display = "flex";
             return;
         }
 
-        // 🔥 HİYERARŞİ ADIM 3: KESİN ÖLÜM (Maymun Yok, Reklam İzlenmiş)
         showGameOver();
         return;
       }
@@ -289,8 +303,17 @@ function animate(timestamp) {
 
 function thePlatformTheStickHits() {
   if (sticks.last().rotation != 90) throw Error(`Stick is ${sticks.last().rotation}°`);
-  const stickFarX = sticks.last().x + sticks.last().length; const platformTheStickHits = platforms.find((platform) => platform.x < stickFarX && stickFarX < platform.x + platform.w);
-  let pArea = getPerfectAreaSize(); if (platformTheStickHits && platformTheStickHits.x + platformTheStickHits.w / 2 - pArea / 2 < stickFarX && stickFarX < platformTheStickHits.x + platformTheStickHits.w / 2 + pArea / 2) return [platformTheStickHits, true]; return [platformTheStickHits, false];
+  const stickFarX = sticks.last().x + sticks.last().length; 
+  const platformTheStickHits = platforms.find((platform) => platform.x < stickFarX && stickFarX < platform.x + platform.w);
+  
+  if (platformTheStickHits) {
+      // 🔥 Genişlik parametresi eklendi
+      let pArea = getPerfectAreaSize(platformTheStickHits.w); 
+      if (platformTheStickHits.x + platformTheStickHits.w / 2 - pArea / 2 < stickFarX && stickFarX < platformTheStickHits.x + platformTheStickHits.w / 2 + pArea / 2) {
+          return [platformTheStickHits, true]; 
+      }
+  }
+  return [platformTheStickHits, false];
 }
 
 function draw() { ctx.save(); ctx.clearRect(0, 0, window.innerWidth, window.innerHeight); drawBackground(); ctx.translate((window.innerWidth - canvasWidth) / 2 - sceneOffset, (window.innerHeight - canvasHeight) / 2); drawPlatforms(); drawPet(); drawHero(); drawSticks(); ctx.restore(); }
@@ -302,7 +325,19 @@ function drawSticks() {
 }
 function drawPlatforms() {
   let bg = bgData[currentBg] || bgData["default"]; let platformColor = bg.isDark ? "#1a1a1a" : "black"; let glowColor = bg.isDark ? "#00ffff" : "transparent";
-  platforms.forEach(({ x, w }) => { ctx.save(); ctx.fillStyle = platformColor; if(bg.isDark) { ctx.shadowBlur = 15; ctx.shadowColor = glowColor; ctx.strokeStyle = glowColor; ctx.lineWidth = 2; } ctx.fillRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2); if(bg.isDark) { ctx.strokeRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2); } ctx.restore(); if (sticks.last().x < x) { ctx.fillStyle = "red"; let pArea = getPerfectAreaSize(); ctx.fillRect(x + w / 2 - pArea / 2, canvasHeight - platformHeight, pArea, pArea); } });
+  platforms.forEach(({ x, w }) => { 
+      ctx.save(); ctx.fillStyle = platformColor; 
+      if(bg.isDark) { ctx.shadowBlur = 15; ctx.shadowColor = glowColor; ctx.strokeStyle = glowColor; ctx.lineWidth = 2; } 
+      ctx.fillRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2); 
+      if(bg.isDark) { ctx.strokeRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2); } 
+      ctx.restore(); 
+      if (sticks.last().x < x) { 
+          ctx.fillStyle = "red"; 
+          // 🔥 Genişlik parametresi eklendi
+          let pArea = getPerfectAreaSize(w); 
+          ctx.fillRect(x + w / 2 - pArea / 2, canvasHeight - platformHeight, pArea, pArea); 
+      } 
+  });
 }
 function drawHero() {
   let skin = skinData[currentSkin] || skinData["default"]; ctx.save(); ctx.globalAlpha = skin.alpha; ctx.fillStyle = skin.body; ctx.translate(heroX - heroWidth / 2, heroY + canvasHeight - platformHeight - heroHeight / 2); drawRoundedRect(-heroWidth / 2, -heroHeight / 2, heroWidth, heroHeight - 4, 5); ctx.fillStyle = skin.body; if(skin.body === "#ffffff") ctx.fillStyle = "#cccccc"; const legDistance = 5; ctx.beginPath(); ctx.arc(legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.beginPath(); ctx.arc(-legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.beginPath(); ctx.fillStyle = "white"; if(skin.body === "#ffffff") ctx.fillStyle = "black"; ctx.arc(5, -7, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.fillStyle = skin.bandana; ctx.fillRect(-heroWidth / 2 - 1, -12, heroWidth + 2, 4.5); ctx.beginPath(); ctx.moveTo(-9, -14.5); ctx.lineTo(-17, -18.5); ctx.lineTo(-14, -8.5); ctx.fill(); ctx.beginPath(); ctx.moveTo(-10, -10.5); ctx.lineTo(-15, -3.5); ctx.lineTo(-5, -7); ctx.fill(); ctx.restore();
