@@ -307,8 +307,8 @@ function draw() {
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight); 
     drawBackground(); 
     
-    let transX = Math.floor((window.innerWidth - canvasWidth) / 2 - sceneOffset);
-    let transY = Math.floor((window.innerHeight - canvasHeight) / 2);
+    let transX = (window.innerWidth - canvasWidth) / 2 - sceneOffset;
+    let transY = (window.innerHeight - canvasHeight) / 2;
     ctx.translate(transX, transY); 
     
     drawPlatforms(); drawPet(); drawHero(); drawSticks(); 
@@ -318,30 +318,29 @@ restartButton.addEventListener("click", (e) => { e.preventDefault(); resetGame()
 
 function drawSticks() {
   sticks.forEach((stick) => { 
-      ctx.save(); ctx.translate(Math.floor(stick.x), canvasHeight - platformHeight); ctx.rotate((Math.PI / 180) * stick.rotation); 
+      ctx.save(); ctx.translate(stick.x, canvasHeight - platformHeight); ctx.rotate((Math.PI / 180) * stick.rotation); 
       ctx.beginPath(); ctx.lineWidth = 3; ctx.strokeStyle = "black"; 
-      ctx.moveTo(0, 0); ctx.lineTo(0, -Math.floor(stick.length)); ctx.stroke(); ctx.restore(); 
+      ctx.moveTo(0, 0); ctx.lineTo(0, -stick.length); ctx.stroke(); ctx.restore(); 
   });
 }
 function drawPlatforms() {
   platforms.forEach(({ x, w }) => { 
-      let fx = Math.floor(x); let fw = Math.floor(w);
       ctx.save(); ctx.fillStyle = "black"; 
-      ctx.fillRect(fx, canvasHeight - platformHeight, fw, platformHeight + (window.innerHeight - canvasHeight) / 2); 
+      ctx.fillRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2); 
       ctx.restore(); 
       if (sticks.last() && sticks.last().x < x) { 
           ctx.fillStyle = "red"; 
-          let pArea = Math.floor(getPerfectAreaSize(w)); 
-          ctx.fillRect(Math.floor(x + w / 2 - pArea / 2), canvasHeight - platformHeight, pArea, pArea); 
+          let pArea = getPerfectAreaSize(w); 
+          ctx.fillRect(x + w / 2 - pArea / 2, canvasHeight - platformHeight, pArea, pArea); 
       } 
   });
 }
 
 function drawHero() {
-  let skin = skinData[currentSkin] || skinData["default"]; ctx.save(); ctx.globalAlpha = skin.alpha; ctx.fillStyle = skin.body; ctx.translate(Math.floor(heroX - heroWidth / 2), Math.floor(heroY + canvasHeight - platformHeight - heroHeight / 2)); drawRoundedRect(Math.floor(-heroWidth / 2), Math.floor(-heroHeight / 2), heroWidth, heroHeight - 4, 5); ctx.fillStyle = skin.body; if(skin.body === "#ffffff") ctx.fillStyle = "#cccccc"; const legDistance = 5; ctx.beginPath(); ctx.arc(legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.beginPath(); ctx.arc(-legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.beginPath(); ctx.fillStyle = "white"; if(skin.body === "#ffffff") ctx.fillStyle = "black"; ctx.arc(5, -7, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.fillStyle = skin.bandana; ctx.fillRect(Math.floor(-heroWidth / 2 - 1), -12, heroWidth + 2, 4.5); ctx.beginPath(); ctx.moveTo(-9, -14.5); ctx.lineTo(-17, -18.5); ctx.lineTo(-14, -8.5); ctx.fill(); ctx.beginPath(); ctx.moveTo(-10, -10.5); ctx.lineTo(-15, -3.5); ctx.lineTo(-5, -7); ctx.fill(); ctx.restore();
+  let skin = skinData[currentSkin] || skinData["default"]; ctx.save(); ctx.globalAlpha = skin.alpha; ctx.fillStyle = skin.body; ctx.translate(heroX - heroWidth / 2, heroY + canvasHeight - platformHeight - heroHeight / 2); drawRoundedRect(-heroWidth / 2, -heroHeight / 2, heroWidth, heroHeight - 4, 5); ctx.fillStyle = skin.body; if(skin.body === "#ffffff") ctx.fillStyle = "#cccccc"; const legDistance = 5; ctx.beginPath(); ctx.arc(legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.beginPath(); ctx.arc(-legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.beginPath(); ctx.fillStyle = "white"; if(skin.body === "#ffffff") ctx.fillStyle = "black"; ctx.arc(5, -7, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.fillStyle = skin.bandana; ctx.fillRect(-heroWidth / 2 - 1, -12, heroWidth + 2, 4.5); ctx.beginPath(); ctx.moveTo(-9, -14.5); ctx.lineTo(-17, -18.5); ctx.lineTo(-14, -8.5); ctx.fill(); ctx.beginPath(); ctx.moveTo(-10, -10.5); ctx.lineTo(-15, -3.5); ctx.lineTo(-5, -7); ctx.fill(); ctx.restore();
 }
 function drawPet() {
-  if (currentPet === "default") return; let pet = petData[currentPet]; ctx.save(); let bounce = (phase === "walking" || phase === "transitioning") ? Math.floor(Math.abs(Math.sin(Date.now() / 100)) * 6) : 0; ctx.translate(Math.floor(heroX - 28), Math.floor(heroY + canvasHeight - platformHeight - 5 - bounce)); ctx.font = "20px Arial"; ctx.fillText(pet.emoji, -10, 5); ctx.restore();
+  if (currentPet === "default") return; let pet = petData[currentPet]; ctx.save(); let bounce = (phase === "walking" || phase === "transitioning") ? Math.abs(Math.sin(Date.now() / 100)) * 6 : 0; ctx.translate(heroX - 28, heroY + canvasHeight - platformHeight - 5 - bounce); ctx.font = "20px Arial"; ctx.fillText(pet.emoji, -10, 5); ctx.restore();
 }
 
 function drawRoundedRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x, y + r); ctx.lineTo(x, y + h - r); ctx.arcTo(x, y + h, x + r, y + h, r); ctx.lineTo(x + w - r, y + h); ctx.arcTo(x + w, y + h, x + w, y + h - r, r); ctx.lineTo(x + w, y + r); ctx.arcTo(x + w, y, x + w - r, y, r); ctx.lineTo(x + r, y); ctx.arcTo(x, y, x, y + r, r); ctx.fill(); }
@@ -360,12 +359,12 @@ function drawBackground() {
 }
 
 function drawHill(base, amp, stretch, color) { 
-    ctx.beginPath(); ctx.moveTo(0, window.innerHeight); ctx.lineTo(0, Math.floor(getHillY(0, base, amp, stretch))); 
-    for (let i = 0; i <= window.innerWidth + 25; i += 25) { ctx.lineTo(i, Math.floor(getHillY(i, base, amp, stretch))); } 
+    ctx.beginPath(); ctx.moveTo(0, window.innerHeight); ctx.lineTo(0, getHillY(0, base, amp, stretch)); 
+    for (let i = 0; i <= window.innerWidth + 25; i += 25) { ctx.lineTo(i, getHillY(i, base, amp, stretch)); } 
     ctx.lineTo(window.innerWidth, window.innerHeight); ctx.fillStyle = color; ctx.fill(); 
 }
 
-function drawTree(x, color, trunkColor) { ctx.save(); ctx.translate(Math.floor((-sceneOffset * backgroundSpeedMultiplier + x) * hill1Stretch), Math.floor(getTreeY(x, hill1BaseHeight, hill1Amplitude))); ctx.fillStyle = trunkColor; ctx.fillRect(-1, -5, 2, 5); ctx.beginPath(); ctx.moveTo(-5, -5); ctx.lineTo(0, -30); ctx.lineTo(5, -5); ctx.fillStyle = color; ctx.fill(); ctx.restore(); }
+function drawTree(x, color, trunkColor) { ctx.save(); ctx.translate((-sceneOffset * backgroundSpeedMultiplier + x) * hill1Stretch, getTreeY(x, hill1BaseHeight, hill1Amplitude)); ctx.fillStyle = trunkColor; ctx.fillRect(-1, -5, 2, 5); ctx.beginPath(); ctx.moveTo(-5, -5); ctx.lineTo(0, -30); ctx.lineTo(5, -5); ctx.fillStyle = color; ctx.fill(); ctx.restore(); }
 function getHillY(windowX, base, amp, stretch) { return (Math.sinus((sceneOffset * backgroundSpeedMultiplier + windowX) * stretch) * amp + window.innerHeight - base); }
 function getTreeY(x, base, amp) { return Math.sinus(x) * amp + window.innerHeight - base; }
 
