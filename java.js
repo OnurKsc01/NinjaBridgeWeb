@@ -404,4 +404,70 @@ function renderShop() {
             let eqBtn = (currentPet === key) ? `<span class="equipped-txt" style="font-size:13px;">✅</span>` : `<button class="equip-btn" style="padding: 5px 10px; font-size:12px; margin:0;" onclick="equipPet('${key}')">Kuşan</button>`; 
             let upgBtn = ""; 
             if (level < 5 && key === "kurt") { let costVal = level * 2; upgBtn = `<button class="buy-btn" style="background:#e67e22; margin-top:4px; padding: 4px 8px; font-size:11px;" onclick="upgradePet('${key}', ${level+1}, 'gems', ${costVal})">⬆️ 💎 ${costVal}</button>`; }
-            else if (level < 4 && key !== "kurt") { let costVal = (level === 1) ? 1 : (level === 2) ? 3 : 5; upgBtn = `<button class="buy-btn" style="background:#e67e22; margin-top:4px; padding: 4px 8px; font-size
+            else if (level < 4 && key !== "kurt") { let costVal = (level === 1) ? 1 : (level === 2) ? 3 : 5; upgBtn = `<button class="buy-btn" style="background:#e67e22; margin-top:4px; padding: 4px 8px; font-size:11px;" onclick="upgradePet('${key}', ${level+1}, 'gems', ${costVal})">⬆️ 💎 ${costVal}</button>`; } 
+            else { upgBtn = `<span style="font-size:11px; color:red; margin-top:4px; font-weight:bold;">MAX SV.</span>`; } 
+            html += `<li style="padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center;"><span style="line-height:1.2;">${pet.emoji} ${pet.name} (Sv.${level})<br><small style="color:gray; font-size:11px;">${pet.desc}</small></span> <div style="display:flex; flex-direction:column; align-items:flex-end;">${eqBtn}${upgBtn}</div></li>`; 
+        } 
+    }); list.innerHTML = html;
+}
+
+function renderWorlds() {
+    const list = document.getElementById("worldsList"); let html = "";
+    worldOrder.forEach((key, index) => {
+        const bg = bgData[key]; let isUnlocked = unlockedWorlds.includes(key);
+        let prevUnlocked = (index === 0) || unlockedWorlds.includes(worldOrder[index-1]);
+        
+        let actionHTML = "";
+        if (currentBg === key) { actionHTML = `<span class="equipped-txt" style="font-size:13px;">✅ Aktif</span>`; }
+        else if (isUnlocked) { actionHTML = `<button class="equip-btn" style="padding: 5px 10px; font-size:12px; margin:0;" onclick="equipBg('${key}')">Seyahat Et</button>`; }
+        else if (prevUnlocked) { actionHTML = `<button class="buy-btn" style="background:#f39c12; padding: 5px 10px; font-size:12px; margin:0;" onclick="promptPrestige('${key}', '${bg.medal}')">Geçiş Yap ⭐ ${bg.priceStars}</button>`; }
+        else { actionHTML = `<span style="color:gray; font-size:11px;">🔒 Kilitli</span>`; }
+
+        html += `<li style="padding: 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; background:${isUnlocked ? '#fff' : '#f4f4f4'}; border-left: 4px solid ${bg.top};">
+            <span style="line-height:1.3;"><b>${bg.name}</b><br><small style="color:gray;">Mühür: ${bg.enemy} | Madalya: ${bg.medal}</small></span>
+            ${actionHTML}
+        </li>`;
+    });
+    list.innerHTML = html;
+}
+
+let isConverting = false;
+window.convertGems = function() { if(playerCoins < 1000) { if(tg && tg.showAlert) tg.showAlert("1000 Jetonun yok!"); return; } if (isConverting) return; isConverting = true; fetch('https://ninja-bridge-api.onrender.com/api/score/convert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId }) }).then(res => res.json()).then(data => { isConverting = false; if(data.success) { playerCoins -= 1000; playerGems += 1; updateCoinUI(); renderShop(); } }).catch(() => { isConverting = false; }); }
+window.convertStars = function() { if(playerGems < 30) { if(tg && tg.showAlert) tg.showAlert("30 Elmasın yok!"); return; } if (isConverting) return; isConverting = true; fetch('https://ninja-bridge-api.onrender.com/api/score/convertstar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId }) }).then(res => res.json()).then(data => { isConverting = false; if(data.success) { playerGems -= 30; playerStars += 1; updateCoinUI(); renderShop(); renderWorlds(); } }).catch(() => { isConverting = false; }); }
+
+let pendingWorld = null; let pendingMedal = null;
+window.promptPrestige = function(worldKey, medal) {
+    if (playerStars < bgData[worldKey].priceStars) { if(tg && tg.showAlert) tg.showAlert(`Yetersiz Yıldız! ${bgData[worldKey].priceStars} Yıldız gerekli.`); return; }
+    pendingWorld = worldKey; pendingMedal = medal;
+    document.getElementById("prestigeConfirmModal").style.display = "flex";
+}
+document.getElementById("cancelPrestigeBtn").addEventListener("click", () => { document.getElementById("prestigeConfirmModal").style.display = "none"; });
+document.getElementById("confirmPrestigeBtn").addEventListener("click", () => {
+    let btn = document.getElementById("confirmPrestigeBtn"); btn.innerText = "Geçiş Yapılıyor..."; btn.style.pointerEvents = "none";
+    fetch('https://ninja-bridge-api.onrender.com/api/score/prestige', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, worldKey: pendingWorld, medalName: pendingMedal }) })
+    .then(res => res.json()).then(data => {
+        if(data.success) {
+            playerCoins = 0; playerGems = 0; playerStars -= bgData[pendingWorld].priceStars;
+            unlockedWorlds.push(pendingWorld); medals.push(pendingMedal); currentBg = pendingWorld; score = 0;
+            document.getElementById("prestigeConfirmModal").style.display = "none";
+            updateCoinUI(); renderWorlds(); resetGame();
+            if(tg && tg.showAlert) tg.showAlert(`🌌 ${bgData[pendingWorld].name} dünyasına geçiş başarılı! Her şey sıfırlandı ama ${pendingMedal} madalyasını kazandın!`);
+        }
+        btn.innerText = "Evet, Sıfırla ve Geç!"; btn.style.pointerEvents = "auto";
+    }).catch(()=>{ btn.innerText = "Evet, Sıfırla ve Geç!"; btn.style.pointerEvents = "auto"; });
+});
+
+window.upgradePet = function(petKey, nextLevel, costType, costVal) { if (costType === "gems" && playerGems < costVal) { tg.showAlert("Yetersiz Elmas!"); return; } tg.showConfirm(`${petData[petKey].name} yoldaşını Seviye ${nextLevel} yapacaksın. Onaylıyor musun?`, function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/upgradepet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, petName: petKey, coinCost: 0, gemCost: costVal, nextLevel: nextLevel }) }).then(res => res.json()).then(data => { if(data.success) { playerGems -= costVal; ownedPets[petKey] = nextLevel; updateCoinUI(); renderShop(); } }); } }); }
+window.buySkin = function(skinKey, price) { if(playerCoins < price) { tg.showAlert("Yetersiz Jeton!"); return; } tg.showConfirm(`${skinData[skinKey].name} kostümünü alacaksın. Onaylıyor musun?`, function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/buyskin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey, price: price }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= price; ownedSkins.push(skinKey); updateCoinUI(); renderShop(); } }); } }); }
+window.equipSkin = function(skinKey) { fetch('https://ninja-bridge-api.onrender.com/api/score/equipskin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey }) }).then(res => res.json()).then(data => { if(data.success) { currentSkin = skinKey; renderShop(); draw(); } }); }
+window.equipBg = function(bgKey) { fetch('https://ninja-bridge-api.onrender.com/api/score/equipbg', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: bgKey }) }).then(res => res.json()).then(data => { if(data.success) { currentBg = bgKey; renderWorlds(); draw(); } }); }
+window.buyPet = function(petKey, price) { if(playerCoins < price) { tg.showAlert("Yetersiz Jeton!"); return; } tg.showConfirm(`${petData[petKey].name} yoldaşını sahipleneceksin. Onaylıyor musun?`, function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/buypet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey, price: price }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= price; ownedPets[petKey] = 1; updateCoinUI(); renderShop(); } }); } }); }
+window.equipPet = function(petKey) { fetch('https://ninja-bridge-api.onrender.com/api/score/equippet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey }) }).then(res => res.json()).then(data => { if(data.success) { currentPet = petKey; renderShop(); draw(); } }); }
+
+document.getElementById("leaderboardBtn").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("leaderboardModal").style.display = "block"; const list = document.getElementById("scoreList"); list.innerHTML = "<li style='text-align:center;'>Yükleniyor... ⏳</li>"; fetch(`https://ninja-bridge-api.onrender.com/api/score/global?t=${Date.now()}`).then(res => res.json()).then(data => { list.innerHTML = ""; if(data.length === 0) { list.innerHTML = "<li>Henüz kimse oynamadı!</li>"; return; } data.forEach((item, i) => { list.innerHTML += `<li><span>${i + 1}. ${item.name}</span> <span>${item.score} Puan</span></li>`; }); }).catch(() => list.innerHTML = "<li style='color:red;'>Hata oluştu!</li>"); }); 
+document.getElementById("closeLeaderboard").addEventListener("click", (e) => { e.stopPropagation(); document.getElementById("leaderboardModal").style.display = "none"; });
+
+try { initAdsGram(); } catch(e) {}
+resetGame(); 
+applyCanvasSize(); 
+loadPlayerData();
