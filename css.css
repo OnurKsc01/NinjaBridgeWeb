@@ -1,3 +1,18 @@
+/* TIKLAMA PARLAMASINI VE SEÇİMİ ENGELLEYEN KODLAR */
+* {
+    -webkit-tap-highlight-color: transparent !important; /* O sinir bozucu mavi parlamayı yok eder */
+    -webkit-touch-callout: none !important; /* Basılı tutunca çıkan menüyü engeller */
+    -webkit-user-select: none !important; /* Metinlerin veya butonların seçilmesini engeller */
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    user-select: none !important;
+    outline: none !important;
+}
+
+canvas {
+    touch-action: none !important; /* Ekranı kaydırmayı ve çift tıklamayla yakınlaştırmayı engeller */
+}
+
 html, body {
   height: 100%;
   margin: 0;
