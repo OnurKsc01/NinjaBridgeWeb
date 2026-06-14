@@ -103,18 +103,27 @@ const restartButton = document.getElementById("restart"); const scoreElement = d
 const coinCountElement = document.getElementById("coinCount"); const shopCoinCountElement = document.getElementById("shopCoinCount");
 const worldsStarCount = document.getElementById("worldsStarCount");
 
+// 🔥 GRAFİK AYARI: Başlangıçta yüksek grafikle başlar
+let lowGraphicsMode = false;
+let graphicsBtn = document.getElementById("graphicsBtn");
+if(graphicsBtn) {
+    graphicsBtn.addEventListener("click", (e) => { 
+        lowGraphicsMode = !lowGraphicsMode; 
+        e.target.innerText = lowGraphicsMode ? "🔋 Grafik: DÜŞÜK" : "🌟 Grafik: YÜKSEK"; 
+        e.target.style.background = lowGraphicsMode ? "#7f8c8d" : "#9b59b6"; 
+    });
+}
+
 try { initAdsGram(); } catch(e) {}
 resetGame(); loadPlayerData();
 
-// EKRANDAN ÇIKAN OBJELERİ SİLEREK TELEFONU RAHATLATAN KOD
+// 🔥 AGRESIF ÇÖPÇÜ SİSTEMİ (Telefonları Yanmaktan Kurtarır)
 function cleanOffScreen() {
-    let safeEdge = sceneOffset - 500; // Ekranın çok gerisinde kalan nokta
-    
-    // Geçmişte kalanları dizilerden (array) atıyoruz
-    if (platforms.length > 5 && platforms[0].x + platforms[0].w < safeEdge) platforms.shift();
-    if (sticks.length > 5 && sticks[0].x < safeEdge) sticks.shift();
-    if (trees.length > 10 && trees[0].x < safeEdge) trees.shift();
-    if (enemies.length > 5 && enemies[0].x < safeEdge) enemies.shift();
+    let safeEdge = sceneOffset - 100; // Ekranın sol kenarı (eski hali -500 idi, şimdi anında siliyoruz)
+    while (platforms.length > 5 && platforms[0].x + platforms[0].w < safeEdge) platforms.shift();
+    while (sticks.length > 5 && sticks[0].x < safeEdge) sticks.shift();
+    while (trees.length > 10 && trees[0].x < safeEdge) trees.shift();
+    while (enemies.length > 3 && enemies[0].x < safeEdge) enemies.shift();
 }
 
 function loadPlayerData() {
@@ -274,7 +283,11 @@ function animate(timestamp) {
       }
       break;
   }
-  draw(); window.requestAnimationFrame(animate); lastTimestamp = timestamp;
+  
+  cleanOffScreen(); // 🔥 YENİ EKLENEN ACIMASIZ ÇÖPÇÜ KOMUTUMUZ
+  draw(); 
+  window.requestAnimationFrame(animate); 
+  lastTimestamp = timestamp;
 }
 
 function thePlatformTheStickHits() {
@@ -286,19 +299,23 @@ function thePlatformTheStickHits() {
 function draw() { ctx.save(); ctx.clearRect(0, 0, window.innerWidth, window.innerHeight); drawBackground(); ctx.translate((window.innerWidth - canvasWidth) / 2 - sceneOffset, (window.innerHeight - canvasHeight) / 2); drawPlatforms(); drawEnemies(); drawPet(); drawHero(); drawSticks(); ctx.restore(); }
 restartButton.addEventListener("click", (e) => { e.preventDefault(); resetGame(); });
 
+// 🔥 ÇİZİM OPTİMİZASYONLARI
 function drawSticks() {
-  let bg = bgData[currentBg] || bgData["default"]; let stickColor = bg.sColor; let glowEffect = bg.isDark ? 10 : 0;
+  let bg = bgData[currentBg] || bgData["default"]; let stickColor = bg.sColor; 
+  let glowEffect = (bg.isDark && !lowGraphicsMode) ? 10 : 0; // 🔥 Düşük grafikte neonlar kapanır
   sticks.forEach((stick) => { ctx.save(); ctx.translate(stick.x, canvasHeight - platformHeight); ctx.rotate((Math.PI / 180) * stick.rotation); ctx.beginPath(); ctx.lineWidth = 3; ctx.strokeStyle = stickColor; if(glowEffect > 0) { ctx.shadowBlur = glowEffect; ctx.shadowColor = bg.glow; } ctx.moveTo(0, 0); ctx.lineTo(0, -stick.length); ctx.stroke(); ctx.restore(); });
 }
+
 function drawPlatforms() {
   let bg = bgData[currentBg] || bgData["default"]; let platformColor = bg.pColor; let glowColor = bg.glow;
   platforms.forEach(({ x, w }) => { 
       ctx.save(); ctx.fillStyle = platformColor; 
-      if(bg.isDark) { ctx.shadowBlur = 5; ctx.shadowColor = glowColor; ctx.strokeStyle = glowColor; ctx.lineWidth = 2; } 
+      // 🔥 Düşük grafikte platform neonları kapanır
+      if(bg.isDark && !lowGraphicsMode) { ctx.shadowBlur = 10; ctx.shadowColor = glowColor; ctx.strokeStyle = glowColor; ctx.lineWidth = 2; } 
       ctx.fillRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2); 
-      if(bg.isDark && glowColor !== "transparent") { ctx.strokeRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2); } 
+      if(bg.isDark && glowColor !== "transparent" && !lowGraphicsMode) { ctx.strokeRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2); } 
       ctx.restore(); 
-      if (sticks.last().x < x) { ctx.fillStyle = bg.isDark ? glowColor : "red"; let pArea = getPerfectAreaSize(w); ctx.fillRect(x + w / 2 - pArea / 2, canvasHeight - platformHeight, pArea, pArea); } 
+      if (sticks.last().x < x) { ctx.fillStyle = (bg.isDark && !lowGraphicsMode) ? glowColor : "red"; let pArea = getPerfectAreaSize(w); ctx.fillRect(x + w / 2 - pArea / 2, canvasHeight - platformHeight, pArea, pArea); } 
   });
 }
 function drawEnemies() {
@@ -315,7 +332,16 @@ function drawPet() {
 
 function drawRoundedRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x, y + r); ctx.lineTo(x, y + h - r); ctx.arcTo(x, y + h, x + r, y + h, r); ctx.lineTo(x + w - r, y + h); ctx.arcTo(x + w, y + h, x + w, y + h - r, r); ctx.lineTo(x + w, y + r); ctx.arcTo(x + w, y, x + w - r, y, r); ctx.lineTo(x + r, y); ctx.arcTo(x, y, x, y + r, r); ctx.fill(); }
 function drawBackground() { let bg = bgData[currentBg] || bgData["default"]; var gradient = ctx.createLinearGradient(0, 0, 0, window.innerHeight); gradient.addColorStop(0, bg.top); gradient.addColorStop(1, bg.bottom); ctx.fillStyle = gradient; ctx.fillRect(0, 0, window.innerWidth, window.innerHeight); drawHill(hill1BaseHeight, hill1Amplitude, hill1Stretch, bg.hill1); drawHill(hill2BaseHeight, hill2Amplitude, hill2Stretch, bg.hill2); trees.forEach((tree) => drawTree(tree.x, tree.color, bg.tree)); }
-function drawHill(base, amp, stretch, color) { ctx.beginPath(); ctx.moveTo(0, window.innerHeight); ctx.lineTo(0, getHillY(0, base, amp, stretch)); for (let i = 0; i < window.innerWidth; i++) { ctx.lineTo(i, getHillY(i, base, amp, stretch)); } ctx.lineTo(window.innerWidth, window.innerHeight); ctx.fillStyle = color; ctx.fill(); }
+
+// 🔥 TRİGONOMETRİ OPTİMİZASYONU: i+=15 sayesinde devasa işlemci tasarrufu
+function drawHill(base, amp, stretch, color) { 
+    ctx.beginPath(); ctx.moveTo(0, window.innerHeight); ctx.lineTo(0, getHillY(0, base, amp, stretch)); 
+    for (let i = 0; i <= window.innerWidth; i += 15) { 
+        ctx.lineTo(i, getHillY(i, base, amp, stretch)); 
+    } 
+    ctx.lineTo(window.innerWidth, window.innerHeight); ctx.fillStyle = color; ctx.fill(); 
+}
+
 function drawTree(x, color, trunkColor) { ctx.save(); ctx.translate((-sceneOffset * backgroundSpeedMultiplier + x) * hill1Stretch, getTreeY(x, hill1BaseHeight, hill1Amplitude)); ctx.fillStyle = trunkColor; ctx.fillRect(-1, -5, 2, 5); ctx.beginPath(); ctx.moveTo(-5, -5); ctx.lineTo(0, -30); ctx.lineTo(5, -5); ctx.fillStyle = color; ctx.fill(); ctx.restore(); }
 function getHillY(windowX, base, amp, stretch) { return (Math.sinus((sceneOffset * backgroundSpeedMultiplier + windowX) * stretch) * amp + window.innerHeight - base); }
 function getTreeY(x, base, amp) { return Math.sinus(x) * amp + window.innerHeight - base; }
