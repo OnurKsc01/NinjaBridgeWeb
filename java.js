@@ -29,40 +29,46 @@ function unlockSounds() {
 }
 
 // ------------------------------------
-// GRAFİK MOTORU VE CACHE
+// GRAFİK MOTORU VE CACHE (KASMA SORUNU KÖKTEN ÇÖZÜLDÜ)
 // ------------------------------------
 const canvas = document.getElementById("game"); 
 const ctx = canvas.getContext("2d");
 let lowGraphics = false;
 
-const graphicsBtn = document.getElementById("graphicsBtn");
-if (graphicsBtn) {
-    graphicsBtn.addEventListener("click", (e) => {
-        e.stopPropagation(); lowGraphics = !lowGraphics;
-        graphicsBtn.innerText = lowGraphics ? "⚙️ Grafik: Düşük" : "⚙️ Grafik: Yüksek";
-        graphicsBtn.style.background = lowGraphics ? "#7f8c8d" : "#8e44ad";
-        resizeCanvas();
-    });
+// 🔥 FIX 1: Grafik Butonu Global Fonksiyonu (HTML'den Tetiklenir)
+window.toggleGraphics = function() {
+    lowGraphics = !lowGraphics;
+    const btn = document.getElementById("graphicsBtn");
+    if (btn) {
+        btn.innerText = lowGraphics ? "⚙️ Grafik: Düşük" : "⚙️ Grafik: Yüksek";
+        btn.style.background = lowGraphics ? "#7f8c8d" : "#8e44ad";
+    }
+    applyCanvasSize();
 }
 
-// 🔥 PERFORMANS FIX 2: Gökyüzü Gradient Önbelleği (Saniyede 60 kez oluşturulmasını engeller)
-let cachedGradient = null; let lastBgKey = null; let lastWinHeight = 0;
+function applyCanvasSize() {
+    // 🔥 FIX 2: Sanal Çözünürlük (DLSS) - Düşük grafikte ekranın piksel yükünü %40 hafifletir.
+    let scale = lowGraphics ? 0.6 : 1; 
+    canvas.width = window.innerWidth * scale;
+    canvas.height = window.innerHeight * scale;
+    ctx.scale(scale, scale);
+    canvas.style.width = window.innerWidth + "px";
+    canvas.style.height = window.innerHeight + "px";
+    lastCanvasHeight = 0; // Gradienti yenilemek için zorla
+    if (phase === "waiting") draw();
+}
+
+// 🔥 FIX 3: Gradient Önbelleği (Saniyede 60 kez oluşturulmasını engeller)
+let cachedGradient = null; let lastBgKey = null; let lastCanvasHeight = 0;
 function getCachedGradient(bg) {
-    if(cachedGradient && lastBgKey === currentBg && lastWinHeight === window.innerHeight) return cachedGradient;
+    if(cachedGradient && lastBgKey === currentBg && lastCanvasHeight === canvas.height) return cachedGradient;
     cachedGradient = ctx.createLinearGradient(0, 0, 0, window.innerHeight);
     cachedGradient.addColorStop(0, bg.top); cachedGradient.addColorStop(1, bg.bottom);
-    lastBgKey = currentBg; lastWinHeight = window.innerHeight;
+    lastBgKey = currentBg; lastCanvasHeight = canvas.height;
     return cachedGradient;
 }
 
-function resizeCanvas() {
-    if (lowGraphics) { canvas.width = window.innerWidth / 1.5; canvas.height = window.innerHeight / 1.5; ctx.scale(1/1.5, 1/1.5); } 
-    else { canvas.width = window.innerWidth; canvas.height = window.innerHeight; ctx.scale(1, 1); }
-    canvas.style.width = window.innerWidth + "px"; canvas.style.height = window.innerHeight + "px";
-    lastWinHeight = 0; // Resize olduğunda gradienti sıfırla
-    if(phase === "waiting") draw();
-}
-window.addEventListener("resize", resizeCanvas);
+applyCanvasSize(); // İlk açılışta boyutu ayarla (Sürekli çalışan resize event'i kaldırıldı!)
 
 // ------------------------------------
 // REKLAM SİSTEMİ 
@@ -70,10 +76,7 @@ window.addEventListener("resize", resizeCanvas);
 let adController = null; let adRetryCount = 0; let adReviveUsedThisRun = false; 
 
 function initAdsGram() {
-    try {
-        if (window.Adsgram) { adController = window.Adsgram.init({ blockId: "35103" }); } 
-        else if (adRetryCount < 10) { adRetryCount++; setTimeout(initAdsGram, 500); }
-    } catch (err) {}
+    try { if (window.Adsgram) { adController = window.Adsgram.init({ blockId: "35103" }); } else if (adRetryCount < 10) { adRetryCount++; setTimeout(initAdsGram, 500); } } catch (err) {}
 }
 
 function checkAdStatus() {
@@ -225,9 +228,9 @@ window.requestAnimationFrame(animate);
 function animate(timestamp) {
   if (!lastTimestamp) { lastTimestamp = timestamp; window.requestAnimationFrame(animate); return; }
   
-  // 🔥 PERFORMANS FIX 1: TİTREME (STUTTER) VE IŞINLANMA KORUMASI (DELTA TIME CAP)
+  // 🔥 FIX 4: Işınlanma Koruması. dt 32'ye sabitlendi. (Oyun takılırsa ninja 5 metre ileri ışınlanmaz, fizik bozulmaz)
   let dt = timestamp - lastTimestamp;
-  if (dt > 50) dt = 16; // Eğer tarayıcı kasarsa (zaman atlarsa), oyunu ışınlama, stabil 60 FPS gibi davran!
+  if (dt > 32) dt = 16; 
 
   if (enemies.length > 0 && phase !== "dead_options") {
       enemies.forEach(e => { e.offsetY = Math.sin(timestamp / (400 / e.speed)) * 60 - 20; });
@@ -299,14 +302,14 @@ function thePlatformTheStickHits() {
   if (platformTheStickHits) { let pArea = getPerfectAreaSize(platformTheStickHits.w); if (platformTheStickHits.x + platformTheStickHits.w / 2 - pArea / 2 < stickFarX && stickFarX < platformTheStickHits.x + platformTheStickHits.w / 2 + pArea / 2) { return [platformTheStickHits, true]; } } return [platformTheStickHits, false];
 }
 
+// 🔥 FIX 5: Tüm Math.floor (Yuvarlama) işlemleri silindi! Alt-piksel pürüzsüzlüğü geri geldi!
 function draw() { 
     ctx.save(); 
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight); 
     drawBackground(); 
     
-    // 🔥 PERFORMANS FIX 3: Sub-pixel rendering (yarım piksel) engellendi. Her şey tam sayı (Math.floor).
-    let transX = Math.floor((window.innerWidth - canvasWidth) / 2 - sceneOffset);
-    let transY = Math.floor((window.innerHeight - canvasHeight) / 2);
+    let transX = (window.innerWidth - canvasWidth) / 2 - sceneOffset;
+    let transY = (window.innerHeight - canvasHeight) / 2;
     ctx.translate(transX, transY); 
     
     drawPlatforms(); drawEnemies(); drawPet(); drawHero(); drawSticks(); 
@@ -317,39 +320,38 @@ restartButton.addEventListener("click", (e) => { e.preventDefault(); resetGame()
 function drawSticks() {
   let bg = bgData[currentBg] || bgData["default"]; let stickColor = bg.sColor; 
   sticks.forEach((stick) => { 
-      ctx.save(); ctx.translate(Math.floor(stick.x), canvasHeight - platformHeight); ctx.rotate((Math.PI / 180) * stick.rotation); 
+      ctx.save(); ctx.translate(stick.x, canvasHeight - platformHeight); ctx.rotate((Math.PI / 180) * stick.rotation); 
       ctx.beginPath(); ctx.lineWidth = 3; ctx.strokeStyle = stickColor; 
-      ctx.moveTo(0, 0); ctx.lineTo(0, -Math.floor(stick.length)); ctx.stroke(); ctx.restore(); 
+      ctx.moveTo(0, 0); ctx.lineTo(0, -stick.length); ctx.stroke(); ctx.restore(); 
   });
 }
 function drawPlatforms() {
   let bg = bgData[currentBg] || bgData["default"]; let platformColor = bg.pColor; let glowColor = bg.glow;
   platforms.forEach(({ x, w }) => { 
-      let fx = Math.floor(x); let fw = Math.floor(w);
       ctx.save(); ctx.fillStyle = platformColor; 
-      ctx.fillRect(fx, canvasHeight - platformHeight, fw, platformHeight + (window.innerHeight - canvasHeight) / 2); 
+      ctx.fillRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2); 
       if(bg.isDark && glowColor !== "transparent" && !lowGraphics) { 
           ctx.strokeStyle = glowColor; ctx.lineWidth = 2; 
-          ctx.strokeRect(fx, canvasHeight - platformHeight, fw, platformHeight + (window.innerHeight - canvasHeight) / 2); 
+          ctx.strokeRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2); 
       } 
       ctx.restore(); 
       if (sticks.last().x < x) { 
           ctx.fillStyle = (bg.isDark && !lowGraphics) ? glowColor : "red"; 
-          let pArea = Math.floor(getPerfectAreaSize(w)); 
-          ctx.fillRect(Math.floor(x + w / 2 - pArea / 2), canvasHeight - platformHeight, pArea, pArea); 
+          let pArea = getPerfectAreaSize(w); 
+          ctx.fillRect(x + w / 2 - pArea / 2, canvasHeight - platformHeight, pArea, pArea); 
       } 
   });
 }
 function drawEnemies() {
   ctx.save(); ctx.font = "28px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  enemies.forEach(e => { let eY = Math.floor(e.baseY + e.offsetY); ctx.fillText(e.emoji, Math.floor(e.x), eY); });
+  enemies.forEach(e => { let eY = e.baseY + e.offsetY; ctx.fillText(e.emoji, e.x, eY); });
   ctx.restore();
 }
 function drawHero() {
-  let skin = skinData[currentSkin] || skinData["default"]; ctx.save(); ctx.globalAlpha = skin.alpha; ctx.fillStyle = skin.body; ctx.translate(Math.floor(heroX - heroWidth / 2), Math.floor(heroY + canvasHeight - platformHeight - heroHeight / 2)); drawRoundedRect(Math.floor(-heroWidth / 2), Math.floor(-heroHeight / 2), heroWidth, heroHeight - 4, 5); ctx.fillStyle = skin.body; if(skin.body === "#ffffff") ctx.fillStyle = "#cccccc"; const legDistance = 5; ctx.beginPath(); ctx.arc(legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.beginPath(); ctx.arc(-legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.beginPath(); ctx.fillStyle = "white"; if(skin.body === "#ffffff") ctx.fillStyle = "black"; ctx.arc(5, -7, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.fillStyle = skin.bandana; ctx.fillRect(Math.floor(-heroWidth / 2 - 1), -12, heroWidth + 2, 4.5); ctx.beginPath(); ctx.moveTo(-9, -14.5); ctx.lineTo(-17, -18.5); ctx.lineTo(-14, -8.5); ctx.fill(); ctx.beginPath(); ctx.moveTo(-10, -10.5); ctx.lineTo(-15, -3.5); ctx.lineTo(-5, -7); ctx.fill(); ctx.restore();
+  let skin = skinData[currentSkin] || skinData["default"]; ctx.save(); ctx.globalAlpha = skin.alpha; ctx.fillStyle = skin.body; ctx.translate(heroX - heroWidth / 2, heroY + canvasHeight - platformHeight - heroHeight / 2); drawRoundedRect(-heroWidth / 2, -heroHeight / 2, heroWidth, heroHeight - 4, 5); ctx.fillStyle = skin.body; if(skin.body === "#ffffff") ctx.fillStyle = "#cccccc"; const legDistance = 5; ctx.beginPath(); ctx.arc(legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.beginPath(); ctx.arc(-legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.beginPath(); ctx.fillStyle = "white"; if(skin.body === "#ffffff") ctx.fillStyle = "black"; ctx.arc(5, -7, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.fillStyle = skin.bandana; ctx.fillRect(-heroWidth / 2 - 1, -12, heroWidth + 2, 4.5); ctx.beginPath(); ctx.moveTo(-9, -14.5); ctx.lineTo(-17, -18.5); ctx.lineTo(-14, -8.5); ctx.fill(); ctx.beginPath(); ctx.moveTo(-10, -10.5); ctx.lineTo(-15, -3.5); ctx.lineTo(-5, -7); ctx.fill(); ctx.restore();
 }
 function drawPet() {
-  if (currentPet === "default") return; let pet = petData[currentPet]; ctx.save(); let bounce = (phase === "walking" || phase === "transitioning") ? Math.floor(Math.abs(Math.sin(Date.now() / 100)) * 6) : 0; ctx.translate(Math.floor(heroX - 28), Math.floor(heroY + canvasHeight - platformHeight - 5 - bounce)); ctx.font = "20px Arial"; ctx.fillText(pet.emoji, -10, 5); ctx.restore();
+  if (currentPet === "default") return; let pet = petData[currentPet]; ctx.save(); let bounce = (phase === "walking" || phase === "transitioning") ? Math.abs(Math.sin(Date.now() / 100)) * 6 : 0; ctx.translate(heroX - 28, heroY + canvasHeight - platformHeight - 5 - bounce); ctx.font = "20px Arial"; ctx.fillText(pet.emoji, -10, 5); ctx.restore();
 }
 
 function drawRoundedRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x, y + r); ctx.lineTo(x, y + h - r); ctx.arcTo(x, y + h, x + r, y + h, r); ctx.lineTo(x + w - r, y + h); ctx.arcTo(x + w, y + h, x + w, y + h - r, r); ctx.lineTo(x + w, y + r); ctx.arcTo(x + w, y, x + w - r, y, r); ctx.lineTo(x + r, y); ctx.arcTo(x, y, x, y + r, r); ctx.fill(); }
@@ -369,12 +371,12 @@ function drawBackground() {
 }
 
 function drawHill(base, amp, stretch, color) { 
-    ctx.beginPath(); ctx.moveTo(0, window.innerHeight); ctx.lineTo(0, Math.floor(getHillY(0, base, amp, stretch))); 
-    for (let i = 0; i <= window.innerWidth + 25; i += 25) { ctx.lineTo(i, Math.floor(getHillY(i, base, amp, stretch))); } 
+    ctx.beginPath(); ctx.moveTo(0, window.innerHeight); ctx.lineTo(0, getHillY(0, base, amp, stretch)); 
+    for (let i = 0; i <= window.innerWidth + 25; i += 25) { ctx.lineTo(i, getHillY(i, base, amp, stretch)); } 
     ctx.lineTo(window.innerWidth, window.innerHeight); ctx.fillStyle = color; ctx.fill(); 
 }
 
-function drawTree(x, color, trunkColor) { ctx.save(); ctx.translate(Math.floor((-sceneOffset * backgroundSpeedMultiplier + x) * hill1Stretch), Math.floor(getTreeY(x, hill1BaseHeight, hill1Amplitude))); ctx.fillStyle = trunkColor; ctx.fillRect(-1, -5, 2, 5); ctx.beginPath(); ctx.moveTo(-5, -5); ctx.lineTo(0, -30); ctx.lineTo(5, -5); ctx.fillStyle = color; ctx.fill(); ctx.restore(); }
+function drawTree(x, color, trunkColor) { ctx.save(); ctx.translate((-sceneOffset * backgroundSpeedMultiplier + x) * hill1Stretch, getTreeY(x, hill1BaseHeight, hill1Amplitude)); ctx.fillStyle = trunkColor; ctx.fillRect(-1, -5, 2, 5); ctx.beginPath(); ctx.moveTo(-5, -5); ctx.lineTo(0, -30); ctx.lineTo(5, -5); ctx.fillStyle = color; ctx.fill(); ctx.restore(); }
 function getHillY(windowX, base, amp, stretch) { return (Math.sinus((sceneOffset * backgroundSpeedMultiplier + windowX) * stretch) * amp + window.innerHeight - base); }
 function getTreeY(x, base, amp) { return Math.sinus(x) * amp + window.innerHeight - base; }
 
