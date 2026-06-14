@@ -106,6 +106,17 @@ const worldsStarCount = document.getElementById("worldsStarCount");
 try { initAdsGram(); } catch(e) {}
 resetGame(); loadPlayerData();
 
+// EKRANDAN ÇIKAN OBJELERİ SİLEREK TELEFONU RAHATLATAN KOD
+function cleanOffScreen() {
+    let safeEdge = sceneOffset - 500; // Ekranın çok gerisinde kalan nokta
+    
+    // Geçmişte kalanları dizilerden (array) atıyoruz
+    if (platforms.length > 5 && platforms[0].x + platforms[0].w < safeEdge) platforms.shift();
+    if (sticks.length > 5 && sticks[0].x < safeEdge) sticks.shift();
+    if (trees.length > 10 && trees[0].x < safeEdge) trees.shift();
+    if (enemies.length > 5 && enemies[0].x < safeEdge) enemies.shift();
+}
+
 function loadPlayerData() {
     fetch(`https://ninja-bridge-api.onrender.com/api/score/player/${tgUserId}`).then(res => res.json()).then(data => {
             playerCoins = data.coins || 0; playerGems = data.gems || 0; playerStars = data.stars || 0;
