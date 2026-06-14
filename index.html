@@ -4,12 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Ninja Bridge</title>
-  <link rel="stylesheet" href="css.css?v=2">
+  <link rel="stylesheet" href="css.css?v=3">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  
   <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
-  
-  <script src="java.js?v=11" defer></script>
+  <script src="java.js?v=12" defer></script>
 </head>
 <body>
   <div class="container">
@@ -18,14 +16,15 @@
         <div id="ui-left" style="display: flex; flex-direction: column; gap: 8px; pointer-events: auto;">
             <button id="leaderboardBtn" style="background:#f1c40f; border:none; padding:6px 12px; border-radius:8px; font-weight:bold; font-size:12px; box-shadow:0 2px 4px rgba(0,0,0,0.2); cursor:pointer;">🏆 Skor</button>
             <button id="shopBtn" style="background:#2ecc71; color:white; border:none; padding:6px 12px; border-radius:8px; font-weight:bold; font-size:12px; box-shadow:0 2px 4px rgba(0,0,0,0.2); cursor:pointer;">🛒 Market</button>
+            <button id="worldsBtn" style="background:#3498db; color:white; border:none; padding:6px 12px; border-radius:8px; font-weight:bold; font-size:12px; box-shadow:0 2px 4px rgba(0,0,0,0.2); cursor:pointer;">🌌 Dünyalar</button>
             <button id="watchAdBtn" style="background:#e74c3c; color:white; border:none; padding:6px 12px; border-radius:8px; font-weight:bold; font-size:12px; box-shadow:0 2px 4px rgba(0,0,0,0.2); cursor:pointer; display:none;">📺 Yükleniyor...</button>
         </div>
         <div id="ui-right" style="pointer-events: auto;">
-            <div id="coinCount" style="background:rgba(255,255,255,0.9) !important; background-image:none !important; padding:6px 10px; border-radius:12px; font-weight:bold; font-size:12px; box-shadow:0 2px 4px rgba(0,0,0,0.2); white-space: nowrap;">🪙 0 | 💎 0</div>
+            <div id="coinCount" style="background:rgba(255,255,255,0.9) !important; padding:6px 10px; border-radius:12px; font-weight:bold; font-size:12px; box-shadow:0 2px 4px rgba(0,0,0,0.2); white-space: nowrap;">🪙 0 | 1 0 | ⭐ 0</div>
         </div>
     </div>
 
-    <div id="score" style="position: absolute; top: 10px; right: 150px; font-size: 38px; font-weight: 900; z-index: 90; color: white; -webkit-text-stroke: 1.5px black; text-shadow: 3px 3px 6px rgba(0,0,0,0.7);">0</div>
+    <div id="score" style="position: absolute; top: 10px; right: 175px; font-size: 38px; font-weight: 900; z-index: 90; color: white; -webkit-text-stroke: 1.5px black; text-shadow: 3px 3px 6px rgba(0,0,0,0.7);">0</div>
 
     <div id="leaderboardModal" class="modal">
       <h2 style="margin-top:0;">Global Top 25</h2>
@@ -35,9 +34,38 @@
 
     <div id="shopModal" class="modal">
       <h2 style="margin-top:0;">🛒 Kostüm Marketi</h2>
-      <p style="font-weight:bold; text-align:center;">Bakiye: <span id="shopCoinCount">🪙 0 | 💎 0</span></p>
+      <p style="font-weight:bold; text-align:center;">Bakiye: <span id="shopCoinCount">🪙 0 | 💎 0 | ⭐ 0</span></p>
       <ul id="shopList" class="modal-list"></ul>
       <button id="closeShop" class="close-btn">Kapat</button>
+    </div>
+
+    <div id="worldsModal" class="modal">
+      <h2 style="margin-top:0;">🌌 Boyut Kapısı (Dünyalar)</h2>
+      <p style="font-weight:bold; text-align:center; margin-bottom:5px;">Mevcut Yıldızların: <span id="worldsStarCount" style="color:#f39c12;">⭐ 0</span></p>
+      <div id="medalsContainer" style="text-align:center; margin-bottom:10px; padding:6px; background:rgba(0,0,0,0.05); border-radius:8px; font-size:12px; display:none;">🎖️ <b>Madalyaların:</b> <span id="medalsList"></span></div>
+      <ul id="worldsList" class="modal-list"></ul>
+      <button id="closeWorlds" class="close-btn">Kapat</button>
+    </div>
+
+    <div id="prestigeConfirmModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:200; align-items:center; justify-content:center; padding:20px; box-sizing:border-box;">
+        <div style="background:white; padding:20px; border-radius:15px; max-width:320px; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.5);">
+            <span style="font-size:45px;">⚠️</span>
+            <h3 style="margin:10px 0; color:#c0392b; font-size:18px;">BOYUT GEÇİŞİ ONAYI</h3>
+            <p style="font-size:13px; color:#333; line-height:1.5; text-align:left; margin-bottom:20px;">
+                Eski dünyadan yeni dünyaya giriş yapacaksınız. <br><br>
+                🔥 <b>Neler Olacak?</b><br>
+                • Tüm mevcut <b>Jeton (🪙) ve Elmaslarınız (💎) TAMAMEN sıfırlanacaktır.</b><br>
+                • Satın aldığınız tüm <b>Dünya Arka Planları</b> sıfırlanacaktır.<br>
+                • En yüksek skorunuz o dünya için sıfırdan başlayacaktır.<br><br>
+                🎖️ <b>Kazanımınız Ne?</b><br>
+                • Yeni dünyanın kapısı ebediyen açılacak ve cüzdanınıza kalıcı bir <b>Şeref Madalyası</b> eklenecektir.<br>
+                • Sahip olduğunuz <u>Petler ve Karakter Kostümleri aynen korunacaktır.</u>
+            </p>
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button id="confirmPrestigeBtn" style="background:#2ecc71; color:white; border:none; padding:10px 15px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:13px;">Evet, Sıfırla ve Geç!</button>
+                <button id="cancelPrestigeBtn" style="background:#e74c3c; color:white; border:none; padding:10px 15px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:13px;">Vazgeç</button>
+            </div>
+        </div>
     </div>
 
     <canvas id="game" width="375" height="375"></canvas>
