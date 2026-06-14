@@ -11,7 +11,6 @@ let tgUserName = user ? user.first_name : "Test Oyuncusu";
 let startParam = tg?.initDataUnsafe?.start_param;
 let tgGroupId = startParam ? Number(startParam) : 0;
 
-// 🔥 SEZON 2: Yeni Cüzdan Verileri
 let playerCoins = 0; let playerGems = 0; let playerStars = 0; let sessionEarnedGems = 0; 
 let currentSkin = "default"; let ownedSkins = ["default"]; 
 let currentBg = "default"; let unlockedWorlds = ["default"]; let medals = [];
@@ -72,7 +71,6 @@ let duelInterval = null; let opponentFinished = false;
 
 const skinData = { "default": { name: "Varsayılan", price: 0, body: "black", bandana: "red", alpha: 1 }, "hayalet": { name: "Hayalet", price: 10, body: "#ffffff", bandana: "#cccccc", alpha: 0.4 }, "yesil": { name: "Yeşil Ninja", price: 20, body: "#228B22", bandana: "black", alpha: 1 }, "bronz": { name: "Bronz Ninja", price: 30, body: "#cd7f32", bandana: "#5c4033", alpha: 1 }, "demir": { name: "Demir Ninja", price: 40, body: "#a9a9a9", bandana: "#696969", alpha: 1 }, "altin": { name: "Altın Ninja", price: 50, body: "#ffd700", bandana: "#b8860b", alpha: 1 }, "hiper": { name: "Hiper Ninja", price: 65, body: "#800080", bandana: "#00ffff", alpha: 1 }, "golge": { name: "Gölge Katili", price: 80, body: "#1a1a1a", bandana: "#4a0000", alpha: 1 }, "buzul": { name: "Buzul Ninja", price: 100, body: "#add8e6", bandana: "#ffffff", alpha: 1 } };
 
-// 🔥 SEZON 2: Dinamik Dünya Veritabanı
 const worldOrder = ["default", "gece", "kanli", "col", "neon", "volkan"];
 const bgData = { 
     "default": { name: "Gündüz Vadisi", priceStars: 0, medal: "Vadi Çaylağı", enemy: "🐝", pColor: "black", sColor: "black", glow: "transparent", top: "#BBD691", bottom: "#FEF1E1", hill1: "#95C629", hill2: "#659F1C", tree: "#7D833C", leaves: ["#6D8821", "#8FAC34", "#98B333"], isDark: false }, 
@@ -83,7 +81,6 @@ const bgData = {
     "volkan": { name: "Volkan Dağı", priceStars: 5, medal: "Volkan Ejderi", enemy: "☄️", pColor: "#1a0000", sColor: "#ffcc00", glow: "#ff6600", top: "#2b0000", bottom: "#1a0000", hill1: "#ff3300", hill2: "#cc0000", tree: "#1a0000", leaves: ["#ff6600", "#ff3300", "#cc0000"], isDark: true } 
 };
 
-// 🔥 SEZON 2: 4. Efsanevi Pet Eklendi
 const petData = { 
     "kopek": { name: "Altın Avcısı", price: 200, desc: "Sv'ye göre daha hızlı Jeton", emoji: "🐶" }, 
     "kedi": { name: "Gözcü Kedi", price: 250, desc: "Sv'ye göre devasa Kombo Alanı", emoji: "🐱" }, 
@@ -103,28 +100,8 @@ const restartButton = document.getElementById("restart"); const scoreElement = d
 const coinCountElement = document.getElementById("coinCount"); const shopCoinCountElement = document.getElementById("shopCoinCount");
 const worldsStarCount = document.getElementById("worldsStarCount");
 
-// 🔥 GRAFİK AYARI: Başlangıçta yüksek grafikle başlar
-let lowGraphicsMode = false;
-let graphicsBtn = document.getElementById("graphicsBtn");
-if(graphicsBtn) {
-    graphicsBtn.addEventListener("click", (e) => { 
-        lowGraphicsMode = !lowGraphicsMode; 
-        e.target.innerText = lowGraphicsMode ? "🔋 Grafik: DÜŞÜK" : "🌟 Grafik: YÜKSEK"; 
-        e.target.style.background = lowGraphicsMode ? "#7f8c8d" : "#9b59b6"; 
-    });
-}
-
 try { initAdsGram(); } catch(e) {}
 resetGame(); loadPlayerData();
-
-// 🔥 AGRESIF ÇÖPÇÜ SİSTEMİ (Telefonları Yanmaktan Kurtarır)
-function cleanOffScreen() {
-    let safeEdge = sceneOffset - 100; // Ekranın sol kenarı (eski hali -500 idi, şimdi anında siliyoruz)
-    while (platforms.length > 5 && platforms[0].x + platforms[0].w < safeEdge) platforms.shift();
-    while (sticks.length > 5 && sticks[0].x < safeEdge) sticks.shift();
-    while (trees.length > 10 && trees[0].x < safeEdge) trees.shift();
-    while (enemies.length > 3 && enemies[0].x < safeEdge) enemies.shift();
-}
 
 function loadPlayerData() {
     fetch(`https://ninja-bridge-api.onrender.com/api/score/player/${tgUserId}`).then(res => res.json()).then(data => {
@@ -158,7 +135,6 @@ function getPerfectAreaSize(platformWidth) {
 
 function getMonkeyStats() { let lvl = ownedPets["maymun"] || 1; let lives = Math.floor((lvl - 1) / 2) + 1; let bonus = (lvl % 2 === 0) ? lvl * 5 : 0; return { lives: lives, bonusCoins: bonus }; }
 
-// 🔥 KÖPEK VE KURT YETENEĞİ (Adım Başı Jeton)
 function processPetSteps() {
     if (currentPet === "kopek") {
         let lvl = ownedPets["kopek"] || 1; let reqSteps = 10 - lvl; wolfStepCount++;
@@ -202,9 +178,8 @@ function generatePlatform() {
   const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth)); 
   platforms.push({ x, w });
 
-  // 🔥 SEZON 2: DÜŞMAN (BOSS) SPAWN SİSTEMİ
   if (score >= 500 && platforms.length > 1) {
-      let spawnChance = 0.2 + (score / 15000); // Zamanla çıkma ihtimali artar
+      let spawnChance = 0.2 + (score / 15000);
       if (Math.random() < spawnChance) {
           let currentBgData = bgData[currentBg] || bgData["default"];
           let gapStartX = lastPlatform.x + lastPlatform.w; let gapEndX = x;
@@ -227,7 +202,6 @@ window.requestAnimationFrame(animate);
 function animate(timestamp) {
   if (!lastTimestamp) { lastTimestamp = timestamp; window.requestAnimationFrame(animate); return; }
   
-  // Düşman Animasyon Döngüsü
   if (enemies.length > 0 && phase !== "dead_options") {
       enemies.forEach(e => { e.offsetY = Math.sin(timestamp / (400 / e.speed)) * 60 - 20; });
   }
@@ -241,7 +215,7 @@ function animate(timestamp) {
       if (sticks.last().rotation > 90) {
         sticks.last().rotation = 90; const [nextPlatform, perfectHit] = thePlatformTheStickHits();
         if (nextPlatform) {
-          processPetSteps(); // Kurt ve Köpek adım sayacı
+          processPetSteps();
           if (perfectHit) {
             combo++; score += 1 + combo; 
             if (combo % 50 === 0) { playerGems += 1; sessionEarnedGems += 1; updateCoinUI(); perfectElement.innerText = `💎 50x COMBO!\n+1 ELMAS KAZANDIN!`; perfectElement.style.color = "#00ffff"; } else { perfectElement.innerText = `🔥 KUSURSUZ! +${1 + combo}\n${combo}x COMBO`; perfectElement.style.color = "#FFD700"; }
@@ -256,7 +230,6 @@ function animate(timestamp) {
     case "walking":
       heroX += (timestamp - lastTimestamp) / walkingSpeed; 
       
-      // 🔥 DÜŞMAN ÇARPIŞMA KONTROLÜ (SADECE YÜRÜRKEN)
       let hitEnemy = enemies.find(e => { let eY = e.baseY + e.offsetY; return Math.abs(heroX - e.x) < 20 && Math.abs((heroY + canvasHeight - platformHeight - heroHeight/2) - eY) < 30; });
       if (hitEnemy) { phase = "falling"; fallSound.currentTime = 0; fallSound.play().catch(e=>{}); }
 
@@ -268,7 +241,16 @@ function animate(timestamp) {
       break;
     case "transitioning":
       sceneOffset += (timestamp - lastTimestamp) / transitioningSpeed; const [nextPlatform2] = thePlatformTheStickHits();
-      if (sceneOffset > nextPlatform2.x + nextPlatform2.w - paddingX) { sticks.push({ x: nextPlatform2.x + nextPlatform2.w, length: 0, rotation: 0 }); phase = "waiting"; }
+      if (sceneOffset > nextPlatform2.x + nextPlatform2.w - paddingX) { 
+          sticks.push({ x: nextPlatform2.x + nextPlatform2.w, length: 0, rotation: 0 }); 
+          phase = "waiting"; 
+
+          // 🔥 PERFORMANS DOKUNUŞU: EKRANDAN KAYBOLAN OBJELERİ HAFIZADAN SİLİYORUZ (GARBAGE COLLECTION)
+          platforms = platforms.filter(p => p.x + p.w > sceneOffset - 300);
+          sticks = sticks.filter(s => s.x > sceneOffset - 300);
+          trees = trees.filter(t => t.x > sceneOffset - 1000);
+          enemies = enemies.filter(e => e.x > sceneOffset - 300);
+      }
       break;
     case "falling":
       if (sticks.last().rotation < 180) sticks.last().rotation += (timestamp - lastTimestamp) / turningSpeed;
@@ -283,11 +265,7 @@ function animate(timestamp) {
       }
       break;
   }
-  
-  cleanOffScreen(); // 🔥 YENİ EKLENEN ACIMASIZ ÇÖPÇÜ KOMUTUMUZ
-  draw(); 
-  window.requestAnimationFrame(animate); 
-  lastTimestamp = timestamp;
+  draw(); window.requestAnimationFrame(animate); lastTimestamp = timestamp;
 }
 
 function thePlatformTheStickHits() {
@@ -299,23 +277,26 @@ function thePlatformTheStickHits() {
 function draw() { ctx.save(); ctx.clearRect(0, 0, window.innerWidth, window.innerHeight); drawBackground(); ctx.translate((window.innerWidth - canvasWidth) / 2 - sceneOffset, (window.innerHeight - canvasHeight) / 2); drawPlatforms(); drawEnemies(); drawPet(); drawHero(); drawSticks(); ctx.restore(); }
 restartButton.addEventListener("click", (e) => { e.preventDefault(); resetGame(); });
 
-// 🔥 ÇİZİM OPTİMİZASYONLARI
 function drawSticks() {
   let bg = bgData[currentBg] || bgData["default"]; let stickColor = bg.sColor; 
-  let glowEffect = (bg.isDark && !lowGraphicsMode) ? 10 : 0; // 🔥 Düşük grafikte neonlar kapanır
-  sticks.forEach((stick) => { ctx.save(); ctx.translate(stick.x, canvasHeight - platformHeight); ctx.rotate((Math.PI / 180) * stick.rotation); ctx.beginPath(); ctx.lineWidth = 3; ctx.strokeStyle = stickColor; if(glowEffect > 0) { ctx.shadowBlur = glowEffect; ctx.shadowColor = bg.glow; } ctx.moveTo(0, 0); ctx.lineTo(0, -stick.length); ctx.stroke(); ctx.restore(); });
+  sticks.forEach((stick) => { 
+      ctx.save(); ctx.translate(stick.x, canvasHeight - platformHeight); ctx.rotate((Math.PI / 180) * stick.rotation); 
+      ctx.beginPath(); ctx.lineWidth = 3; ctx.strokeStyle = stickColor; 
+      ctx.moveTo(0, 0); ctx.lineTo(0, -stick.length); ctx.stroke(); ctx.restore(); 
+  });
 }
-
 function drawPlatforms() {
   let bg = bgData[currentBg] || bgData["default"]; let platformColor = bg.pColor; let glowColor = bg.glow;
   platforms.forEach(({ x, w }) => { 
       ctx.save(); ctx.fillStyle = platformColor; 
-      // 🔥 Düşük grafikte platform neonları kapanır
-      if(bg.isDark && !lowGraphicsMode) { ctx.shadowBlur = 10; ctx.shadowColor = glowColor; ctx.strokeStyle = glowColor; ctx.lineWidth = 2; } 
       ctx.fillRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2); 
-      if(bg.isDark && glowColor !== "transparent" && !lowGraphicsMode) { ctx.strokeRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2); } 
+      if(bg.isDark && glowColor !== "transparent") { 
+          // 🔥 PERFORMANS DOKUNUŞU 2: Kasıntı shadowBlur tamamen kaldırıldı, yerine performanslı çerçeve eklendi.
+          ctx.strokeStyle = glowColor; ctx.lineWidth = 2; 
+          ctx.strokeRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2); 
+      } 
       ctx.restore(); 
-      if (sticks.last().x < x) { ctx.fillStyle = (bg.isDark && !lowGraphicsMode) ? glowColor : "red"; let pArea = getPerfectAreaSize(w); ctx.fillRect(x + w / 2 - pArea / 2, canvasHeight - platformHeight, pArea, pArea); } 
+      if (sticks.last().x < x) { ctx.fillStyle = bg.isDark ? glowColor : "red"; let pArea = getPerfectAreaSize(w); ctx.fillRect(x + w / 2 - pArea / 2, canvasHeight - platformHeight, pArea, pArea); } 
   });
 }
 function drawEnemies() {
@@ -332,16 +313,7 @@ function drawPet() {
 
 function drawRoundedRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x, y + r); ctx.lineTo(x, y + h - r); ctx.arcTo(x, y + h, x + r, y + h, r); ctx.lineTo(x + w - r, y + h); ctx.arcTo(x + w, y + h, x + w, y + h - r, r); ctx.lineTo(x + w, y + r); ctx.arcTo(x + w, y, x + w - r, y, r); ctx.lineTo(x + r, y); ctx.arcTo(x, y, x, y + r, r); ctx.fill(); }
 function drawBackground() { let bg = bgData[currentBg] || bgData["default"]; var gradient = ctx.createLinearGradient(0, 0, 0, window.innerHeight); gradient.addColorStop(0, bg.top); gradient.addColorStop(1, bg.bottom); ctx.fillStyle = gradient; ctx.fillRect(0, 0, window.innerWidth, window.innerHeight); drawHill(hill1BaseHeight, hill1Amplitude, hill1Stretch, bg.hill1); drawHill(hill2BaseHeight, hill2Amplitude, hill2Stretch, bg.hill2); trees.forEach((tree) => drawTree(tree.x, tree.color, bg.tree)); }
-
-// 🔥 TRİGONOMETRİ OPTİMİZASYONU: i+=15 sayesinde devasa işlemci tasarrufu
-function drawHill(base, amp, stretch, color) { 
-    ctx.beginPath(); ctx.moveTo(0, window.innerHeight); ctx.lineTo(0, getHillY(0, base, amp, stretch)); 
-    for (let i = 0; i <= window.innerWidth; i += 15) { 
-        ctx.lineTo(i, getHillY(i, base, amp, stretch)); 
-    } 
-    ctx.lineTo(window.innerWidth, window.innerHeight); ctx.fillStyle = color; ctx.fill(); 
-}
-
+function drawHill(base, amp, stretch, color) { ctx.beginPath(); ctx.moveTo(0, window.innerHeight); ctx.lineTo(0, getHillY(0, base, amp, stretch)); for (let i = 0; i < window.innerWidth; i++) { ctx.lineTo(i, getHillY(i, base, amp, stretch)); } ctx.lineTo(window.innerWidth, window.innerHeight); ctx.fillStyle = color; ctx.fill(); }
 function drawTree(x, color, trunkColor) { ctx.save(); ctx.translate((-sceneOffset * backgroundSpeedMultiplier + x) * hill1Stretch, getTreeY(x, hill1BaseHeight, hill1Amplitude)); ctx.fillStyle = trunkColor; ctx.fillRect(-1, -5, 2, 5); ctx.beginPath(); ctx.moveTo(-5, -5); ctx.lineTo(0, -30); ctx.lineTo(5, -5); ctx.fillStyle = color; ctx.fill(); ctx.restore(); }
 function getHillY(windowX, base, amp, stretch) { return (Math.sinus((sceneOffset * backgroundSpeedMultiplier + windowX) * stretch) * amp + window.innerHeight - base); }
 function getTreeY(x, base, amp) { return Math.sinus(x) * amp + window.innerHeight - base; }
@@ -398,12 +370,10 @@ function renderWorlds() {
     list.innerHTML = html;
 }
 
-// Borsa İşlemleri
 let isConverting = false;
 window.convertGems = function() { if(playerCoins < 1000) { if(tg && tg.showAlert) tg.showAlert("1000 Jetonun yok!"); return; } if (isConverting) return; isConverting = true; fetch('https://ninja-bridge-api.onrender.com/api/score/convert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId }) }).then(res => res.json()).then(data => { isConverting = false; if(data.success) { playerCoins -= 1000; playerGems += 1; updateCoinUI(); renderShop(); } }).catch(() => { isConverting = false; }); }
 window.convertStars = function() { if(playerGems < 30) { if(tg && tg.showAlert) tg.showAlert("30 Elmasın yok!"); return; } if (isConverting) return; isConverting = true; fetch('https://ninja-bridge-api.onrender.com/api/score/convertstar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId }) }).then(res => res.json()).then(data => { isConverting = false; if(data.success) { playerGems -= 30; playerStars += 1; updateCoinUI(); renderShop(); renderWorlds(); } }).catch(() => { isConverting = false; }); }
 
-// Prestige (Yeni Dünyaya Sıfırlanarak Geçiş)
 let pendingWorld = null; let pendingMedal = null;
 window.promptPrestige = function(worldKey, medal) {
     if (playerStars < bgData[worldKey].priceStars) { if(tg && tg.showAlert) tg.showAlert(`Yetersiz Yıldız! ${bgData[worldKey].priceStars} Yıldız gerekli.`); return; }
