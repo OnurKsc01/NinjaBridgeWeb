@@ -30,23 +30,23 @@ function unlockSounds() {
 }
 
 // ------------------------------------
-// GRAFİK MOTORU VE "OFF-SCREEN CACHE" (KASMA ÇÖZÜCÜ)
+// GRAFİK MOTORU VE "OFF-SCREEN CACHE" 
 // ------------------------------------
 const canvas = document.getElementById("game"); 
 const ctx = canvas.getContext("2d");
 
-// 🔥 DONANIM HIZLANDIRMASI: Canvas'ı zorla GPU'ya (Ekran Kartına) bağlar!
+// 🔥 DONANIM HIZLANDIRMASI
 canvas.style.transform = "translateZ(0)";
 canvas.style.willChange = "transform";
 
 let lowGraphics = false;
 
-// Sabit Tema Renkleri (Gündüz Vadisi)
+// Sabit Tema Renkleri
 const themeTop = "#BBD691", themeBottom = "#FEF1E1";
 const themeHill1 = "#95C629", themeHill2 = "#659F1C";
 const themeTree = "#7D833C", themeLeaves = ["#6D8821", "#8FAC34", "#98B333"];
 
-// 🔥 ARKA PLAN ÖNBELLEĞİ: İşlemciyi %95 rahatlatan Sanal Çizim Katmanı
+// 🔥 ARKA PLAN ÖNBELLEĞİ
 const bgCacheCanvas = document.createElement("canvas");
 const bgCacheCtx = bgCacheCanvas.getContext("2d");
 let lastRenderedOffset = -999;
@@ -69,7 +69,7 @@ function applyCanvasSize() {
     ctx.scale(scale, scale);
     canvas.style.width = window.innerWidth + "px";
     canvas.style.height = window.innerHeight + "px";
-    lastRenderedWidth = 0; // Ekran boyutu değişirse önbelleği (cache) sıfırlamaya zorla
+    lastRenderedWidth = 0; 
     if (phase === "waiting" && platforms.length > 0) draw();
 }
 window.addEventListener("resize", applyCanvasSize);
@@ -123,6 +123,8 @@ const petData = {
 let phase = "waiting"; let lastTimestamp; let heroX = 0, heroY = 0, sceneOffset = 0; 
 let platforms = [], sticks = [], trees = []; 
 let score = 0, combo = 0; let currentMonkeyLives = 0; 
+
+// 🔥 Sayaç artık adım değil, kazanılan "Skor Puanını" tutar
 let stepCount = 0; 
 
 const canvasWidth = 375, canvasHeight = 375, platformHeight = 100; const heroDistanceFromEdge = 10, paddingX = 100;
@@ -157,16 +159,22 @@ function getPerfectAreaSize(platformWidth) {
 
 function getMonkeyStats() { let lvl = ownedPets["maymun"] || 1; let lives = Math.floor((lvl - 1) / 2) + 1; let bonus = (lvl % 2 === 0) ? lvl * 5 : 0; return { lives: lives, bonusCoins: bonus }; }
 
-function processCoinGeneration() {
-    stepCount++; 
+// 🔥 FİX: Artık Fiziksel Adımları Değil, Skoru (Puanı) Temel Alır!
+function processCoinGeneration(earnedPoints) {
+    stepCount += earnedPoints; // Oyuncu kombo ile 5 puan alırsa kasaya anında 5 puan işlenir
     let reqSteps = 8; 
+    
+    // Köpek veya Kurt varsa hedeflenen puanı aşağı çek
     if (currentPet === "kopek" || currentPet === "kurt") { 
         let lvl = ownedPets[currentPet] || 1; 
         reqSteps = Math.max(1, 8 - lvl); 
     } 
+    
+    // Eğer biriken puan hedefi aştıysa Jeton ver
     if (stepCount >= reqSteps) { 
-        sessionEarnedCoins++; 
-        stepCount = 0; 
+        let coinsToAdd = Math.floor(stepCount / reqSteps); // Fazladan kaç jeton kazandığını hesaplar
+        sessionEarnedCoins += coinsToAdd; 
+        stepCount = stepCount % reqSteps; // Kalan küsurat puanı bir sonraki jeton için kasada tutar
     }
 }
 
@@ -230,8 +238,6 @@ function animate(timestamp) {
   if (!lastTimestamp) { lastTimestamp = timestamp; window.requestAnimationFrame(animate); return; }
   
   let dt = timestamp - lastTimestamp;
-  
-  // 🔥 TİTREME (STUTTER) YOK EDİCİ: Telegram zamanlaması sapsa bile (13ms - 19ms arası), motor onu pürüzsüz akması için 16.66ms'ye kitler.
   if (dt >= 12 && dt <= 20) { dt = 16.66; } 
   else if (dt > 32) { dt = 16.66; } 
 
@@ -245,19 +251,25 @@ function animate(timestamp) {
         sticks.last().rotation = 90; const [nextPlatform, perfectHit] = thePlatformTheStickHits();
         if (nextPlatform) {
           
-          processCoinGeneration(); 
+          let earnedPts = 0; // Bu turda kazanılan net puan
           
           if (perfectHit) {
             combo++; 
-            score += 1 + combo; 
+            earnedPts = 1 + combo;
+            score += earnedPts; 
+            
             if (combo % 50 === 0) { sessionEarnedGems += 1; perfectElement.innerText = `💎 50x COMBO!\n+1 ELMAS KAZANDIN!`; perfectElement.style.color = "#00ffff"; } 
-            else { perfectElement.innerText = `🔥 KUSURSUZ! +${1 + combo}\n${combo}x COMBO`; perfectElement.style.color = "#FFD700"; }
+            else { perfectElement.innerText = `🔥 KUSURSUZ! +${earnedPts}\n${combo}x COMBO`; perfectElement.style.color = "#FFD700"; }
             comboSound.currentTime = 0; comboSound.play().catch(e => {});
           } else { 
             combo = 0; 
-            score += 1; 
+            earnedPts = 1;
+            score += earnedPts; 
             perfectElement.innerText = ""; 
           }
+          
+          // 🔥 Skordan gelen puanı Jeton motoruna yolla!
+          processCoinGeneration(earnedPts);
           
           scoreElement.innerText = score; if (perfectHit) { perfectElement.style.opacity = 1; setTimeout(() => (perfectElement.style.opacity = 0), 1200); }
           generatePlatform(); generateTree(); generateTree();
@@ -305,9 +317,6 @@ function thePlatformTheStickHits() {
   if (platformTheStickHits) { let pArea = getPerfectAreaSize(platformTheStickHits.w); if (platformTheStickHits.x + platformTheStickHits.w / 2 - pArea / 2 < stickFarX && stickFarX < platformTheStickHits.x + platformTheStickHits.w / 2 + pArea / 2) { return [platformTheStickHits, true]; } } return [platformTheStickHits, false];
 }
 
-// ------------------------------------
-// ÇİZİM MOTORU (RENDER)
-// ------------------------------------
 function draw() { 
     ctx.save(); 
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight); 
@@ -322,7 +331,6 @@ function draw() {
 }
 restartButton.addEventListener("click", (e) => { e.preventDefault(); resetGame(); });
 
-// 🔥 PERFORMANS: Arka planı her seferinde baştan hesaplamak yerine, gizli hafızaya yazıp sadece gerektiğinde günceller. 
 function drawBackground() { 
     if (Math.abs(lastRenderedOffset - sceneOffset) > 0.1 || lastRenderedWidth !== canvas.width) {
         bgCacheCanvas.width = canvas.width;
@@ -349,7 +357,7 @@ function drawBackground() {
     }
 
     ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0); // Ekranı sabitleyip fotoğrafı yapıştır
+    ctx.setTransform(1, 0, 0, 1, 0, 0); 
     ctx.drawImage(bgCacheCanvas, 0, 0);
     ctx.restore();
 }
