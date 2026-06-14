@@ -107,14 +107,17 @@ document.getElementById("skipReviveBtn").addEventListener("click", () => { docum
 let duelInterval = null; let opponentFinished = false;
 
 const skinData = { "default": { name: "Varsayılan", price: 0, body: "black", bandana: "red", alpha: 1 }, "hayalet": { name: "Hayalet", price: 10, body: "#ffffff", bandana: "#cccccc", alpha: 0.4 }, "yesil": { name: "Yeşil Ninja", price: 20, body: "#228B22", bandana: "black", alpha: 1 }, "bronz": { name: "Bronz Ninja", price: 30, body: "#cd7f32", bandana: "#5c4033", alpha: 1 }, "demir": { name: "Demir Ninja", price: 40, body: "#a9a9a9", bandana: "#696969", alpha: 1 }, "altin": { name: "Altın Ninja", price: 50, body: "#ffd700", bandana: "#b8860b", alpha: 1 }, "hiper": { name: "Hiper Ninja", price: 65, body: "#800080", bandana: "#00ffff", alpha: 1 }, "golge": { name: "Gölge Katili", price: 80, body: "#1a1a1a", bandana: "#4a0000", alpha: 1 }, "buzul": { name: "Buzul Ninja", price: 100, body: "#add8e6", bandana: "#ffffff", alpha: 1 } };
-const worldOrder = ["default", "gece", "kanli", "col", "neon", "volkan"];
+const worldOrder = ["default", "gece", "kanli"];
 const bgData = { 
     "default": { name: "Gündüz Vadisi", priceStars: 0, medal: "Vadi Çaylağı", enemy: "🐝", pColor: "black", sColor: "black", glow: "transparent", top: "#BBD691", bottom: "#FEF1E1", hill1: "#95C629", hill2: "#659F1C", tree: "#7D833C", leaves: ["#6D8821", "#8FAC34", "#98B333"], isDark: false }, 
     "gece": { name: "Gece Yarısı", priceStars: 1, medal: "Gece Fatihi", enemy: "🦇", pColor: "#1a1a1a", sColor: "#00ffff", glow: "#00ffff", top: "#0B1D3A", bottom: "#1A0B2E", hill1: "#1A2A42", hill2: "#0D1B2A", tree: "#1E1E1E", leaves: ["#2B3A42", "#1A2A42", "#3B4A52"], isDark: true }, 
-    "kanli": { name: "Kanlı Ay", priceStars: 2, medal: "Kanlı Ay Şövalyesi", enemy: "🕷️", pColor: "#2a0000", sColor: "#ff0000", glow: "#ff0000", top: "#4A0000", bottom: "#1A0000", hill1: "#590000", hill2: "#330000", tree: "#1A0000", leaves: ["#660000", "#800000", "#4D0000"], isDark: true }, 
-    "col": { name: "Çöl Sıcağı", priceStars: 3, medal: "Çöl Gezgini", enemy: "🦂", pColor: "#4a2500", sColor: "#8B0000", glow: "#FF8C00", top: "#FF8C00", bottom: "#FFD700", hill1: "#CD853F", hill2: "#8B4513", tree: "#5C4033", leaves: ["#D2B48C", "#F4A460", "#DEB887"], isDark: true }, 
+    "kanli": { name: "Kanlı Ay", priceStars: 2, medal: "Kanlı Ay Şövalyesi", enemy: "🕷️", pColor: "#2a0000", sColor: "#ff0000", glow: "#ff0000", top: "#4A0000", bottom: "#1A0000", hill1: "#590000", hill2: "#330000", tree: "#1A0000", leaves: ["#660000", "#800000", "#4D0000"], isDark: true }
+    
+    /* GİZLENEN DÜNYALAR (İleride sadece başındaki ve sonundaki /* işaretlerini sil
+    , "col": { name: "Çöl Sıcağı", priceStars: 3, medal: "Çöl Gezgini", enemy: "🦂", pColor: "#4a2500", sColor: "#8B0000", glow: "#FF8C00", top: "#FF8C00", bottom: "#FFD700", hill1: "#CD853F", hill2: "#8B4513", tree: "#5C4033", leaves: ["#D2B48C", "#F4A460", "#DEB887"], isDark: true }, 
     "neon": { name: "Siber Şehir", priceStars: 4, medal: "Siber Hacker", enemy: "🛸", pColor: "#000000", sColor: "#00ff00", glow: "#00ff00", top: "#000000", bottom: "#001a00", hill1: "#003300", hill2: "#001100", tree: "#001100", leaves: ["#00ff00", "#00cc00", "#009900"], isDark: true }, 
     "volkan": { name: "Volkan Dağı", priceStars: 5, medal: "Volkan Ejderi", enemy: "☄️", pColor: "#1a0000", sColor: "#ffcc00", glow: "#ff6600", top: "#2b0000", bottom: "#1a0000", hill1: "#ff3300", hill2: "#cc0000", tree: "#1a0000", leaves: ["#ff6600", "#ff3300", "#cc0000"], isDark: true } 
+    */
 };
 const petData = { 
     "kopek": { name: "Altın Avcısı", price: 200, desc: "Sv'ye göre daha hızlı Jeton", emoji: "🐶" }, 
