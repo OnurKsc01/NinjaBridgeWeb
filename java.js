@@ -27,22 +27,22 @@ function unlockSounds() {
 }
 
 // ------------------------------------
-// FAZ 6: ADSGRAM REKLAM BAĞLANTISI (HATA KORUMALI)
+// FAZ 6: ADSGRAM REKLAM BAĞLANTISI 
 // ------------------------------------
 let adController = null;
 let adRetryCount = 0;
+let adReviveUsedThisRun = false; // 🔥 HİYERARŞİ: Bu turda reklamla canlanıldı mı?
 
 function initAdsGram() {
     try {
         if (window.Adsgram) {
-            // 🔥 HATALI KOD DÜZELTİLDİ: Doğru komut init'tir.
             adController = window.Adsgram.init({ blockId: "35103" });
         } else if (adRetryCount < 10) {
             adRetryCount++;
             setTimeout(initAdsGram, 500);
         }
     } catch (err) {
-        console.warn("Reklam sistemi başlatılamadı, oyun devam ediyor:", err);
+        console.warn("Reklam sistemi başlatılamadı:", err);
     }
 }
 
@@ -67,6 +67,7 @@ function checkAdStatus() {
         }).catch(() => { watchAdBtn.style.display = "none"; });
 }
 
+// Standart (Sağ Üstteki) Ödüllü Reklam
 const watchAdBtnElement = document.getElementById("watchAdBtn");
 if (watchAdBtnElement) {
     watchAdBtnElement.addEventListener("click", () => {
@@ -74,82 +75,83 @@ if (watchAdBtnElement) {
             if(tg && tg.showAlert) tg.showAlert("Reklam yüklenemedi. Lütfen internetinizi kontrol edip tekrar deneyin.");
             return;
         }
-        
         try {
             adController.show().then((result) => {
                 if (result.done) {
                     fetch('https://ninja-bridge-api.onrender.com/api/score/watchad', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ userId: tgUserId })
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        playerCoins = data.totalCoins;
-                        playerGems = data.totalGems;
-                        updateCoinUI();
-                        checkAdStatus(); 
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId })
+                    }).then(res => res.json()).then(data => {
+                        playerCoins = data.totalCoins; playerGems = data.totalGems; updateCoinUI(); checkAdStatus(); 
                         if(tg && tg.showAlert) tg.showAlert(`🎉 Reklam Tamamlandı!\nHesabına +${data.earnedCoins} Jeton eklendi!`);
                     });
                 }
-            }).catch(() => {
-                if(tg && tg.showAlert) tg.showAlert("Reklam ödülü alınamadı. Lütfen videoyu sonuna kadar izleyin.");
-            });
-        } catch (e) {
-            if(tg && tg.showAlert) tg.showAlert("Şu anda reklam gösterilemiyor.");
-        }
+            }).catch(() => { if(tg && tg.showAlert) tg.showAlert("Reklam ödülü alınamadı. Lütfen videoyu sonuna kadar izleyin."); });
+        } catch (e) { if(tg && tg.showAlert) tg.showAlert("Şu anda reklam gösterilemiyor."); }
     });
 }
 
+// 🔥 YENİ: Düşünce Çıkan "Reklamla Canlanma" Butonları
+document.getElementById("reviveAdBtn").addEventListener("click", () => {
+    if (!adController) {
+        if(tg && tg.showAlert) tg.showAlert("Şu an reklam bulunamadı. Lütfen tekrar deneyin.");
+        return;
+    }
+    
+    adController.show().then((result) => {
+        if (result.done) {
+            adReviveUsedThisRun = true;
+            document.getElementById("reviveMenu").style.display = "none";
+            
+            // Karakteri Son Platforma Geri Koy
+            phase = "rescued"; heroY = 0; heroX = sticks.last().x - heroDistanceFromEdge; 
+            sticks.last().length = 0; sticks.last().rotation = 0;
+            
+            perfectElement.innerText = `📺 CANLANDIN!`; 
+            perfectElement.style.color = "#8e44ad"; perfectElement.style.opacity = 1;
+            draw(); 
+            setTimeout(() => { perfectElement.style.opacity = 0; phase = "waiting"; }, 1500); 
+        }
+    }).catch(() => {
+        if(tg && tg.showAlert) tg.showAlert("Reklamı sonuna kadar izlemediğiniz için canlanamadınız.");
+    });
+});
+
+// "Hayır, Tekrar Dene" Butonu
+document.getElementById("skipReviveBtn").addEventListener("click", () => {
+    document.getElementById("reviveMenu").style.display = "none";
+    showGameOver(); // Kesin ölümü tetikle
+});
+
 // ------------------------------------
-// FAZ 5: CANLI DÜELLO BİLDİRİM SİSTEMİ
+// DİĞER FONKSİYONLAR (DÜELLO, KOSTÜM Vb.)
 // ------------------------------------
 const duelNotif = document.createElement("div");
 duelNotif.id = "duelNotification";
 duelNotif.style.cssText = "position:absolute; top:70px; left:50%; transform:translateX(-50%); background:rgba(220, 20, 60, 0.9); color:white; padding:10px 20px; border-radius:10px; font-weight:bold; font-size:14px; z-index:100; display:none; text-align:center; box-shadow:0 4px 8px rgba(0,0,0,0.3); pointer-events:none; text-shadow:1px 1px 2px black;";
 document.body.appendChild(duelNotif);
 
-let duelInterval = null;
-let opponentFinished = false;
+let duelInterval = null; let opponentFinished = false;
 
 function startDuelPolling() {
     opponentFinished = false;
     if (duelInterval) clearInterval(duelInterval);
-    
     duelInterval = setInterval(() => {
         if (phase === "waiting" || opponentFinished) return; 
-        
-        fetch(`https://ninja-bridge-api.onrender.com/api/score/duelstatus/${tgUserId}`)
-            .then(res => res.json())
-            .then(data => {
+        fetch(`https://ninja-bridge-api.onrender.com/api/score/duelstatus/${tgUserId}`).then(res => res.json()).then(data => {
                 if (data.finished) {
                     opponentFinished = true;
                     duelNotif.innerHTML = `💀 <b>${data.opponentName} düştü!</b><br>Skoru: ${data.opponentScore}<br><small style="color:gold;">Kazanmak için onu geç!</small>`;
-                    duelNotif.style.display = "block";
-                    duelNotif.style.opacity = 1;
-                    
-                    setTimeout(() => {
-                        let fade = setInterval(() => {
-                            duelNotif.style.opacity -= 0.1;
-                            if(duelNotif.style.opacity <= 0) { duelNotif.style.display = "none"; clearInterval(fade); }
-                        }, 50);
-                    }, 5000);
-                    
+                    duelNotif.style.display = "block"; duelNotif.style.opacity = 1;
+                    setTimeout(() => { let fade = setInterval(() => { duelNotif.style.opacity -= 0.1; if(duelNotif.style.opacity <= 0) { duelNotif.style.display = "none"; clearInterval(fade); } }, 50); }, 5000);
                     clearInterval(duelInterval);
                 }
             }).catch(e => {});
     }, 2000); 
 }
 
-const skinData = {
-  "default": { name: "Varsayılan", price: 0, body: "black", bandana: "red", alpha: 1 }, "hayalet": { name: "Hayalet", price: 10, body: "#ffffff", bandana: "#cccccc", alpha: 0.4 }, "yesil": { name: "Yeşil Ninja", price: 20, body: "#228B22", bandana: "black", alpha: 1 }, "bronz": { name: "Bronz Ninja", price: 30, body: "#cd7f32", bandana: "#5c4033", alpha: 1 }, "demir": { name: "Demir Ninja", price: 40, body: "#a9a9a9", bandana: "#696969", alpha: 1 }, "altin": { name: "Altın Ninja", price: 50, body: "#ffd700", bandana: "#b8860b", alpha: 1 }, "hiper": { name: "Hiper Ninja", price: 65, body: "#800080", bandana: "#00ffff", alpha: 1 }, "golge": { name: "Gölge Katili", price: 80, body: "#1a1a1a", bandana: "#4a0000", alpha: 1 }, "buzul": { name: "Buzul Ninja", price: 100, body: "#add8e6", bandana: "#ffffff", alpha: 1 }
-};
-const bgData = {
-  "default": { name: "Gündüz Vadisi", price: 0, top: "#BBD691", bottom: "#FEF1E1", hill1: "#95C629", hill2: "#659F1C", tree: "#7D833C", leaves: ["#6D8821", "#8FAC34", "#98B333"], isDark: false }, "gece": { name: "Gece Yarısı", price: 50, top: "#0B1D3A", bottom: "#1A0B2E", hill1: "#1A2A42", hill2: "#0D1B2A", tree: "#1E1E1E", leaves: ["#2B3A42", "#1A2A42", "#3B4A52"], isDark: true }, "kanli": { name: "Kanlı Ay", price: 100, top: "#4A0000", bottom: "#1A0000", hill1: "#590000", hill2: "#330000", tree: "#1A0000", leaves: ["#660000", "#800000", "#4D0000"], isDark: true }, "col": { name: "Çöl Sıcağı", price: 150, top: "#FF8C00", bottom: "#FFD700", hill1: "#CD853F", hill2: "#8B4513", tree: "#5C4033", leaves: ["#D2B48C", "#F4A460", "#DEB887"], isDark: false }, "neon": { name: "Siber Şehir", price: 200, top: "#000000", bottom: "#001a00", hill1: "#003300", hill2: "#001100", tree: "#001100", leaves: ["#00ff00", "#00cc00", "#009900"], isDark: true }, "volkan": { name: "Volkan Dağı", price: 250, top: "#2b0000", bottom: "#1a0000", hill1: "#ff3300", hill2: "#cc0000", tree: "#1a0000", leaves: ["#ff6600", "#ff3300", "#cc0000"], isDark: true }
-};
-const petData = {
-  "kopek": { name: "Altın Avcısı", price: 200, desc: "Sv'ye göre daha hızlı Jeton", emoji: "🐶" }, "kedi": { name: "Gözcü Kedi", price: 250, desc: "Sv'ye göre devasa Kombo Alanı", emoji: "🐱" }, "maymun": { name: "Kuyruklu Maymun", price: 400, desc: "Sv'ye göre ekstra Can & Jeton", emoji: "🐒" }
-};
+const skinData = { "default": { name: "Varsayılan", price: 0, body: "black", bandana: "red", alpha: 1 }, "hayalet": { name: "Hayalet", price: 10, body: "#ffffff", bandana: "#cccccc", alpha: 0.4 }, "yesil": { name: "Yeşil Ninja", price: 20, body: "#228B22", bandana: "black", alpha: 1 }, "bronz": { name: "Bronz Ninja", price: 30, body: "#cd7f32", bandana: "#5c4033", alpha: 1 }, "demir": { name: "Demir Ninja", price: 40, body: "#a9a9a9", bandana: "#696969", alpha: 1 }, "altin": { name: "Altın Ninja", price: 50, body: "#ffd700", bandana: "#b8860b", alpha: 1 }, "hiper": { name: "Hiper Ninja", price: 65, body: "#800080", bandana: "#00ffff", alpha: 1 }, "golge": { name: "Gölge Katili", price: 80, body: "#1a1a1a", bandana: "#4a0000", alpha: 1 }, "buzul": { name: "Buzul Ninja", price: 100, body: "#add8e6", bandana: "#ffffff", alpha: 1 } };
+const bgData = { "default": { name: "Gündüz Vadisi", price: 0, top: "#BBD691", bottom: "#FEF1E1", hill1: "#95C629", hill2: "#659F1C", tree: "#7D833C", leaves: ["#6D8821", "#8FAC34", "#98B333"], isDark: false }, "gece": { name: "Gece Yarısı", price: 50, top: "#0B1D3A", bottom: "#1A0B2E", hill1: "#1A2A42", hill2: "#0D1B2A", tree: "#1E1E1E", leaves: ["#2B3A42", "#1A2A42", "#3B4A52"], isDark: true }, "kanli": { name: "Kanlı Ay", price: 100, top: "#4A0000", bottom: "#1A0000", hill1: "#590000", hill2: "#330000", tree: "#1A0000", leaves: ["#660000", "#800000", "#4D0000"], isDark: true }, "col": { name: "Çöl Sıcağı", price: 150, top: "#FF8C00", bottom: "#FFD700", hill1: "#CD853F", hill2: "#8B4513", tree: "#5C4033", leaves: ["#D2B48C", "#F4A460", "#DEB887"], isDark: false }, "neon": { name: "Siber Şehir", price: 200, top: "#000000", bottom: "#001a00", hill1: "#003300", hill2: "#001100", tree: "#001100", leaves: ["#00ff00", "#00cc00", "#009900"], isDark: true }, "volkan": { name: "Volkan Dağı", price: 250, top: "#2b0000", bottom: "#1a0000", hill1: "#ff3300", hill2: "#cc0000", tree: "#1a0000", leaves: ["#ff6600", "#ff3300", "#cc0000"], isDark: true } };
+const petData = { "kopek": { name: "Altın Avcısı", price: 200, desc: "Sv'ye göre daha hızlı Jeton", emoji: "🐶" }, "kedi": { name: "Gözcü Kedi", price: 250, desc: "Sv'ye göre devasa Kombo Alanı", emoji: "🐱" }, "maymun": { name: "Kuyruklu Maymun", price: 400, desc: "Sv'ye göre ekstra Can & Jeton", emoji: "🐒" } };
 
 let phase = "waiting"; let lastTimestamp; let heroX, heroY, sceneOffset; let platforms = [], sticks = [], trees = []; let score = 0, combo = 0; let currentMonkeyLives = 0; 
 const canvasWidth = 375, canvasHeight = 375, platformHeight = 100; const heroDistanceFromEdge = 10, paddingX = 100;
@@ -161,43 +163,43 @@ const introductionElement = document.getElementById("introduction"); const perfe
 const restartButton = document.getElementById("restart"); const scoreElement = document.getElementById("score");
 const coinCountElement = document.getElementById("coinCount"); const shopCoinCountElement = document.getElementById("shopCoinCount");
 
-// Başlangıç Yüklemeleri (Try-Catch Korumalı)
 try { initAdsGram(); } catch(e) {}
 resetGame(); 
 loadPlayerData();
 
 function loadPlayerData() {
-    fetch(`https://ninja-bridge-api.onrender.com/api/score/player/${tgUserId}`)
-        .then(res => {
-            if(!res.ok) throw new Error("API Yanit Vermedi");
-            return res.json();
-        })
-        .then(data => {
+    fetch(`https://ninja-bridge-api.onrender.com/api/score/player/${tgUserId}`).then(res => { if(!res.ok) throw new Error("API Yanit Vermedi"); return res.json(); }).then(data => {
             playerCoins = data.coins || 0; playerGems = data.gems || 0; 
-            currentSkin = data.currentSkin || "default"; ownedSkins = data.ownedSkins || ["default"]; 
-            currentBg = data.currentBackground || "default"; ownedBgs = data.ownedBackgrounds || ["default"]; 
-            currentPet = data.currentPet || "default"; ownedPets = data.ownedPets || {}; 
-            
-            updateCoinUI(); 
-            checkAdStatus(); 
-            
-            if (phase === "waiting") {
-                if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; }
-                draw(); 
-            }
-        }).catch(err => {
-            console.warn("API Gecikmesi, oyun yine de devam ediyor:", err);
-        });
+            currentSkin = data.currentSkin || "default"; ownedSkins = data.ownedSkins || ["default"]; currentBg = data.currentBackground || "default"; ownedBgs = data.ownedBackgrounds || ["default"]; currentPet = data.currentPet || "default"; ownedPets = data.ownedPets || {}; 
+            updateCoinUI(); checkAdStatus(); 
+            if (phase === "waiting") { if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } draw(); }
+        }).catch(err => { console.warn("API Gecikmesi, oyun yine de devam ediyor:", err); });
 }
 
 function updateCoinUI() { coinCountElement.innerHTML = `🪙 ${playerCoins} | 💎 ${playerGems}`; shopCoinCountElement.innerHTML = `🪙 ${playerCoins} | 💎 ${playerGems}`; }
 function getPerfectAreaSize() { if (currentPet === "kedi") { let lvl = ownedPets["kedi"] || 1; return 20 + (lvl * 5); } return 10; }
 function getMonkeyStats() { let lvl = ownedPets["maymun"] || 1; let lives = Math.floor((lvl - 1) / 2) + 1; let bonus = (lvl % 2 === 0) ? lvl * 5 : 0; return { lives: lives, bonusCoins: bonus }; }
 
+// API'ye skor kaydetme ve bitiş ekranı
+function showGameOver() {
+    restartButton.style.display = "block";
+    if (duelInterval) clearInterval(duelInterval);
+
+    fetch('https://ninja-bridge-api.onrender.com/api/score/save', { 
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: tgGroupId, earnedGems: sessionEarnedGems })
+    }).then(res => res.json()).then(data => { if(data.earnedCoins > 0) { playerCoins += data.earnedCoins; updateCoinUI(); } }).catch(err => console.error(err));
+}
+
 function resetGame() {
   phase = "waiting"; lastTimestamp = undefined; sceneOffset = 0; score = 0; combo = 0; sessionEarnedGems = 0;
+  adReviveUsedThisRun = false; // 🔥 HİYERARŞİ: Yeni turda canlanma hakkını sıfırla
+  
+  document.getElementById("reviveMenu").style.display = "none";
+  restartButton.style.display = "none";
+  
   if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } else { currentMonkeyLives = 0; }
-  introductionElement.style.opacity = 1; perfectElement.style.opacity = 0; restartButton.style.display = "none"; scoreElement.innerText = score;
+  introductionElement.style.opacity = 1; perfectElement.style.opacity = 0; scoreElement.innerText = score;
   platforms = [{ x: 50, w: 50 }]; for(let i=0; i<4; i++) generatePlatform();
   sticks = [{ x: platforms[0].x + platforms[0].w, length: 0, rotation: 0 }]; trees = []; for(let i=0; i<10; i++) generateTree();
   heroX = platforms[0].x + platforms[0].w - heroDistanceFromEdge; heroY = 0; 
@@ -214,7 +216,7 @@ function generatePlatform() {
   const lastPlatform = platforms.last(); let furthestX = lastPlatform.x + lastPlatform.w; const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap)); const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth)); platforms.push({ x, w });
 }
 
-function isMenuOpen() { return document.getElementById("shopModal").style.display === "block" || document.getElementById("leaderboardModal").style.display === "block"; }
+function isMenuOpen() { return document.getElementById("shopModal").style.display === "block" || document.getElementById("leaderboardModal").style.display === "block" || document.getElementById("reviveMenu").style.display === "flex"; }
 
 window.addEventListener("mousedown", (e) => { if (!isMenuOpen() && phase == "waiting" && e.target.tagName === 'CANVAS') startStretching(); });
 window.addEventListener("touchstart", (e) => { if (!isMenuOpen() && phase == "waiting" && e.target.tagName === 'CANVAS') startStretching(); });
@@ -229,6 +231,7 @@ function animate(timestamp) {
   if (!lastTimestamp) { lastTimestamp = timestamp; window.requestAnimationFrame(animate); return; }
   switch (phase) {
     case "waiting": return; 
+    case "dead_options": return; // HİYERARŞİ: Seçim ekranındayken oyunu dondur
     case "stretching": sticks.last().length += (timestamp - lastTimestamp) / Math.max(stretchingSpeed - (score * 0.015), 2.8); break;
     case "turning":
       sticks.last().rotation += (timestamp - lastTimestamp) / turningSpeed;
@@ -259,17 +262,24 @@ function animate(timestamp) {
       if (sticks.last().rotation < 180) sticks.last().rotation += (timestamp - lastTimestamp) / turningSpeed;
       heroY += (timestamp - lastTimestamp) / fallingSpeed;
       if (heroY > platformHeight + 100 + (window.innerHeight - canvasHeight) / 2) {
+        
+        // 🔥 HİYERARŞİ ADIM 1: MAYMUN KONTROLÜ
         if (currentMonkeyLives > 0) {
             currentMonkeyLives--; let mStats = getMonkeyStats(); if (mStats.bonusCoins > 0) { playerCoins += mStats.bonusCoins; updateCoinUI(); }
             phase = "rescued"; heroY = 0; heroX = sticks.last().x - heroDistanceFromEdge; sticks.last().length = 0; sticks.last().rotation = 0;
             perfectElement.innerText = mStats.bonusCoins > 0 ? `🐒 KURTARILDI!\n+${mStats.bonusCoins} Jeton Bonus!` : `🐒 MAYMUN KURTARDI!`; perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1;
             draw(); setTimeout(() => { perfectElement.style.opacity = 0; phase = "waiting"; }, 1500); return;
         }
-        restartButton.style.display = "block";
-        if (duelInterval) clearInterval(duelInterval);
 
-        fetch('https://ninja-bridge-api.onrender.com/api/score/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: tgGroupId, earnedGems: sessionEarnedGems })
-        }).then(res => res.json()).then(data => { if(data.earnedCoins > 0) { playerCoins += data.earnedCoins; updateCoinUI(); } }).catch(err => console.error(err));
+        // 🔥 HİYERARŞİ ADIM 2: REKLAMLA CANLANMA KONTROLÜ
+        if (!adReviveUsedThisRun) {
+            phase = "dead_options"; // Oyunu dondur ve menüyü aç
+            document.getElementById("reviveMenu").style.display = "flex";
+            return;
+        }
+
+        // 🔥 HİYERARŞİ ADIM 3: KESİN ÖLÜM (Maymun Yok, Reklam İzlenmiş)
+        showGameOver();
         return;
       }
       break;
@@ -348,28 +358,18 @@ function renderShop() {
 
 let isConverting = false;
 window.convertGems = function() { 
-    if(playerCoins < 1000) { 
-        if (tg && tg.showAlert) tg.showAlert("1000 Jetonun yok!"); else alert("1000 Jetonun yok!"); 
-        return; 
-    } 
+    if(playerCoins < 1000) { if (tg && tg.showAlert) tg.showAlert("1000 Jetonun yok!"); else alert("1000 Jetonun yok!"); return; } 
     if (isConverting) return; isConverting = true;
     let btn = document.getElementById("gemBuyBtn"); if(btn) btn.innerText = "⏳"; 
     fetch('https://ninja-bridge-api.onrender.com/api/score/convert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId }) })
-    .then(res => res.json()).then(data => { 
-        isConverting = false;
-        if(data.success) { playerCoins -= 1000; playerGems += 1; updateCoinUI(); renderShop(); } 
-        else { if(btn) btn.innerText = "💎 1 Al"; }
-    }).catch(() => { isConverting = false; if(btn) btn.innerText = "💎 1 Al"; }); 
+    .then(res => res.json()).then(data => { isConverting = false; if(data.success) { playerCoins -= 1000; playerGems += 1; updateCoinUI(); renderShop(); } else { if(btn) btn.innerText = "💎 1 Al"; } }).catch(() => { isConverting = false; if(btn) btn.innerText = "💎 1 Al"; }); 
 }
 
 window.upgradePet = function(petKey, nextLevel, costType, costVal) { 
     if (costType === "coins" && playerCoins < costVal) { tg.showAlert("Yetersiz Jeton!"); return; } 
     if (costType === "gems" && playerGems < costVal) { tg.showAlert("Yetersiz Elmas!"); return; } 
     tg.showConfirm(`${petData[petKey].name} yoldaşını Seviye ${nextLevel} yapacaksın. Onaylıyor musun?`, function(agreed) { 
-        if(agreed) { 
-            fetch('https://ninja-bridge-api.onrender.com/api/score/upgradepet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, petName: petKey, coinCost: costType === "coins" ? costVal : 0, gemCost: costType === "gems" ? costVal : 0, nextLevel: nextLevel }) })
-            .then(res => res.json()).then(data => { if(data.success) { if(costType === "coins") playerCoins -= costVal; if(costType === "gems") playerGems -= costVal; ownedPets[petKey] = nextLevel; updateCoinUI(); renderShop(); } }); 
-        } 
+        if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/upgradepet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, petName: petKey, coinCost: costType === "coins" ? costVal : 0, gemCost: costType === "gems" ? costVal : 0, nextLevel: nextLevel }) }).then(res => res.json()).then(data => { if(data.success) { if(costType === "coins") playerCoins -= costVal; if(costType === "gems") playerGems -= costVal; ownedPets[petKey] = nextLevel; updateCoinUI(); renderShop(); } }); } 
     }); 
 }
 
