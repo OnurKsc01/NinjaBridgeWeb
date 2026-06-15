@@ -32,19 +32,17 @@ function unlockSounds() {
 }
 
 // ------------------------------------
-// 🔥 YENİ: DÜŞMAN PNG GÖRSELLERİ (PRELOAD)
+// DÜŞMAN PNG GÖRSELLERİ
 // ------------------------------------
 const enemyImages = {
-    "default": new Image(), // Gündüz: Arı
-    "gece": new Image(),    // Gece: Yarasa
-    "kanli": new Image()    // Kanlı Ay: Örümcek
+    "default": new Image(),
+    "gece": new Image(),
+    "kanli": new Image()
 };
-// Güvenli yükleme için crossOrigin ayarı (Canvas'ın çökmesini engeller)
 enemyImages["default"].crossOrigin = "Anonymous";
 enemyImages["gece"].crossOrigin = "Anonymous";
 enemyImages["kanli"].crossOrigin = "Anonymous";
 
-// Not: İleride kendi resimlerini kullanmak istersen bu linkleri silip "ari.png", "yarasa.png" gibi kendi yüklediğin dosyaların adını yazabilirsin.
 enemyImages["default"].src = "https://cdn-icons-png.flaticon.com/512/809/809052.png"; 
 enemyImages["gece"].src = "https://cdn-icons-png.flaticon.com/512/1068/1068065.png"; 
 enemyImages["kanli"].src = "https://cdn-icons-png.flaticon.com/512/817/817637.png"; 
@@ -58,7 +56,6 @@ const ctx = canvas.getContext("2d");
 canvas.style.transform = "translateZ(0)";
 canvas.style.willChange = "transform";
 
-let lowGraphics = false;
 const themeTop = "#BBD691", themeBottom = "#FEF1E1";
 const themeHill1 = "#95C629", themeHill2 = "#659F1C";
 const themeTree = "#7D833C", themeLeaves = ["#6D8821", "#8FAC34", "#98B333"];
@@ -68,21 +65,9 @@ const bgCacheCtx = bgCacheCanvas.getContext("2d");
 let lastRenderedOffset = -999;
 let lastRenderedWidth = 0;
 
-window.toggleGraphics = function() {
-    lowGraphics = !lowGraphics;
-    const btn = document.getElementById("graphicsBtn");
-    if (btn) {
-        btn.innerText = lowGraphics ? "⚙️ Grafik: Düşük" : "⚙️ Grafik: Yüksek";
-        btn.style.background = lowGraphics ? "#7f8c8d" : "#8e44ad";
-    }
-    applyCanvasSize();
-}
-
 function applyCanvasSize() {
-    let scale = lowGraphics ? 0.6 : 1; 
-    canvas.width = window.innerWidth * scale;
-    canvas.height = window.innerHeight * scale;
-    ctx.scale(scale, scale);
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
     canvas.style.width = window.innerWidth + "px";
     canvas.style.height = window.innerHeight + "px";
     lastRenderedWidth = 0; 
@@ -135,15 +120,10 @@ const petData = {
     "maymun": { name: "Kuyruklu Maymun", price: 400, desc: "Sv'ye göre ekstra Can & Jeton", emoji: "🐒" },
     "kurt": { name: "Gölge Kurdu", price: 750, desc: "Jeton Üretimi + Dev Kırmızı Alan", emoji: "🐺" } 
 };
-const bgData = { 
-    "default": { name: "Gündüz Vadisi", medal: "Vadi Çaylağı" }, 
-    "gece": { name: "Gece Yarısı", medal: "Gece Fatihi" }, 
-    "kanli": { name: "Kanlı Ay", medal: "Kanlı Ay Şövalyesi" }
-};
-let currentBg = "default"; // Gelecekte dünyaları açarsan diye altyapısı hazır
 
+let currentBg = "default"; 
 let phase = "waiting"; let lastTimestamp; let heroX = 0, heroY = 0, sceneOffset = 0; 
-let platforms = [], sticks = [], trees = [], enemies = []; // 🔥 enemies dizisi geri döndü
+let platforms = [], sticks = [], trees = [], enemies = []; 
 let score = 0, combo = 0; let currentMonkeyLives = 0; 
 let stepCount = 0; 
 
@@ -160,7 +140,7 @@ function loadPlayerData() {
             playerCoins = data.coins || 0; playerGems = data.gems || 0;
             currentSkin = data.currentSkin || "default"; ownedSkins = data.ownedSkins || ["default"]; 
             currentPet = data.currentPet || "default"; ownedPets = data.ownedPets || {}; 
-            currentBg = data.currentBackground || "default"; // Mevcut dünyayı çeker
+            currentBg = data.currentBackground || "default";
             updateCoinUI(); checkAdStatus(); 
             if (phase === "waiting") { if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } draw(); }
         }).catch(err => {});
@@ -213,7 +193,7 @@ function showGameOver() {
 function resetGame() {
   phase = "waiting"; lastTimestamp = undefined; sceneOffset = 0; score = 0; combo = 0; 
   sessionEarnedGems = 0; sessionEarnedCoins = 0; 
-  adReviveUsedThisRun = false; stepCount = 0; enemies = []; // 🔥 Düşmanlar sıfırlandı
+  adReviveUsedThisRun = false; stepCount = 0; enemies = [];
   document.getElementById("reviveMenu").style.display = "none"; restartButton.style.display = "none";
   if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } else { currentMonkeyLives = 0; }
   introductionElement.style.opacity = 1; perfectElement.style.opacity = 0; scoreElement.innerText = score;
@@ -239,9 +219,8 @@ function generatePlatform() {
   const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth)); 
   platforms.push({ x, w });
 
-  // 🔥 YENİ: DÜŞMAN (PNG) YARATMA SİSTEMİ
   if (score >= 500 && platforms.length > 1) {
-      let spawnChance = 0.2 + (score / 15000); // Skor arttıkça canavar çıkma ihtimali artar
+      let spawnChance = 0.2 + (score / 15000);
       if (Math.random() < spawnChance) {
           let gapStartX = lastPlatform.x + lastPlatform.w; 
           let gapEndX = x;
@@ -250,7 +229,7 @@ function generatePlatform() {
               baseY: canvasHeight - platformHeight, 
               offsetY: 0, 
               speed: 1.5 + (score/3000), 
-              worldType: currentBg // Hangi dünyanın canavarı çizilecek?
+              worldType: currentBg 
           });
       }
   }
@@ -273,7 +252,6 @@ function animate(timestamp) {
   if (dt >= 12 && dt <= 20) { dt = 16.66; } 
   else if (dt > 32) { dt = 16.66; } 
 
-  // 🔥 YENİ: CANAVARLARIN HAREKETİ (Pürüzsüz animasyon)
   if (enemies.length > 0 && phase !== "dead_options") {
       enemies.forEach(e => { e.offsetY = Math.sin(timestamp / (400 / e.speed)) * 60 - 20; });
   }
@@ -309,7 +287,6 @@ function animate(timestamp) {
     case "walking":
       heroX += dt / walkingSpeed; 
       
-      // 🔥 YENİ: DÜŞMANA ÇARPMA KONTROLÜ (Hitbox)
       let hitEnemy = enemies.find(e => { 
           let eY = e.baseY + e.offsetY; 
           return Math.abs(heroX - e.x) < 20 && Math.abs((heroY + canvasHeight - platformHeight - heroHeight/2) - eY) < 30; 
@@ -330,7 +307,7 @@ function animate(timestamp) {
           platforms = platforms.filter(p => p.x + p.w > sceneOffset - 300);
           sticks = sticks.filter(s => s.x > sceneOffset - 300);
           trees = trees.filter(t => t.x > sceneOffset - 1000);
-          enemies = enemies.filter(e => e.x > sceneOffset - 300); // 🔥 Ekrandan çıkan canavarları bellekten sil
+          enemies = enemies.filter(e => e.x > sceneOffset - 300); 
       }
       break;
     case "falling":
@@ -377,8 +354,6 @@ function drawBackground() {
     if (Math.abs(lastRenderedOffset - sceneOffset) > 0.1 || lastRenderedWidth !== canvas.width) {
         bgCacheCanvas.width = canvas.width;
         bgCacheCanvas.height = canvas.height;
-        let scale = lowGraphics ? 0.6 : 1; 
-        bgCacheCtx.scale(scale, scale);
 
         let grad = bgCacheCtx.createLinearGradient(0, 0, 0, window.innerHeight);
         grad.addColorStop(0, themeTop); 
@@ -386,11 +361,10 @@ function drawBackground() {
         bgCacheCtx.fillStyle = grad;
         bgCacheCtx.fillRect(0, 0, window.innerWidth, window.innerHeight); 
 
-        if(!lowGraphics) drawHill(bgCacheCtx, hill2BaseHeight, hill2Amplitude, hill2Stretch, themeHill2); 
+        drawHill(bgCacheCtx, hill2BaseHeight, hill2Amplitude, hill2Stretch, themeHill2); 
         drawHill(bgCacheCtx, hill1BaseHeight, hill1Amplitude, hill1Stretch, themeHill1); 
 
-        trees.forEach((tree, index) => { 
-            if(lowGraphics && index % 2 === 0) return;
+        trees.forEach((tree) => { 
             drawTree(bgCacheCtx, tree.x, tree.color, themeTree); 
         }); 
 
@@ -440,13 +414,11 @@ function drawPlatforms() {
   });
 }
 
-// 🔥 YENİ: DÜŞMANLARI PNG OLARAK ÇİZDİRME (İşlemciyi yormayan GPU destekli çizim)
 function drawEnemies() {
   enemies.forEach(e => {
       let eY = e.baseY + e.offsetY;
       let img = enemyImages[e.worldType] || enemyImages["default"];
       if (img && img.complete) {
-          // Resmi tam ortaya hizalayarak 32x32 piksel boyutunda çizer
           ctx.drawImage(img, e.x - 16, eY - 16, 32, 32);
       }
   });
