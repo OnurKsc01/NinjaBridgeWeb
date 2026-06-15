@@ -1,4 +1,3 @@
-Array.prototype.last = function () { return this[this.length - 1]; };
 Math.sinus = function (degree) { return Math.sin((degree / 180) * Math.PI); };
 
 // ------------------------------------
@@ -29,15 +28,17 @@ const petData = { "kopek": { name: "Altın Avcısı", price: 200, desc: "Daha h�
 
 // OFF-SCREEN CACHE (Resimleri Hafızaya Alma)
 const preRenderedPets = {};
-Object.keys(petData).forEach(key => {
-    let c = document.createElement('canvas');
-    c.width = 32; c.height = 32;
-    let cCtx = c.getContext('2d');
-    cCtx.font = "22px Arial"; cCtx.fillText(petData[key].emoji, 2, 24);
-    preRenderedPets[key] = c;
-    let img = new Image(); img.src = key + '.png'; 
-    img.onload = () => { cCtx.clearRect(0, 0, 32, 32); cCtx.drawImage(img, 0, 0, 26, 26); };
-});
+try {
+    Object.keys(petData).forEach(key => {
+        let c = document.createElement('canvas');
+        c.width = 32; c.height = 32;
+        let cCtx = c.getContext('2d');
+        cCtx.font = "22px Arial"; cCtx.fillText(petData[key].emoji, 2, 24);
+        preRenderedPets[key] = c;
+        let img = new Image(); img.src = key + '.png'; 
+        img.onload = () => { cCtx.clearRect(0, 0, 32, 32); cCtx.drawImage(img, 0, 0, 26, 26); };
+    });
+} catch(e) {}
 
 const introductionElement = document.getElementById("introduction");
 const perfectElement = document.getElementById("perfect");
@@ -54,14 +55,7 @@ const comboSound = new Audio('combo.mp3'); comboSound.volume = 0.8;
 const fallSound = new Audio('dusme.mp3'); fallSound.volume = 0.8;
 let soundsUnlocked = false;
 
-function unlockSounds() {
-    if (!soundsUnlocked) {
-        bgMusic.play().catch(()=>{}); 
-        comboSound.play().then(() => comboSound.pause()).catch(()=>{}); 
-        fallSound.play().then(() => fallSound.pause()).catch(()=>{});
-        soundsUnlocked = true;
-    }
-}
+function unlockSounds() { if (!soundsUnlocked) { bgMusic.play().catch(()=>{}); comboSound.play().then(() => comboSound.pause()).catch(()=>{}); fallSound.play().then(() => fallSound.pause()).catch(()=>{}); soundsUnlocked = true; } }
 
 // ------------------------------------
 // 3. REKLAM (ADSGRAM) SİSTEMİ
@@ -69,43 +63,32 @@ function unlockSounds() {
 let adController = null; 
 let adReviveUsedThisRun = false; 
 
-function initAdsGram() {
-    try { 
-        if (window.Adsgram) { adController = window.Adsgram.init({ blockId: "35103" }); } 
-        else { setTimeout(initAdsGram, 500); } 
-    } catch (err) {}
-}
+function initAdsGram() { try { if (window.Adsgram) { adController = window.Adsgram.init({ blockId: "35103" }); } else { setTimeout(initAdsGram, 500); } } catch (err) {} }
 
 document.getElementById("reviveAdBtn").addEventListener("click", () => {
-    if (!adController) { if(tg && tg.showAlert) tg.showAlert("Reklam yüklenemedi. İnternetinizi kontrol edin."); return; }
+    if (!adController) { if(tg && tg.showAlert) tg.showAlert("Reklam yüklenemedi."); return; }
     adController.show().then((result) => { 
         if (result.done) { 
-            adReviveUsedThisRun = true; 
-            document.getElementById("reviveMenu").style.display = "none"; 
-            phase = "waiting"; heroY = 0; heroX = sticks.last().x - heroDistanceFromEdge; 
-            sticks.last().length = 0; sticks.last().rotation = 0; 
+            adReviveUsedThisRun = true; document.getElementById("reviveMenu").style.display = "none"; 
+            phase = "waiting"; heroY = 0; heroX = sticks[sticks.length - 1].x - heroDistanceFromEdge; 
+            sticks[sticks.length - 1].length = 0; sticks[sticks.length - 1].rotation = 0; 
             perfectElement.innerText = "📺 CANLANDIN!"; perfectElement.style.color = "#8e44ad"; perfectElement.style.opacity = 1; 
             draw(); setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); 
         } 
     }).catch(() => { });
 });
 
-document.getElementById("skipReviveBtn").addEventListener("click", () => { 
-    document.getElementById("reviveMenu").style.display = "none"; restartButton.style.display = "block"; saveScoreToAPI(); 
-});
+document.getElementById("skipReviveBtn").addEventListener("click", () => { document.getElementById("reviveMenu").style.display = "none"; restartButton.style.display = "block"; saveScoreToAPI(); });
 
 document.getElementById("watchEarnBtn").addEventListener("click", () => {
-    if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert("Oyun devam ederken reklam izlenemez!"); return; }
-    if (!adController) { if(tg && tg.showAlert) tg.showAlert("Reklam yüklenemedi. İnternetinizi kontrol edin."); return; }
+    if (phase !== "waiting") return;
+    if (!adController) { if(tg && tg.showAlert) tg.showAlert("Reklam yüklenemedi."); return; }
     adController.show().then((result) => { 
         if (result.done) { 
             const rewards = [35, 50, 65]; const earned = rewards[Math.floor(Math.random() * rewards.length)];
             playerCoins += earned; updateCoinUI();
-            fetch('https://ninja-bridge-api.onrender.com/api/score/save', { 
-                method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, 
-                body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: tgGroupId, earnedCoins: earned, earnedGems: 0 }) 
-            }).catch(e => {});
-            if(tg && tg.showAlert) { tg.showAlert(`📺 Tebrikler! Reklamı izledin ve ${earned} Jeton kazandın!`); }
+            fetch('https://ninja-bridge-api.onrender.com/api/score/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: tgGroupId, earnedCoins: earned, earnedGems: 0 }) }).catch(e => {});
+            if(tg && tg.showAlert) { tg.showAlert(`📺 ${earned} Jeton kazandın!`); }
         } 
     }).catch(() => { });
 });
@@ -134,7 +117,8 @@ const ctx = canvas.getContext("2d");
 window.addEventListener('load', () => {
     if (tg && tg.ready) tg.ready();
     if (tg && tg.expand) tg.expand();
-    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    canvas.width = window.innerWidth || 375; 
+    canvas.height = window.innerHeight || 800;
     initAdsGram(); 
     loadPlayerData();
     checkDuelStatus(); 
@@ -149,7 +133,7 @@ function loadPlayerData() {
             currentSkin = data.currentSkin || "default"; ownedSkins = data.ownedSkins || ["default"];
             currentPet = data.currentPet || "default"; ownedPets = data.ownedPets || {};
             updateCoinUI();
-            if (phase === "waiting") { if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } draw(); }
+            if (phase === "waiting") { if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } }
         }).catch(err => console.error("Veri çekilemedi", err));
 }
 
@@ -161,15 +145,7 @@ function checkDuelStatus() {
                 isDuelMode = true;
                 opponentName = data.opponentName;
                 opponentTargetScore = data.opponentScore;
-                
-                const banner = document.getElementById("duelBanner");
-                const oppEl = document.getElementById("duelOpponent");
-                const targetEl = document.getElementById("duelTarget");
-                if (banner && oppEl && targetEl) {
-                    oppEl.innerText = opponentName;
-                    targetEl.innerText = (opponentTargetScore === -1) ? "İlk Oynayan Sensin!" : `${opponentTargetScore} Puan`;
-                    banner.style.display = "block";
-                }
+                // 🔥 Afiş/Banner gösterme kodu tamamen silindi! Sadece hafızada düelloda olduğunu biliyor.
             }
         }).catch(() => {});
 }
@@ -199,10 +175,7 @@ function getMonkeyStats() { let lvl = ownedPets["maymun"] || 1; let lives = Math
 function processCoinGeneration(earnedPts) {
     stepCount += earnedPts; let reqSteps = 8; 
     if (currentPet === "kopek" || currentPet === "kurt") { let lvl = ownedPets[currentPet] || 1; reqSteps = Math.max(1, 8 - lvl); } 
-    if (stepCount >= reqSteps) { 
-        let coinsToAdd = Math.floor(stepCount / reqSteps);
-        sessionEarnedCoins += coinsToAdd; stepCount = stepCount % reqSteps; 
-    }
+    if (stepCount >= reqSteps) { let coinsToAdd = Math.floor(stepCount / reqSteps); playerCoins += coinsToAdd; sessionEarnedCoins += coinsToAdd; updateCoinUI(); stepCount = stepCount % reqSteps; }
 }
 
 function isMenuOpen() { 
@@ -212,29 +185,22 @@ function isMenuOpen() {
 }
 
 function resetGame() {
-  phase = "waiting"; lastTimestamp = undefined; sceneOffset = 0; score = 0; combo = 0; 
-  sessionEarnedCoins = 0; stepCount = 0; adReviveUsedThisRun = false;
+  phase = "waiting"; lastTimestamp = undefined; sceneOffset = 0; score = 0; combo = 0; sessionEarnedCoins = 0; stepCount = 0; adReviveUsedThisRun = false;
   if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } else { currentMonkeyLives = 0; }
-  introductionElement.style.opacity = 1; perfectElement.style.opacity = 0;
-  restartButton.style.display = "none"; 
+  introductionElement.style.opacity = 1; perfectElement.style.opacity = 0; restartButton.style.display = "none"; 
   if(document.getElementById("reviveMenu")) document.getElementById("reviveMenu").style.display = "none";
-  scoreElement.innerText = score;
-  platforms = [{ x: 50, w: 50 }];
+  scoreElement.innerText = score; platforms = [{ x: 50, w: 50 }];
   generatePlatform(); generatePlatform(); generatePlatform(); generatePlatform();
   sticks = [{ x: platforms[0].x + platforms[0].w, length: 0, rotation: 0 }];
   trees = []; for(let i=0; i<10; i++) generateTree();
-  heroX = platforms[0].x + platforms[0].w - heroDistanceFromEdge; heroY = 0; draw();
+  heroX = platforms[0].x + platforms[0].w - heroDistanceFromEdge; heroY = 0; 
+  draw();
 }
 
-function generateTree() {
-  const minimumGap = 30, maximumGap = 150; const lastTree = trees[trees.length - 1]; let furthestX = lastTree ? lastTree.x : 0;
-  const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap));
-  const treeColors = ["#6D8821", "#8FAC34", "#98B333"]; trees.push({ x, color: treeColors[Math.floor(Math.random() * 3)] });
-}
+function generateTree() { const minimumGap = 30, maximumGap = 150; const lastTree = trees[trees.length - 1]; let furthestX = lastTree ? lastTree.x : 0; const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap)); const treeColors = ["#6D8821", "#8FAC34", "#98B333"]; trees.push({ x, color: treeColors[Math.floor(Math.random() * 3)] }); }
 
 function generatePlatform() {
   let minimumGap, maximumGap, minimumWidth, maximumWidth;
-
   if (score >= 5000) { minimumGap = 120; maximumGap = 250; minimumWidth = 10; maximumWidth = 25; }
   else if (score >= 4000) { minimumGap = 100; maximumGap = 230; minimumWidth = 15; maximumWidth = 35; }
   else if (score >= 3000) { minimumGap = 90; maximumGap = 210; minimumWidth = 20; maximumWidth = 45; }
@@ -244,20 +210,15 @@ function generatePlatform() {
   else if (score >= 500) { minimumGap = 50; maximumGap = 130; minimumWidth = 40; maximumWidth = 85; }
   else if (score >= 250) { minimumGap = 45; maximumGap = 110; minimumWidth = 45; maximumWidth = 95; }
   else { minimumGap = 40; maximumGap = 90; minimumWidth = 50; maximumWidth = 100; } 
-
-  let maxScreenGap = window.innerWidth - 130;
-  if (maximumGap > maxScreenGap) { maximumGap = Math.max(minimumGap + 10, maxScreenGap); }
-
-  const lastPlatform = platforms[platforms.length - 1]; let furthestX = lastPlatform.x + lastPlatform.w;
-  const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap));
-  const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth)); platforms.push({ x, w });
+  let maxScreenGap = window.innerWidth - 130; if (maximumGap > maxScreenGap) { maximumGap = Math.max(minimumGap + 10, maxScreenGap); }
+  const lastPlatform = platforms[platforms.length - 1]; let furthestX = lastPlatform.x + lastPlatform.w; const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap)); const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth)); platforms.push({ x, w });
 }
 
 // ------------------------------------
 // 6. MOTOR (ANIMATION & INPUT)
 // ------------------------------------
-window.addEventListener("mousedown", function (event) { if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); window.requestAnimationFrame(animate); }});
-window.addEventListener("touchstart", function (event) { if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); window.requestAnimationFrame(animate); }});
+window.addEventListener("mousedown", function (event) { if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); } });
+window.addEventListener("touchstart", function (event) { if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); } });
 window.addEventListener("mouseup", function (event) { if (phase == "stretching") phase = "turning"; });
 window.addEventListener("touchend", function (event) { if (phase == "stretching") phase = "turning"; });
 window.addEventListener("resize", function (event) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; draw(); });
@@ -266,224 +227,153 @@ window.requestAnimationFrame(animate);
 
 function animate(timestamp) {
   if (!lastTimestamp) { lastTimestamp = timestamp; window.requestAnimationFrame(animate); return; }
-  let dt = timestamp - lastTimestamp;
-  if (dt >= 12 && dt <= 20) { dt = 16.66; } else if (dt > 32) { dt = 16.66; } 
+  let dt = timestamp - lastTimestamp; if (dt >= 12 && dt <= 20) { dt = 16.66; } else if (dt > 32) { dt = 16.66; } 
+
+  if (sticks.length === 0) { window.requestAnimationFrame(animate); return; }
+  const lastStick = sticks[sticks.length - 1];
 
   switch (phase) {
-    case "waiting": return; // Orijinal çalışan sisteme dönüldü!
+    case "waiting": break; 
     case "dead_options": break; 
-    case "stretching": { sticks.last().length += dt / stretchingSpeed; break; }
+    case "stretching": { lastStick.length += dt / stretchingSpeed; break; }
     case "turning": {
-      sticks.last().rotation += dt / turningSpeed;
-      if (sticks.last().rotation > 90) {
-        sticks.last().rotation = 90;
-        const [nextPlatform, perfectHit] = thePlatformTheStickHits();
+      lastStick.rotation += dt / turningSpeed;
+      if (lastStick.rotation > 90) {
+        lastStick.rotation = 90; const [nextPlatform, perfectHit] = thePlatformTheStickHits();
         if (nextPlatform) {
           let earnedPts = 0;
-          if (perfectHit) {
-             combo++; earnedPts = 1 + combo; score += earnedPts;
-             perfectElement.innerText = `🔥 KUSURSUZ! +${earnedPts}`;
-             perfectElement.style.opacity = 1; setTimeout(() => (perfectElement.style.opacity = 0), 1000);
-             comboSound.currentTime = 0; comboSound.play().catch(e => {});
-          } else {
-             combo = 0; earnedPts = 1; score += earnedPts; perfectElement.innerText = "";
-          }
-          processCoinGeneration(earnedPts);
-          scoreElement.innerText = score; 
-          generatePlatform(); generateTree(); generateTree();
+          if (perfectHit) { combo++; earnedPts = 1 + combo; score += earnedPts; perfectElement.innerText = `🔥 KUSURSUZ! +${earnedPts}`; perfectElement.style.opacity = 1; setTimeout(() => (perfectElement.style.opacity = 0), 1000); comboSound.currentTime = 0; comboSound.play().catch(e => {}); } 
+          else { combo = 0; earnedPts = 1; score += earnedPts; perfectElement.innerText = ""; }
+          processCoinGeneration(earnedPts); scoreElement.innerText = score; generatePlatform(); generateTree(); generateTree();
         }
         phase = "walking";
       }
       break;
     }
     case "walking": {
-      heroX += dt / walkingSpeed;
-      const [nextPlatform] = thePlatformTheStickHits();
-      if (nextPlatform) {
-        const maxHeroX = nextPlatform.x + nextPlatform.w - heroDistanceFromEdge;
-        if (heroX > maxHeroX) { heroX = maxHeroX; phase = "transitioning"; }
-      } else {
-        const maxHeroX = sticks.last().x + sticks.last().length + heroWidth;
-        if (heroX > maxHeroX) { 
-            heroX = maxHeroX; 
-            phase = "falling"; 
-            fallSound.currentTime = 0; fallSound.play().catch(e=>{});
-        }
-      }
+      heroX += dt / walkingSpeed; const [nextPlatform] = thePlatformTheStickHits();
+      if (nextPlatform) { const maxHeroX = nextPlatform.x + nextPlatform.w - heroDistanceFromEdge; if (heroX > maxHeroX) { heroX = maxHeroX; phase = "transitioning"; } } 
+      else { const maxHeroX = lastStick.x + lastStick.length + heroWidth; if (heroX > maxHeroX) { heroX = maxHeroX; phase = "falling"; fallSound.currentTime = 0; fallSound.play().catch(e=>{}); } }
       break;
     }
-    case "transitioning": {
-      sceneOffset += dt / transitioningSpeed;
-      const [nextPlatform] = thePlatformTheStickHits();
-      if (sceneOffset > nextPlatform.x + nextPlatform.w - paddingX) {
-        sticks.push({ x: nextPlatform.x + nextPlatform.w, length: 0, rotation: 0 });
-        phase = "waiting";
-      }
-      break;
-    }
+    case "transitioning": { sceneOffset += dt / transitioningSpeed; const [nextPlatform] = thePlatformTheStickHits(); if (sceneOffset > nextPlatform.x + nextPlatform.w - paddingX) { sticks.push({ x: nextPlatform.x + nextPlatform.w, length: 0, rotation: 0 }); phase = "waiting"; } break; }
+    
     case "falling": {
-      if (sticks.last().rotation < 180) sticks.last().rotation += dt / turningSpeed;
-      heroY += dt / fallingSpeed;
-      const maxHeroY = platformHeight + 100 + (window.innerHeight - canvasHeight) / 2;
+      if (lastStick.rotation < 180) lastStick.rotation += dt / turningSpeed;
+      heroY += dt / fallingSpeed; const maxHeroY = platformHeight + 100 + (window.innerHeight - canvasHeight) / 2;
       
       if (heroY > maxHeroY) {
-        if (currentMonkeyLives > 0) {
-            currentMonkeyLives--; let mStats = getMonkeyStats(); 
-            if (mStats.bonusCoins > 0) { sessionEarnedCoins += mStats.bonusCoins; }
-            phase = "waiting"; heroY = 0; heroX = sticks.last().x - heroDistanceFromEdge; sticks.last().length = 0; sticks.last().rotation = 0; 
-            perfectElement.innerText = `🐒 MAYMUN KURTARDI!`; perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1; draw(); setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); return;
+        if (currentMonkeyLives > 0) { 
+            currentMonkeyLives--; phase = "waiting"; heroY = 0; heroX = lastStick.x - heroDistanceFromEdge; lastStick.length = 0; lastStick.rotation = 0; 
+            perfectElement.innerText = `🐒 MAYMUN KURTARDI!`; perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1; setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); 
+            break; 
         }
         
-        // 🔥 İŞTE CAN ALICI BYPASS: Düelloda ise direkt ekranı getir
+        // 🔥 YENİ: DÜELLO BİTTİĞİNDE ÇIKACAK SADE YAZI (Afiş yerine)
         if (isDuelMode) {
             phase = "dead_options"; 
+            perfectElement.innerText = "⚔️ DÜELLO BİTTİ!"; 
+            perfectElement.style.color = "#e74c3c"; 
+            perfectElement.style.opacity = 1;
             restartButton.style.display = "block"; 
             saveScoreToAPI(); 
-            return;
+            break;
         }
 
         let reviveMenuEl = document.getElementById("reviveMenu");
-        if (!adReviveUsedThisRun && reviveMenuEl) {
-            phase = "dead_options"; 
-            reviveMenuEl.style.display = "flex"; 
-            return;
+        if (!adReviveUsedThisRun && reviveMenuEl) { 
+            phase = "dead_options"; reviveMenuEl.style.display = "flex"; 
+            break; 
         }
-
+        
         phase = "dead_options"; 
-        restartButton.style.display = "block"; 
-        saveScoreToAPI(); 
-        return;
+        restartButton.style.display = "block"; saveScoreToAPI(); 
+        break;
       }
       break;
     }
   }
-  draw(); window.requestAnimationFrame(animate); lastTimestamp = timestamp;
+  
+  draw(); 
+  window.requestAnimationFrame(animate); 
+  lastTimestamp = timestamp;
 }
 
-function thePlatformTheStickHits() {
-  if (sticks.last().rotation != 90) throw Error(`Stick is ${sticks.last().rotation}°`);
-  const stickFarX = sticks.last().x + sticks.last().length;
-  const platformTheStickHits = platforms.find((platform) => platform.x < stickFarX && stickFarX < platform.x + platform.w);
-  let pArea = getPerfectAreaSize(platformTheStickHits ? platformTheStickHits.w : 0);
-  if (platformTheStickHits && platformTheStickHits.x + platformTheStickHits.w / 2 - pArea / 2 < stickFarX && stickFarX < platformTheStickHits.x + platformTheStickHits.w / 2 + pArea / 2)
-    return [platformTheStickHits, true];
-  return [platformTheStickHits, false];
+function thePlatformTheStickHits() { 
+  const lastStick = sticks[sticks.length - 1];
+  if (lastStick.rotation != 90) throw Error(`Stick is ${lastStick.rotation}°`); 
+  const stickFarX = lastStick.x + lastStick.length; 
+  const platformTheStickHits = platforms.find((platform) => platform.x < stickFarX && stickFarX < platform.x + platform.w); 
+  let pArea = getPerfectAreaSize(platformTheStickHits ? platformTheStickHits.w : 0); 
+  if (platformTheStickHits && platformTheStickHits.x + platformTheStickHits.w / 2 - pArea / 2 < stickFarX && stickFarX < platformTheStickHits.x + platformTheStickHits.w / 2 + pArea / 2) return [platformTheStickHits, true]; return [platformTheStickHits, false]; 
 }
 
 // ------------------------------------
 // 7. RENDER (ÇİZİM MOTORU)
 // ------------------------------------
-function draw() {
-  ctx.save(); ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-  drawBackground();
-  ctx.translate((window.innerWidth - canvasWidth) / 2 - sceneOffset, (window.innerHeight - canvasHeight) / 2);
-  drawPlatforms(); drawPet(); drawHero(); drawSticks();
-  ctx.restore();
+function draw() { 
+    let wWidth = window.innerWidth || 375;
+    let wHeight = window.innerHeight || 800;
+    
+    ctx.save(); 
+    ctx.clearRect(0, 0, wWidth, wHeight); 
+    drawBackground(); 
+    ctx.translate((wWidth - canvasWidth) / 2 - sceneOffset, (wHeight - canvasHeight) / 2); 
+    drawPlatforms(); 
+    drawPet(); 
+    drawHero(); 
+    drawSticks(); 
+    ctx.restore(); 
 }
 
 restartButton.addEventListener("click", function (event) { event.preventDefault(); resetGame(); });
 
-function drawPlatforms() {
-  platforms.forEach(({ x, w }) => {
-    ctx.fillStyle = "black"; ctx.fillRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2);
-    if (sticks.last().x < x) {
-      ctx.fillStyle = "red"; let pArea = getPerfectAreaSize(w);
-      ctx.fillRect(x + w / 2 - pArea / 2, canvasHeight - platformHeight, pArea, pArea);
-    }
-  });
-}
-
-function drawHero() {
-  ctx.save();
-  let skin = skinData[currentSkin] || skinData["default"];
-  ctx.fillStyle = skin.body;
-  ctx.translate(heroX - heroWidth / 2, heroY + canvasHeight - platformHeight - heroHeight / 2);
-  drawRoundedRect(-heroWidth / 2, -heroHeight / 2, heroWidth, heroHeight - 4, 5);
+function drawPlatforms() { 
+  const lastStick = sticks[sticks.length - 1];
+  let wHeight = window.innerHeight || 800;
   
-  const legDistance = 5;
-  ctx.beginPath(); ctx.arc(legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill();
-  ctx.beginPath(); ctx.arc(-legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill();
-  
-  ctx.beginPath(); ctx.fillStyle = "white"; ctx.arc(5, -7, 3, 0, Math.PI * 2, false); ctx.fill();
-  
-  ctx.fillStyle = skin.bandana;
-  ctx.fillRect(-heroWidth / 2 - 1, -12, heroWidth + 2, 4.5);
-  ctx.beginPath(); ctx.moveTo(-9, -14.5); ctx.lineTo(-17, -18.5); ctx.lineTo(-14, -8.5); ctx.fill();
-  ctx.beginPath(); ctx.moveTo(-10, -10.5); ctx.lineTo(-15, -3.5); ctx.lineTo(-5, -7); ctx.fill();
-  ctx.restore();
+  platforms.forEach(({ x, w }) => { 
+      ctx.fillStyle = "black"; 
+      ctx.fillRect(x, canvasHeight - platformHeight, w, platformHeight + (wHeight - canvasHeight) / 2); 
+      if (lastStick && lastStick.x < x) { 
+          ctx.fillStyle = "red"; let pArea = getPerfectAreaSize(w); 
+          ctx.fillRect(x + w / 2 - pArea / 2, canvasHeight - platformHeight, pArea, pArea); 
+      } 
+  }); 
 }
 
-function drawPet() {
-  if (currentPet === "default") return; 
-  let bounce = (phase === "walking" || phase === "transitioning") ? Math.abs(Math.sin(Date.now() / 100)) * 6 : 0; 
-  ctx.save(); 
-  ctx.translate(heroX - 32, heroY + canvasHeight - platformHeight - 20 - bounce); 
-  
-  if (preRenderedPets[currentPet]) {
-      ctx.drawImage(preRenderedPets[currentPet], 0, 0);
-  }
-  
-  ctx.restore();
-}
+function drawHero() { ctx.save(); let skin = skinData[currentSkin] || skinData["default"]; ctx.fillStyle = skin.body; ctx.translate(heroX - heroWidth / 2, heroY + canvasHeight - platformHeight - heroHeight / 2); drawRoundedRect(-heroWidth / 2, -heroHeight / 2, heroWidth, heroHeight - 4, 5); const legDistance = 5; ctx.beginPath(); ctx.arc(legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.beginPath(); ctx.arc(-legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.beginPath(); ctx.fillStyle = "white"; ctx.arc(5, -7, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.fillStyle = skin.bandana; ctx.fillRect(-heroWidth / 2 - 1, -12, heroWidth + 2, 4.5); ctx.beginPath(); ctx.moveTo(-9, -14.5); ctx.lineTo(-17, -18.5); ctx.lineTo(-14, -8.5); ctx.fill(); ctx.beginPath(); ctx.moveTo(-10, -10.5); ctx.lineTo(-15, -3.5); ctx.lineTo(-5, -7); ctx.fill(); ctx.restore(); }
 
-function drawRoundedRect(x, y, width, height, radius) {
-  ctx.beginPath(); ctx.moveTo(x, y + radius); ctx.lineTo(x, y + height - radius);
-  ctx.arcTo(x, y + height, x + radius, y + height, radius); ctx.lineTo(x + width - radius, y + height);
-  ctx.arcTo(x + width, y + height, x + width, y + height - radius, radius); ctx.lineTo(x + width, y + radius);
-  ctx.arcTo(x + width, y, x + width - radius, y, radius); ctx.lineTo(x + radius, y);
-  ctx.arcTo(x, y, x, y + radius, radius); ctx.fill();
-}
+function drawPet() { if (currentPet === "default") return; let bounce = (phase === "walking" || phase === "transitioning") ? Math.abs(Math.sin(Date.now() / 100)) * 6 : 0; ctx.save(); ctx.translate(heroX - 32, heroY + canvasHeight - platformHeight - 20 - bounce); if (preRenderedPets[currentPet]) { ctx.drawImage(preRenderedPets[currentPet], 0, 0); } ctx.restore(); }
 
-function drawSticks() {
-  sticks.forEach((stick) => {
-    ctx.save(); ctx.translate(stick.x, canvasHeight - platformHeight); ctx.rotate((Math.PI / 180) * stick.rotation);
-    ctx.beginPath(); ctx.lineWidth = 2; ctx.moveTo(0, 0); ctx.lineTo(0, -stick.length); ctx.stroke(); ctx.restore();
-  });
-}
+function drawRoundedRect(x, y, width, height, radius) { ctx.beginPath(); ctx.moveTo(x, y + radius); ctx.lineTo(x, y + height - radius); ctx.arcTo(x, y + height, x + radius, y + height, radius); ctx.lineTo(x + width - radius, y + height); ctx.arcTo(x + width, y + height, x + width, y + height - radius, radius); ctx.lineTo(x + width, y + radius); ctx.arcTo(x + width, y, x + width - radius, y, radius); ctx.lineTo(x + radius, y); ctx.arcTo(x, y, x, y + radius, radius); ctx.fill(); }
 
-function drawBackground() {
-  var gradient = ctx.createLinearGradient(0, 0, 0, window.innerHeight);
-  gradient.addColorStop(0, "#BBD691"); gradient.addColorStop(1, "#FEF1E1");
-  ctx.fillStyle = gradient; ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
-  drawHill(hill1BaseHeight, hill1Amplitude, hill1Stretch, "#95C629");
-  drawHill(hill2BaseHeight, hill2Amplitude, hill2Stretch, "#659F1C");
-  trees.forEach((tree) => drawTree(tree.x, tree.color));
-}
+function drawSticks() { sticks.forEach((stick) => { ctx.save(); ctx.translate(stick.x, canvasHeight - platformHeight); ctx.rotate((Math.PI / 180) * stick.rotation); ctx.beginPath(); ctx.lineWidth = 2; ctx.moveTo(0, 0); ctx.lineTo(0, -stick.length); ctx.stroke(); ctx.restore(); }); }
 
-function drawHill(baseHeight, amplitude, stretch, color) {
-  ctx.beginPath(); ctx.moveTo(0, window.innerHeight); ctx.lineTo(0, getHillY(0, baseHeight, amplitude, stretch));
-  for (let i = 0; i < window.innerWidth; i++) { ctx.lineTo(i, getHillY(i, baseHeight, amplitude, stretch)); }
-  ctx.lineTo(window.innerWidth, window.innerHeight); ctx.fillStyle = color; ctx.fill();
-}
+function drawBackground() { let wWidth = window.innerWidth || 375; let wHeight = window.innerHeight || 800; var gradient = ctx.createLinearGradient(0, 0, 0, wHeight); gradient.addColorStop(0, "#BBD691"); gradient.addColorStop(1, "#FEF1E1"); ctx.fillStyle = gradient; ctx.fillRect(0, 0, wWidth, wHeight); drawHill(hill1BaseHeight, hill1Amplitude, hill1Stretch, "#95C629"); drawHill(hill2BaseHeight, hill2Amplitude, hill2Stretch, "#659F1C"); trees.forEach((tree) => drawTree(tree.x, tree.color)); }
 
-function drawTree(x, color) {
-  ctx.save(); ctx.translate((-sceneOffset * backgroundSpeedMultiplier + x) * hill1Stretch, getTreeY(x, hill1BaseHeight, hill1Amplitude));
-  const treeTrunkHeight = 5, treeTrunkWidth = 2, treeCrownHeight = 25, treeCrownWidth = 10;
-  ctx.fillStyle = "#7D833C"; ctx.fillRect(-treeTrunkWidth / 2, -treeTrunkHeight, treeTrunkWidth, treeTrunkHeight);
-  ctx.beginPath(); ctx.moveTo(-treeCrownWidth / 2, -treeTrunkHeight); ctx.lineTo(0, -(treeTrunkHeight + treeCrownHeight)); ctx.lineTo(treeCrownWidth / 2, -treeTrunkHeight);
-  ctx.fillStyle = color; ctx.fill(); ctx.restore();
-}
+function drawHill(baseHeight, amplitude, stretch, color) { let wWidth = window.innerWidth || 375; let wHeight = window.innerHeight || 800; ctx.beginPath(); ctx.moveTo(0, wHeight); ctx.lineTo(0, getHillY(0, baseHeight, amplitude, stretch)); for (let i = 0; i < wWidth; i++) { ctx.lineTo(i, getHillY(i, baseHeight, amplitude, stretch)); } ctx.lineTo(wWidth, wHeight); ctx.fillStyle = color; ctx.fill(); }
 
-function getHillY(windowX, baseHeight, amplitude, stretch) { return Math.sinus((sceneOffset * backgroundSpeedMultiplier + windowX) * stretch) * amplitude + window.innerHeight - baseHeight; }
-function getTreeY(x, baseHeight, amplitude) { return Math.sinus(x) * amplitude + window.innerHeight - baseHeight; }
+function getHillY(windowX, baseHeight, amplitude, stretch) { let wHeight = window.innerHeight || 800; return Math.sinus((sceneOffset * backgroundSpeedMultiplier + windowX) * stretch) * amplitude + wHeight - baseHeight; }
+function getTreeY(x, baseHeight, amplitude) { let wHeight = window.innerHeight || 800; return Math.sinus(x) * amplitude + wHeight - baseHeight; }
 
 // ------------------------------------
-// 8. UI VE MARKET İŞLEMLERİ (KORUMALI)
+// 8. UI VE MARKET İŞLEMLERİ
 // ------------------------------------
 
 document.getElementById("leaderboardBtn").addEventListener("click", () => { 
-    if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert("Oyun devam ederken skor tablosu açılamaz! Lütfen yanmayı bekleyin."); return; }
+    if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert("Oyun devam ederken açılamaz!"); return; }
     document.getElementById("leaderboardModal").style.display = "block"; 
     const list = document.getElementById("scoreList"); list.innerHTML = "<li style='text-align:center;'>Yükleniyor... ⏳</li>"; 
     fetch(`https://ninja-bridge-api.onrender.com/api/score/global?t=${Date.now()}`).then(res => res.json()).then(data => { 
         list.innerHTML = ""; if(data.length === 0) { list.innerHTML = "<li>Henüz kimse oynamadı!</li>"; return; } 
         data.forEach((item, i) => { list.innerHTML += `<li style="padding:4px; border-bottom:1px solid #ddd;"><b>${i + 1}.</b> ${item.name} <span style="float:right;">${item.score} Puan</span></li>`; }); 
-    }).catch(() => list.innerHTML = "<li style='color:red;'>Hata oluştu!</li>"); 
+    }).catch(() => list.innerHTML = "<li style='color:red;'>Hata!</li>"); 
 }); 
 document.getElementById("closeLeaderboard").addEventListener("click", () => { document.getElementById("leaderboardModal").style.display = "none"; });
 
 document.getElementById("shopBtn").addEventListener("click", () => { 
-    if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert("Oyun devam ederken market açılamaz! Lütfen yanmayı bekleyin."); return; }
+    if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert("Oyun devam ederken market açılamaz!"); return; }
     document.getElementById("shopModal").style.display = "block"; renderShop(); 
 });
 document.getElementById("closeShop").addEventListener("click", () => { document.getElementById("shopModal").style.display = "none"; });
