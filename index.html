@@ -3,60 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Ninja Bridge</title>
-  <link rel="stylesheet" href="css.css?v=28">
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
-  <script src="java.js?v=28" defer></script>
+  <title>Ninja Bridge Başlangıç</title>
+  <link rel="stylesheet" href="css.css">
+  <script src="java.js" defer></script>
 </head>
 <body>
   <div class="container">
-    
-    <div id="ui-top" style="position: absolute; top: 15px; left: 15px; right: 15px; display: flex; justify-content: space-between; z-index: 100; pointer-events: none;">
-        <div id="ui-left" style="display: flex; flex-direction: column; gap: 8px; pointer-events: auto;">
-            <button id="leaderboardBtn" style="background:#f1c40f; border:none; padding:6px 12px; border-radius:8px; font-weight:bold; font-size:12px; box-shadow:0 2px 4px rgba(0,0,0,0.2); cursor:pointer;">🏆 Skor</button>
-            <button id="shopBtn" style="background:#2ecc71; color:white; border:none; padding:6px 12px; border-radius:8px; font-weight:bold; font-size:12px; box-shadow:0 2px 4px rgba(0,0,0,0.2); cursor:pointer;">🛒 Market</button>
-            <button id="watchAdBtn" style="background:#e74c3c; color:white; border:none; padding:6px 12px; border-radius:8px; font-weight:bold; font-size:12px; box-shadow:0 2px 4px rgba(0,0,0,0.2); cursor:pointer; display:none;">📺 Yükleniyor...</button>
-        </div>
-        <div id="ui-right" style="pointer-events: auto;">
-            <div id="coinCount" style="background:rgba(255,255,255,0.9) !important; padding:6px 10px; border-radius:12px; font-weight:bold; font-size:12px; box-shadow:0 2px 4px rgba(0,0,0,0.2); white-space: nowrap;">🪙 0 | 💎 0</div>
-        </div>
-    </div>
-
-    <div id="score" style="position: absolute; top: 10px; right: 175px; font-size: 38px; font-weight: 900; z-index: 90; color: white; -webkit-text-stroke: 1.5px black; text-shadow: 3px 3px 6px rgba(0,0,0,0.7);">0</div>
-
-    <div id="leaderboardModal" class="modal">
-      <h2 style="margin-top:0;">Global Top 25</h2>
-      <ul id="scoreList" class="modal-list"></ul>
-      <button id="closeLeaderboard" class="close-btn">Kapat</button>
-    </div>
-
-    <div id="shopModal" class="modal">
-      <h2 style="margin-top:0;">🛒 Market</h2>
-      <p style="font-weight:bold; text-align:center;">Bakiye: <span id="shopCoinCount">🪙 0 | 💎 0</span></p>
-      <ul id="shopList" class="modal-list"></ul>
-      <button id="closeShop" class="close-btn">Kapat</button>
-    </div>
-
-    <canvas id="game"></canvas>
-    
-    <div id="introduction">Köprüyü oluşturmak için ekrana basılı tutun.</div>
-    <div id="perfect">2X SKOR</div>
-    
-    <div id="reviveMenu" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); flex-direction:column; gap:12px; z-index:50; width: 220px; text-align:center;">
-        <button id="reviveAdBtn" style="background:#8e44ad; color:white; border:none; padding:15px; border-radius:10px; font-weight:bold; font-size:16px; cursor:pointer; box-shadow:0 4px 6px rgba(0,0,0,0.4); animation: pulse 1.5s infinite;">📺 İzle & Devam Et</button>
-        <button id="skipReviveBtn" style="background:#c0392b; color:white; border:none; padding:10px; border-radius:10px; font-weight:bold; font-size:14px; cursor:pointer; box-shadow:0 4px 6px rgba(0,0,0,0.4);">❌ Hayır, Tekrar Dene</button>
-    </div>
-    
-    <button id="restart" style="z-index:45;">TEKRAR DENE</button>
+    <div id="score"></div>
+    <canvas id="game" width="375" height="375"></canvas>
+    <div id="introduction">Hold down the mouse to stretch out a stick</div>
+    <div id="perfect">DOUBLE SCORE</div>
+    <button id="restart">RESTART</button>
   </div>
-
-  <style>
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-      100% { transform: scale(1); }
-    }
-  </style>
 </body>
 </html>
