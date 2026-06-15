@@ -1,6 +1,26 @@
 Array.prototype.last = function () { return this[this.length - 1]; };
 Math.sinus = function (degree) { return Math.sin((degree / 180) * Math.PI); };
 
+
+// Telegram'ın tamamen hazır olduğundan emin ol
+function initGame() {
+    console.log("Oyun Başlatılıyor...");
+    
+    // Telegram kontrolü
+    if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.ready();
+        window.Telegram.WebApp.expand();
+    }
+    
+    // Şimdi senin oyun motorun başlasın
+    resetGame();
+}
+
+// Sayfa yüklenince başlat
+window.addEventListener('load', initGame);
+
+// ... (Geri kalan motor kodların)
+
 // ------------------------------------
 // TELEGRAM & OYUNCU VERİLERİ
 // ------------------------------------
