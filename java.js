@@ -14,13 +14,11 @@ const urlParams = new URLSearchParams(window.location.search);
 let urlGroupId = urlParams.get('groupid') || urlParams.get('startapp');
 let tgGroupId = startParam ? Number(startParam) : (urlGroupId ? Number(urlGroupId) : 0);
 
-// API Verileri
 let playerCoins = 0; let playerGems = 0; 
 let sessionEarnedCoins = 0; let stepCount = 0; 
 let currentSkin = "default"; let ownedSkins = ["default"]; 
 let currentPet = "default"; let ownedPets = {}; 
 
-// Market Veritabanı
 const skinData = { "default": { name: "Varsayılan", price: 0, body: "black", bandana: "red" }, "yesil": { name: "Yeşil Ninja", price: 20, body: "#228B22", bandana: "black" }, "bronz": { name: "Bronz Ninja", price: 30, body: "#cd7f32", bandana: "#5c4033" }, "demir": { name: "Demir Ninja", price: 40, body: "#a9a9a9", bandana: "#696969" }, "altin": { name: "Altın Ninja", price: 50, body: "#ffd700", bandana: "#b8860b" }, "hiper": { name: "Hiper Ninja", price: 65, body: "#800080", bandana: "#00ffff" }, "golge": { name: "Gölge Katili", price: 80, body: "#1a1a1a", bandana: "#4a0000" }, "buzul": { name: "Buzul Ninja", price: 100, body: "#add8e6", bandana: "#ffffff" } };
 const petData = { "kopek": { name: "Altın Avcısı", price: 200, desc: "Daha hızlı Jeton", emoji: "🐶" }, "kedi": { name: "Gözcü Kedi", price: 250, desc: "Büyük Kombo Alanı", emoji: "🐱" }, "maymun": { name: "Kuyruklu Maymun", price: 400, desc: "Ekstra Can & Jeton", emoji: "🐒" }, "kurt": { name: "Gölge Kurdu", price: 750, desc: "Jeton + Dev Kırmızı Alan", emoji: "🐺" } };
 
@@ -32,7 +30,50 @@ const coinCountElement = document.getElementById("coinCount");
 const shopCoinCountElement = document.getElementById("shopCoinCount");
 
 // ------------------------------------
-// 2. OYUN İÇİ DEĞİŞKENLER
+// 2. REKLAM (ADSGRAM) SİSTEMİ
+// ------------------------------------
+let adController = null; 
+let adReviveUsedThisRun = false; 
+
+function initAdsGram() {
+    try { 
+        if (window.Adsgram) { adController = window.Adsgram.init({ blockId: "35103" }); } 
+        else { setTimeout(initAdsGram, 500); } 
+    } catch (err) {}
+}
+
+document.getElementById("reviveAdBtn").addEventListener("click", () => {
+    if (!adController) { if(tg && tg.showAlert) tg.showAlert("Reklam yüklenemedi. İnternetinizi kontrol edin."); return; }
+    
+    adController.show().then((result) => { 
+        if (result.done) { 
+            // Reklam izlendi, karakteri canlandır!
+            adReviveUsedThisRun = true; 
+            document.getElementById("reviveMenu").style.display = "none"; 
+            phase = "waiting"; 
+            heroY = 0; 
+            heroX = sticks.last().x - heroDistanceFromEdge; 
+            sticks.last().length = 0; 
+            sticks.last().rotation = 0; 
+            perfectElement.innerText = "📺 CANLANDIN!"; 
+            perfectElement.style.color = "#8e44ad"; 
+            perfectElement.style.opacity = 1; 
+            draw(); 
+            setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); 
+        } 
+    }).catch(() => { /* Reklam kapatıldı veya hata oluştu */ });
+});
+
+document.getElementById("skipReviveBtn").addEventListener("click", () => { 
+    // İstemedi, oyunu bitir.
+    document.getElementById("reviveMenu").style.display = "none"; 
+    restartButton.style.display = "block"; 
+    saveScoreToAPI(); 
+});
+
+
+// ------------------------------------
+// 3. OYUN İÇİ DEĞİŞKENLER
 // ------------------------------------
 let phase = "waiting"; let lastTimestamp; let heroX, heroY, sceneOffset; 
 let platforms = [], sticks = [], trees = [];
@@ -49,13 +90,15 @@ const heroWidth = 17, heroHeight = 30;
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
+
 // ------------------------------------
-// 3. API BAĞLANTILARI
+// 4. BAŞLATMA VE API BAĞLANTILARI
 // ------------------------------------
 window.addEventListener('load', () => {
     if (tg && tg.ready) tg.ready();
     if (tg && tg.expand) tg.expand();
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    initAdsGram(); // Reklam motorunu yükle
     loadPlayerData();
     resetGame();
 });
@@ -86,9 +129,6 @@ function saveScoreToAPI() {
     }).catch(e => {});
 }
 
-// ------------------------------------
-// 4. MEKANİKLER (PET VE JETON)
-// ------------------------------------
 function getPerfectAreaSize(platformWidth) { 
     let baseArea = 10; 
     if (currentPet === "kedi") { let lvl = ownedPets["kedi"] || 1; baseArea = 20 + (lvl * 5); } 
@@ -109,15 +149,17 @@ function processCoinGeneration(earnedPts) {
 
 function isMenuOpen() { 
     return (document.getElementById("shopModal") && document.getElementById("shopModal").style.display === "block") || 
-           (document.getElementById("leaderboardModal") && document.getElementById("leaderboardModal").style.display === "block"); 
+           (document.getElementById("leaderboardModal") && document.getElementById("leaderboardModal").style.display === "block") ||
+           (document.getElementById("reviveMenu") && document.getElementById("reviveMenu").style.display === "flex"); 
 }
 
 function resetGame() {
   phase = "waiting"; lastTimestamp = undefined; sceneOffset = 0; score = 0; combo = 0; 
-  sessionEarnedCoins = 0; stepCount = 0; 
+  sessionEarnedCoins = 0; stepCount = 0; adReviveUsedThisRun = false;
   if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } else { currentMonkeyLives = 0; }
   introductionElement.style.opacity = 1; perfectElement.style.opacity = 0;
-  restartButton.style.display = "none"; scoreElement.innerText = score;
+  restartButton.style.display = "none"; document.getElementById("reviveMenu").style.display = "none";
+  scoreElement.innerText = score;
   platforms = [{ x: 50, w: 50 }];
   generatePlatform(); generatePlatform(); generatePlatform(); generatePlatform();
   sticks = [{ x: platforms[0].x + platforms[0].w, length: 0, rotation: 0 }];
@@ -138,7 +180,10 @@ function generatePlatform() {
   const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth)); platforms.push({ x, w });
 }
 
-// 🔥 ÇÖZÜM: event.target.tagName === 'CANVAS' şartı eklendi. Butona basılınca arkaya geçmez!
+
+// ------------------------------------
+// 5. MOTOR (ANIMATION & INPUT)
+// ------------------------------------
 window.addEventListener("mousedown", function (event) { if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; window.requestAnimationFrame(animate); }});
 window.addEventListener("touchstart", function (event) { if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; window.requestAnimationFrame(animate); }});
 window.addEventListener("mouseup", function (event) { if (phase == "stretching") phase = "turning"; });
@@ -202,13 +247,24 @@ function animate(timestamp) {
       if (sticks.last().rotation < 180) sticks.last().rotation += dt / turningSpeed;
       heroY += dt / fallingSpeed;
       const maxHeroY = platformHeight + 100 + (window.innerHeight - canvasHeight) / 2;
+      
       if (heroY > maxHeroY) {
+        // Maymun kurtarışı
         if (currentMonkeyLives > 0) {
             currentMonkeyLives--; let mStats = getMonkeyStats(); 
             if (mStats.bonusCoins > 0) { sessionEarnedCoins += mStats.bonusCoins; }
             phase = "waiting"; heroY = 0; heroX = sticks.last().x - heroDistanceFromEdge; sticks.last().length = 0; sticks.last().rotation = 0; 
-            perfectElement.innerText = `🐒 MAYMUN KURTARDI!`; perfectElement.style.opacity = 1; draw(); setTimeout(() => { perfectElement.style.opacity = 0; }, 1500); return;
+            perfectElement.innerText = `🐒 MAYMUN KURTARDI!`; perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1; draw(); setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); return;
         }
+        
+        // 🔥 YENİ: Reklam ile Canlanma Sistemi
+        if (!adReviveUsedThisRun) {
+            phase = "dead_options"; // Oyunu durdur
+            document.getElementById("reviveMenu").style.display = "flex";
+            return;
+        }
+
+        // Zaten canlanmışsa veya reklam izlemediyse normal bitiş
         restartButton.style.display = "block"; saveScoreToAPI(); return;
       }
       break;
@@ -228,7 +284,7 @@ function thePlatformTheStickHits() {
 }
 
 // ------------------------------------
-// 5. RENDER (ÇİZİM MOTORU)
+// 6. RENDER (ÇİZİM MOTORU)
 // ------------------------------------
 function draw() {
   ctx.save(); ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
@@ -320,7 +376,7 @@ function getHillY(windowX, baseHeight, amplitude, stretch) { return Math.sinus((
 function getTreeY(x, baseHeight, amplitude) { return Math.sinus(x) * amplitude + window.innerHeight - baseHeight; }
 
 // ------------------------------------
-// 6. UI VE MARKET İŞLEMLERİ
+// 7. UI VE MARKET İŞLEMLERİ
 // ------------------------------------
 document.getElementById("leaderboardBtn").addEventListener("click", () => { 
     document.getElementById("leaderboardModal").style.display = "block"; 
