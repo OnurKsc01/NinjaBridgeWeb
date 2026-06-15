@@ -1,3 +1,12 @@
+/* 🔥 MOBİL TIKLAMA VE MAVİ EKRAN KALKANI (Sorunu Kökünden Çözer) */
+* {
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  outline: none !important;
+}
+
 html, body {
   height: 100%;
   margin: 0;
@@ -10,16 +19,8 @@ body {
   background-color: #FEF1E1; 
 }
 
-/* MOBİL EKRAN TİTREMELERİNİ VE ZUMLAMAYI ENGELLEYEN KALKAN */
 canvas {
   touch-action: none !important;
-  outline: none;
-  -webkit-tap-highlight-color: transparent;
-}
-
-* {
-  -webkit-user-select: none;
-  user-select: none;
 }
 
 .container {
@@ -29,14 +30,13 @@ canvas {
   height: 100%;
 }
 
-/* 🔥 SKOR GÜNCELLEMESİ: Havada asılı kalması engellendi, şık tasarımı korundu */
 #score {
-  font-size: 2.5em;
+  font-size: 2.2em;
   font-weight: 900;
   color: white;
   -webkit-text-stroke: 1.5px black;
   text-shadow: 2px 2px 5px rgba(0,0,0,0.7);
-  line-height: 1; /* Cüzdanla aynı hizada durması için */
+  line-height: 1;
 }
 
 #introduction {
