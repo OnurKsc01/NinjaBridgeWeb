@@ -444,7 +444,7 @@ function getTreeY(x, baseHeight, amplitude) { return Math.sinus(x) * amplitude +
 // 🔥 KORUMA: Oyun devam ederken menüler açılamaz
 document.getElementById("leaderboardBtn").addEventListener("click", () => { 
     if (phase !== "waiting") {
-        if(tg && tg.showAlert) tg.showAlert("Oyun devam ederken skor tablosu açılamaz! Lütfen yanmayı bekleyin.");
+        if(tg && tg.showAlert) tg.showAlert("Oyun esnasında teçhizat değiştirilemez! Lütfen yeniden doğmayı bekleyin.");
         return;
     }
     document.getElementById("leaderboardModal").style.display = "block"; 
