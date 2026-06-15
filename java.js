@@ -9,7 +9,9 @@ let user = tg?.initDataUnsafe?.user;
 let tgUserId = user ? user.id : 123456789;
 let tgUserName = user ? user.first_name : "Test Oyuncusu";
 let startParam = tg?.initDataUnsafe?.start_param;
-let tgGroupId = startParam ? Number(startParam) : 0;
+const urlParams = new URLSearchParams(window.location.search);
+let urlGroupId = urlParams.get('groupid') || urlParams.get('startapp');
+let tgGroupId = startParam ? Number(startParam) : (urlGroupId ? Number(urlGroupId) : 0);
 
 let playerCoins = 0; let playerGems = 0; 
 let sessionEarnedGems = 0; let sessionEarnedCoins = 0; 
@@ -30,23 +32,37 @@ function unlockSounds() {
 }
 
 // ------------------------------------
+// 🔥 YENİ: DÜŞMAN PNG GÖRSELLERİ (PRELOAD)
+// ------------------------------------
+const enemyImages = {
+    "default": new Image(), // Gündüz: Arı
+    "gece": new Image(),    // Gece: Yarasa
+    "kanli": new Image()    // Kanlı Ay: Örümcek
+};
+// Güvenli yükleme için crossOrigin ayarı (Canvas'ın çökmesini engeller)
+enemyImages["default"].crossOrigin = "Anonymous";
+enemyImages["gece"].crossOrigin = "Anonymous";
+enemyImages["kanli"].crossOrigin = "Anonymous";
+
+// Not: İleride kendi resimlerini kullanmak istersen bu linkleri silip "ari.png", "yarasa.png" gibi kendi yüklediğin dosyaların adını yazabilirsin.
+enemyImages["default"].src = "https://cdn-icons-png.flaticon.com/512/809/809052.png"; 
+enemyImages["gece"].src = "https://cdn-icons-png.flaticon.com/512/1068/1068065.png"; 
+enemyImages["kanli"].src = "https://cdn-icons-png.flaticon.com/512/817/817637.png"; 
+
+// ------------------------------------
 // GRAFİK MOTORU VE "OFF-SCREEN CACHE" 
 // ------------------------------------
 const canvas = document.getElementById("game"); 
 const ctx = canvas.getContext("2d");
 
-// 🔥 DONANIM HIZLANDIRMASI
 canvas.style.transform = "translateZ(0)";
 canvas.style.willChange = "transform";
 
 let lowGraphics = false;
-
-// Sabit Tema Renkleri
 const themeTop = "#BBD691", themeBottom = "#FEF1E1";
 const themeHill1 = "#95C629", themeHill2 = "#659F1C";
 const themeTree = "#7D833C", themeLeaves = ["#6D8821", "#8FAC34", "#98B333"];
 
-// 🔥 ARKA PLAN ÖNBELLEĞİ
 const bgCacheCanvas = document.createElement("canvas");
 const bgCacheCtx = bgCacheCanvas.getContext("2d");
 let lastRenderedOffset = -999;
@@ -119,12 +135,16 @@ const petData = {
     "maymun": { name: "Kuyruklu Maymun", price: 400, desc: "Sv'ye göre ekstra Can & Jeton", emoji: "🐒" },
     "kurt": { name: "Gölge Kurdu", price: 750, desc: "Jeton Üretimi + Dev Kırmızı Alan", emoji: "🐺" } 
 };
+const bgData = { 
+    "default": { name: "Gündüz Vadisi", medal: "Vadi Çaylağı" }, 
+    "gece": { name: "Gece Yarısı", medal: "Gece Fatihi" }, 
+    "kanli": { name: "Kanlı Ay", medal: "Kanlı Ay Şövalyesi" }
+};
+let currentBg = "default"; // Gelecekte dünyaları açarsan diye altyapısı hazır
 
 let phase = "waiting"; let lastTimestamp; let heroX = 0, heroY = 0, sceneOffset = 0; 
-let platforms = [], sticks = [], trees = []; 
+let platforms = [], sticks = [], trees = [], enemies = []; // 🔥 enemies dizisi geri döndü
 let score = 0, combo = 0; let currentMonkeyLives = 0; 
-
-// 🔥 Sayaç artık adım değil, kazanılan "Skor Puanını" tutar
 let stepCount = 0; 
 
 const canvasWidth = 375, canvasHeight = 375, platformHeight = 100; const heroDistanceFromEdge = 10, paddingX = 100;
@@ -140,6 +160,7 @@ function loadPlayerData() {
             playerCoins = data.coins || 0; playerGems = data.gems || 0;
             currentSkin = data.currentSkin || "default"; ownedSkins = data.ownedSkins || ["default"]; 
             currentPet = data.currentPet || "default"; ownedPets = data.ownedPets || {}; 
+            currentBg = data.currentBackground || "default"; // Mevcut dünyayı çeker
             updateCoinUI(); checkAdStatus(); 
             if (phase === "waiting") { if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } draw(); }
         }).catch(err => {});
@@ -159,22 +180,17 @@ function getPerfectAreaSize(platformWidth) {
 
 function getMonkeyStats() { let lvl = ownedPets["maymun"] || 1; let lives = Math.floor((lvl - 1) / 2) + 1; let bonus = (lvl % 2 === 0) ? lvl * 5 : 0; return { lives: lives, bonusCoins: bonus }; }
 
-// 🔥 FİX: Artık Fiziksel Adımları Değil, Skoru (Puanı) Temel Alır!
-function processCoinGeneration(earnedPoints) {
-    stepCount += earnedPoints; // Oyuncu kombo ile 5 puan alırsa kasaya anında 5 puan işlenir
+function processCoinGeneration(earnedPts) {
+    stepCount += earnedPts; 
     let reqSteps = 8; 
-    
-    // Köpek veya Kurt varsa hedeflenen puanı aşağı çek
     if (currentPet === "kopek" || currentPet === "kurt") { 
         let lvl = ownedPets[currentPet] || 1; 
         reqSteps = Math.max(1, 8 - lvl); 
     } 
-    
-    // Eğer biriken puan hedefi aştıysa Jeton ver
     if (stepCount >= reqSteps) { 
-        let coinsToAdd = Math.floor(stepCount / reqSteps); // Fazladan kaç jeton kazandığını hesaplar
+        let coinsToAdd = Math.floor(stepCount / reqSteps);
         sessionEarnedCoins += coinsToAdd; 
-        stepCount = stepCount % reqSteps; // Kalan küsurat puanı bir sonraki jeton için kasada tutar
+        stepCount = stepCount % reqSteps; 
     }
 }
 
@@ -197,7 +213,7 @@ function showGameOver() {
 function resetGame() {
   phase = "waiting"; lastTimestamp = undefined; sceneOffset = 0; score = 0; combo = 0; 
   sessionEarnedGems = 0; sessionEarnedCoins = 0; 
-  adReviveUsedThisRun = false; stepCount = 0; 
+  adReviveUsedThisRun = false; stepCount = 0; enemies = []; // 🔥 Düşmanlar sıfırlandı
   document.getElementById("reviveMenu").style.display = "none"; restartButton.style.display = "none";
   if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } else { currentMonkeyLives = 0; }
   introductionElement.style.opacity = 1; perfectElement.style.opacity = 0; scoreElement.innerText = score;
@@ -222,6 +238,22 @@ function generatePlatform() {
   const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap)); 
   const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth)); 
   platforms.push({ x, w });
+
+  // 🔥 YENİ: DÜŞMAN (PNG) YARATMA SİSTEMİ
+  if (score >= 500 && platforms.length > 1) {
+      let spawnChance = 0.2 + (score / 15000); // Skor arttıkça canavar çıkma ihtimali artar
+      if (Math.random() < spawnChance) {
+          let gapStartX = lastPlatform.x + lastPlatform.w; 
+          let gapEndX = x;
+          enemies.push({ 
+              x: gapStartX + (gapEndX - gapStartX)/2, 
+              baseY: canvasHeight - platformHeight, 
+              offsetY: 0, 
+              speed: 1.5 + (score/3000), 
+              worldType: currentBg // Hangi dünyanın canavarı çizilecek?
+          });
+      }
+  }
 }
 
 function isMenuOpen() { return document.getElementById("shopModal").style.display === "block" || document.getElementById("leaderboardModal").style.display === "block" || document.getElementById("reviveMenu").style.display === "flex"; }
@@ -241,6 +273,11 @@ function animate(timestamp) {
   if (dt >= 12 && dt <= 20) { dt = 16.66; } 
   else if (dt > 32) { dt = 16.66; } 
 
+  // 🔥 YENİ: CANAVARLARIN HAREKETİ (Pürüzsüz animasyon)
+  if (enemies.length > 0 && phase !== "dead_options") {
+      enemies.forEach(e => { e.offsetY = Math.sin(timestamp / (400 / e.speed)) * 60 - 20; });
+  }
+
   switch (phase) {
     case "waiting": break; 
     case "dead_options": break; 
@@ -251,25 +288,17 @@ function animate(timestamp) {
         sticks.last().rotation = 90; const [nextPlatform, perfectHit] = thePlatformTheStickHits();
         if (nextPlatform) {
           
-          let earnedPts = 0; // Bu turda kazanılan net puan
-          
+          let earnedPts = 0;
           if (perfectHit) {
-            combo++; 
-            earnedPts = 1 + combo;
-            score += earnedPts; 
-            
+            combo++; earnedPts = 1 + combo; score += earnedPts; 
             if (combo % 50 === 0) { sessionEarnedGems += 1; perfectElement.innerText = `💎 50x COMBO!\n+1 ELMAS KAZANDIN!`; perfectElement.style.color = "#00ffff"; } 
             else { perfectElement.innerText = `🔥 KUSURSUZ! +${earnedPts}\n${combo}x COMBO`; perfectElement.style.color = "#FFD700"; }
             comboSound.currentTime = 0; comboSound.play().catch(e => {});
           } else { 
-            combo = 0; 
-            earnedPts = 1;
-            score += earnedPts; 
-            perfectElement.innerText = ""; 
+            combo = 0; earnedPts = 1; score += earnedPts; perfectElement.innerText = ""; 
           }
           
-          // 🔥 Skordan gelen puanı Jeton motoruna yolla!
-          processCoinGeneration(earnedPts);
+          processCoinGeneration(earnedPts); 
           
           scoreElement.innerText = score; if (perfectHit) { perfectElement.style.opacity = 1; setTimeout(() => (perfectElement.style.opacity = 0), 1200); }
           generatePlatform(); generateTree(); generateTree();
@@ -280,9 +309,18 @@ function animate(timestamp) {
     case "walking":
       heroX += dt / walkingSpeed; 
       
-      const [nextPlatform] = thePlatformTheStickHits();
-      if (nextPlatform) { const maxHeroX = nextPlatform.x + nextPlatform.w - heroDistanceFromEdge; if (heroX > maxHeroX) { heroX = maxHeroX; phase = "transitioning"; } } 
-      else { const maxHeroX = sticks.last().x + sticks.last().length + heroWidth; if (heroX > maxHeroX) { heroX = maxHeroX; phase = "falling"; fallSound.currentTime = 0; fallSound.play().catch(e => {}); } }
+      // 🔥 YENİ: DÜŞMANA ÇARPMA KONTROLÜ (Hitbox)
+      let hitEnemy = enemies.find(e => { 
+          let eY = e.baseY + e.offsetY; 
+          return Math.abs(heroX - e.x) < 20 && Math.abs((heroY + canvasHeight - platformHeight - heroHeight/2) - eY) < 30; 
+      });
+      if (hitEnemy) { phase = "falling"; fallSound.currentTime = 0; fallSound.play().catch(e=>{}); }
+
+      if (phase !== "falling") {
+          const [nextPlatform] = thePlatformTheStickHits();
+          if (nextPlatform) { const maxHeroX = nextPlatform.x + nextPlatform.w - heroDistanceFromEdge; if (heroX > maxHeroX) { heroX = maxHeroX; phase = "transitioning"; } } 
+          else { const maxHeroX = sticks.last().x + sticks.last().length + heroWidth; if (heroX > maxHeroX) { heroX = maxHeroX; phase = "falling"; fallSound.currentTime = 0; fallSound.play().catch(e => {}); } }
+      }
       break;
     case "transitioning":
       sceneOffset += dt / transitioningSpeed; const [nextPlatform2] = thePlatformTheStickHits();
@@ -292,6 +330,7 @@ function animate(timestamp) {
           platforms = platforms.filter(p => p.x + p.w > sceneOffset - 300);
           sticks = sticks.filter(s => s.x > sceneOffset - 300);
           trees = trees.filter(t => t.x > sceneOffset - 1000);
+          enemies = enemies.filter(e => e.x > sceneOffset - 300); // 🔥 Ekrandan çıkan canavarları bellekten sil
       }
       break;
     case "falling":
@@ -317,6 +356,9 @@ function thePlatformTheStickHits() {
   if (platformTheStickHits) { let pArea = getPerfectAreaSize(platformTheStickHits.w); if (platformTheStickHits.x + platformTheStickHits.w / 2 - pArea / 2 < stickFarX && stickFarX < platformTheStickHits.x + platformTheStickHits.w / 2 + pArea / 2) { return [platformTheStickHits, true]; } } return [platformTheStickHits, false];
 }
 
+// ------------------------------------
+// ÇİZİM MOTORU (RENDER)
+// ------------------------------------
 function draw() { 
     ctx.save(); 
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight); 
@@ -326,7 +368,7 @@ function draw() {
     let transY = (window.innerHeight - canvasHeight) / 2;
     ctx.translate(transX, transY); 
     
-    drawPlatforms(); drawPet(); drawHero(); drawSticks(); 
+    drawPlatforms(); drawEnemies(); drawPet(); drawHero(); drawSticks(); 
     ctx.restore(); 
 }
 restartButton.addEventListener("click", (e) => { e.preventDefault(); resetGame(); });
@@ -395,6 +437,18 @@ function drawPlatforms() {
           let pArea = getPerfectAreaSize(w); 
           ctx.fillRect(x + w / 2 - pArea / 2, canvasHeight - platformHeight, pArea, pArea); 
       } 
+  });
+}
+
+// 🔥 YENİ: DÜŞMANLARI PNG OLARAK ÇİZDİRME (İşlemciyi yormayan GPU destekli çizim)
+function drawEnemies() {
+  enemies.forEach(e => {
+      let eY = e.baseY + e.offsetY;
+      let img = enemyImages[e.worldType] || enemyImages["default"];
+      if (img && img.complete) {
+          // Resmi tam ortaya hizalayarak 32x32 piksel boyutunda çizer
+          ctx.drawImage(img, e.x - 16, eY - 16, 32, 32);
+      }
   });
 }
 
