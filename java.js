@@ -42,12 +42,12 @@ function initAdsGram() {
     } catch (err) {}
 }
 
+// Reklam İzle ve Canlan
 document.getElementById("reviveAdBtn").addEventListener("click", () => {
     if (!adController) { if(tg && tg.showAlert) tg.showAlert("Reklam yüklenemedi. İnternetinizi kontrol edin."); return; }
     
     adController.show().then((result) => { 
         if (result.done) { 
-            // Reklam izlendi, karakteri canlandır!
             adReviveUsedThisRun = true; 
             document.getElementById("reviveMenu").style.display = "none"; 
             phase = "waiting"; 
@@ -61,14 +61,41 @@ document.getElementById("reviveAdBtn").addEventListener("click", () => {
             draw(); 
             setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); 
         } 
-    }).catch(() => { /* Reklam kapatıldı veya hata oluştu */ });
+    }).catch(() => { });
 });
 
 document.getElementById("skipReviveBtn").addEventListener("click", () => { 
-    // İstemedi, oyunu bitir.
     document.getElementById("reviveMenu").style.display = "none"; 
     restartButton.style.display = "block"; 
     saveScoreToAPI(); 
+});
+
+// 🔥 YENİ: Reklam İzle ve Jeton Kazan (35, 50 veya 65)
+document.getElementById("watchEarnBtn").addEventListener("click", () => {
+    if (!adController) { if(tg && tg.showAlert) tg.showAlert("Reklam yüklenemedi. İnternetinizi kontrol edin."); return; }
+    
+    adController.show().then((result) => { 
+        if (result.done) { 
+            const rewards = [35, 50, 65];
+            const earned = rewards[Math.floor(Math.random() * rewards.length)];
+            
+            // Cüzdana Ekle
+            playerCoins += earned;
+            updateCoinUI();
+            
+            // Veritabanına Anında Kaydet (Score'u etkilemeden sadece coin yollar)
+            fetch('https://ninja-bridge-api.onrender.com/api/score/save', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, 
+                body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: tgGroupId, earnedCoins: earned, earnedGems: 0 }) 
+            }).catch(e => {});
+            
+            // Bildirim Göster
+            if(tg && tg.showAlert) {
+                tg.showAlert(`📺 Tebrikler! Reklamı izledin ve ${earned} Jeton kazandın!`);
+            }
+        } 
+    }).catch(() => { });
 });
 
 
@@ -90,7 +117,6 @@ const heroWidth = 17, heroHeight = 30;
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-
 // ------------------------------------
 // 4. BAŞLATMA VE API BAĞLANTILARI
 // ------------------------------------
@@ -98,7 +124,7 @@ window.addEventListener('load', () => {
     if (tg && tg.ready) tg.ready();
     if (tg && tg.expand) tg.expand();
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-    initAdsGram(); // Reklam motorunu yükle
+    initAdsGram(); 
     loadPlayerData();
     resetGame();
 });
@@ -126,6 +152,8 @@ function saveScoreToAPI() {
         method: 'POST', 
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, 
         body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: tgGroupId, earnedCoins: sessionEarnedCoins, earnedGems: 0 }) 
+    }).then(() => {
+        sessionEarnedCoins = 0; // Kaydedilen jetonları sıfırla ki tekrar kaydedilmesin
     }).catch(e => {});
 }
 
@@ -158,7 +186,8 @@ function resetGame() {
   sessionEarnedCoins = 0; stepCount = 0; adReviveUsedThisRun = false;
   if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } else { currentMonkeyLives = 0; }
   introductionElement.style.opacity = 1; perfectElement.style.opacity = 0;
-  restartButton.style.display = "none"; document.getElementById("reviveMenu").style.display = "none";
+  restartButton.style.display = "none"; 
+  if(document.getElementById("reviveMenu")) document.getElementById("reviveMenu").style.display = "none";
   scoreElement.innerText = score;
   platforms = [{ x: 50, w: 50 }];
   generatePlatform(); generatePlatform(); generatePlatform(); generatePlatform();
@@ -180,7 +209,6 @@ function generatePlatform() {
   const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth)); platforms.push({ x, w });
 }
 
-
 // ------------------------------------
 // 5. MOTOR (ANIMATION & INPUT)
 // ------------------------------------
@@ -199,6 +227,7 @@ function animate(timestamp) {
 
   switch (phase) {
     case "waiting": return; 
+    case "dead_options": break; 
     case "stretching": { sticks.last().length += dt / stretchingSpeed; break; }
     case "turning": {
       sticks.last().rotation += dt / turningSpeed;
@@ -249,7 +278,6 @@ function animate(timestamp) {
       const maxHeroY = platformHeight + 100 + (window.innerHeight - canvasHeight) / 2;
       
       if (heroY > maxHeroY) {
-        // Maymun kurtarışı
         if (currentMonkeyLives > 0) {
             currentMonkeyLives--; let mStats = getMonkeyStats(); 
             if (mStats.bonusCoins > 0) { sessionEarnedCoins += mStats.bonusCoins; }
@@ -257,14 +285,13 @@ function animate(timestamp) {
             perfectElement.innerText = `🐒 MAYMUN KURTARDI!`; perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1; draw(); setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); return;
         }
         
-        // 🔥 YENİ: Reklam ile Canlanma Sistemi
-        if (!adReviveUsedThisRun) {
-            phase = "dead_options"; // Oyunu durdur
-            document.getElementById("reviveMenu").style.display = "flex";
+        let reviveMenuEl = document.getElementById("reviveMenu");
+        if (!adReviveUsedThisRun && reviveMenuEl) {
+            phase = "dead_options"; 
+            reviveMenuEl.style.display = "flex"; 
             return;
         }
 
-        // Zaten canlanmışsa veya reklam izlemediyse normal bitiş
         restartButton.style.display = "block"; saveScoreToAPI(); return;
       }
       break;
