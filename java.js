@@ -13,7 +13,7 @@ const urlParams = new URLSearchParams(window.location.search);
 let urlGroupId = urlParams.get('groupid') || urlParams.get('startapp');
 let tgGroupId = startParam ? Number(startParam) : (urlGroupId ? Number(urlGroupId) : 0);
 
-let playerCoins = 0; let playerGems = 0; 
+let playerCoins = 0; let playerGems = 0;  
 let sessionEarnedCoins = 0; let stepCount = 0; 
 let currentSkin = "default"; let ownedSkins = ["default"]; 
 let currentPet = "default"; let ownedPets = {}; 
