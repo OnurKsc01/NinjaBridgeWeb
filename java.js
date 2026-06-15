@@ -30,6 +30,24 @@ const coinCountElement = document.getElementById("coinCount");
 const shopCoinCountElement = document.getElementById("shopCoinCount");
 
 // ------------------------------------
+// 🔥 YENİ: SES MOTORU
+// ------------------------------------
+const bgMusic = new Audio('bg.mp3'); bgMusic.loop = true; bgMusic.volume = 0.3; 
+const comboSound = new Audio('combo.mp3'); comboSound.volume = 0.8;
+const fallSound = new Audio('dusme.mp3'); fallSound.volume = 0.8;
+let soundsUnlocked = false;
+
+// Tarayıcı kuralları gereği, sesleri başlatmak için kullanıcının ekrana ilk dokunuşunu yakalıyoruz.
+function unlockSounds() {
+    if (!soundsUnlocked) {
+        bgMusic.play().catch(()=>{}); 
+        comboSound.play().then(() => comboSound.pause()).catch(()=>{}); 
+        fallSound.play().then(() => fallSound.pause()).catch(()=>{});
+        soundsUnlocked = true;
+    }
+}
+
+// ------------------------------------
 // 2. REKLAM (ADSGRAM) SİSTEMİ
 // ------------------------------------
 let adController = null; 
@@ -42,58 +60,35 @@ function initAdsGram() {
     } catch (err) {}
 }
 
-// Reklam İzle ve Canlan
 document.getElementById("reviveAdBtn").addEventListener("click", () => {
     if (!adController) { if(tg && tg.showAlert) tg.showAlert("Reklam yüklenemedi. İnternetinizi kontrol edin."); return; }
-    
     adController.show().then((result) => { 
         if (result.done) { 
             adReviveUsedThisRun = true; 
             document.getElementById("reviveMenu").style.display = "none"; 
-            phase = "waiting"; 
-            heroY = 0; 
-            heroX = sticks.last().x - heroDistanceFromEdge; 
-            sticks.last().length = 0; 
-            sticks.last().rotation = 0; 
-            perfectElement.innerText = "📺 CANLANDIN!"; 
-            perfectElement.style.color = "#8e44ad"; 
-            perfectElement.style.opacity = 1; 
-            draw(); 
-            setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); 
+            phase = "waiting"; heroY = 0; heroX = sticks.last().x - heroDistanceFromEdge; 
+            sticks.last().length = 0; sticks.last().rotation = 0; 
+            perfectElement.innerText = "📺 CANLANDIN!"; perfectElement.style.color = "#8e44ad"; perfectElement.style.opacity = 1; 
+            draw(); setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); 
         } 
     }).catch(() => { });
 });
 
 document.getElementById("skipReviveBtn").addEventListener("click", () => { 
-    document.getElementById("reviveMenu").style.display = "none"; 
-    restartButton.style.display = "block"; 
-    saveScoreToAPI(); 
+    document.getElementById("reviveMenu").style.display = "none"; restartButton.style.display = "block"; saveScoreToAPI(); 
 });
 
-// 🔥 YENİ: Reklam İzle ve Jeton Kazan (35, 50 veya 65)
 document.getElementById("watchEarnBtn").addEventListener("click", () => {
     if (!adController) { if(tg && tg.showAlert) tg.showAlert("Reklam yüklenemedi. İnternetinizi kontrol edin."); return; }
-    
     adController.show().then((result) => { 
         if (result.done) { 
-            const rewards = [35, 50, 65];
-            const earned = rewards[Math.floor(Math.random() * rewards.length)];
-            
-            // Cüzdana Ekle
-            playerCoins += earned;
-            updateCoinUI();
-            
-            // Veritabanına Anında Kaydet (Score'u etkilemeden sadece coin yollar)
+            const rewards = [35, 50, 65]; const earned = rewards[Math.floor(Math.random() * rewards.length)];
+            playerCoins += earned; updateCoinUI();
             fetch('https://ninja-bridge-api.onrender.com/api/score/save', { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, 
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, 
                 body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: tgGroupId, earnedCoins: earned, earnedGems: 0 }) 
             }).catch(e => {});
-            
-            // Bildirim Göster
-            if(tg && tg.showAlert) {
-                tg.showAlert(`📺 Tebrikler! Reklamı izledin ve ${earned} Jeton kazandın!`);
-            }
+            if(tg && tg.showAlert) { tg.showAlert(`📺 Tebrikler! Reklamı izledin ve ${earned} Jeton kazandın!`); }
         } 
     }).catch(() => { });
 });
@@ -149,12 +144,9 @@ function updateCoinUI() {
 function saveScoreToAPI() {
     if (sessionEarnedCoins > 0) { playerCoins += sessionEarnedCoins; updateCoinUI(); }
     fetch('https://ninja-bridge-api.onrender.com/api/score/save', { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, 
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, 
         body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: tgGroupId, earnedCoins: sessionEarnedCoins, earnedGems: 0 }) 
-    }).then(() => {
-        sessionEarnedCoins = 0; // Kaydedilen jetonları sıfırla ki tekrar kaydedilmesin
-    }).catch(e => {});
+    }).then(() => { sessionEarnedCoins = 0; }).catch(e => {});
 }
 
 function getPerfectAreaSize(platformWidth) { 
@@ -202,8 +194,24 @@ function generateTree() {
   const treeColors = ["#6D8821", "#8FAC34", "#98B333"]; trees.push({ x, color: treeColors[Math.floor(Math.random() * 3)] });
 }
 
+// 🔥 YENİ: KADEMELİ ZORLUK SEVİYESİ (Skor arttıkça daralan ve uzaklaşan platformlar)
 function generatePlatform() {
-  const minimumGap = 40, maximumGap = 200, minimumWidth = 20, maximumWidth = 100;
+  let minimumGap, maximumGap, minimumWidth, maximumWidth;
+
+  if (score >= 5000) { minimumGap = 120; maximumGap = 250; minimumWidth = 10; maximumWidth = 25; }
+  else if (score >= 4000) { minimumGap = 100; maximumGap = 230; minimumWidth = 15; maximumWidth = 35; }
+  else if (score >= 3000) { minimumGap = 90; maximumGap = 210; minimumWidth = 20; maximumWidth = 45; }
+  else if (score >= 2000) { minimumGap = 80; maximumGap = 190; minimumWidth = 25; maximumWidth = 55; }
+  else if (score >= 1000) { minimumGap = 70; maximumGap = 170; minimumWidth = 30; maximumWidth = 65; }
+  else if (score >= 750) { minimumGap = 60; maximumGap = 150; minimumWidth = 35; maximumWidth = 75; }
+  else if (score >= 500) { minimumGap = 50; maximumGap = 130; minimumWidth = 40; maximumWidth = 85; }
+  else if (score >= 250) { minimumGap = 45; maximumGap = 110; minimumWidth = 45; maximumWidth = 95; }
+  else { minimumGap = 40; maximumGap = 90; minimumWidth = 50; maximumWidth = 100; } // Başlangıç zorluğu
+
+  // Ekrandan taşmasını engelleme kalkanı
+  let maxScreenGap = window.innerWidth - 130;
+  if (maximumGap > maxScreenGap) { maximumGap = Math.max(minimumGap + 10, maxScreenGap); }
+
   const lastPlatform = platforms[platforms.length - 1]; let furthestX = lastPlatform.x + lastPlatform.w;
   const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap));
   const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth)); platforms.push({ x, w });
@@ -212,8 +220,8 @@ function generatePlatform() {
 // ------------------------------------
 // 5. MOTOR (ANIMATION & INPUT)
 // ------------------------------------
-window.addEventListener("mousedown", function (event) { if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; window.requestAnimationFrame(animate); }});
-window.addEventListener("touchstart", function (event) { if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; window.requestAnimationFrame(animate); }});
+window.addEventListener("mousedown", function (event) { if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); window.requestAnimationFrame(animate); }});
+window.addEventListener("touchstart", function (event) { if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); window.requestAnimationFrame(animate); }});
 window.addEventListener("mouseup", function (event) { if (phase == "stretching") phase = "turning"; });
 window.addEventListener("touchend", function (event) { if (phase == "stretching") phase = "turning"; });
 window.addEventListener("resize", function (event) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; draw(); });
@@ -240,6 +248,8 @@ function animate(timestamp) {
              combo++; earnedPts = 1 + combo; score += earnedPts;
              perfectElement.innerText = `🔥 KUSURSUZ! +${earnedPts}`;
              perfectElement.style.opacity = 1; setTimeout(() => (perfectElement.style.opacity = 0), 1000);
+             // 🔥 SES: Kusursuz kombo vuruş sesi
+             comboSound.currentTime = 0; comboSound.play().catch(e => {});
           } else {
              combo = 0; earnedPts = 1; score += earnedPts; perfectElement.innerText = "";
           }
@@ -259,7 +269,12 @@ function animate(timestamp) {
         if (heroX > maxHeroX) { heroX = maxHeroX; phase = "transitioning"; }
       } else {
         const maxHeroX = sticks.last().x + sticks.last().length + heroWidth;
-        if (heroX > maxHeroX) { heroX = maxHeroX; phase = "falling"; }
+        if (heroX > maxHeroX) { 
+            heroX = maxHeroX; 
+            phase = "falling"; 
+            // 🔥 SES: Düşme sesi
+            fallSound.currentTime = 0; fallSound.play().catch(e=>{});
+        }
       }
       break;
     }
