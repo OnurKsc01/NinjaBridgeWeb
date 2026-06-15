@@ -28,15 +28,17 @@ const petData = { "kopek": { name: "Altın Avcısı", price: 200, desc: "Daha h�
 
 // OFF-SCREEN CACHE (Resimleri Hafızaya Alma)
 const preRenderedPets = {};
-Object.keys(petData).forEach(key => {
-    let c = document.createElement('canvas');
-    c.width = 32; c.height = 32;
-    let cCtx = c.getContext('2d');
-    cCtx.font = "22px Arial"; cCtx.fillText(petData[key].emoji, 2, 24);
-    preRenderedPets[key] = c;
-    let img = new Image(); img.src = key + '.png'; 
-    img.onload = () => { cCtx.clearRect(0, 0, 32, 32); cCtx.drawImage(img, 0, 0, 26, 26); };
-});
+try {
+    Object.keys(petData).forEach(key => {
+        let c = document.createElement('canvas');
+        c.width = 32; c.height = 32;
+        let cCtx = c.getContext('2d');
+        cCtx.font = "22px Arial"; cCtx.fillText(petData[key].emoji, 2, 24);
+        preRenderedPets[key] = c;
+        let img = new Image(); img.src = key + '.png'; 
+        img.onload = () => { cCtx.clearRect(0, 0, 32, 32); cCtx.drawImage(img, 0, 0, 26, 26); };
+    });
+} catch(e) {}
 
 const introductionElement = document.getElementById("introduction");
 const perfectElement = document.getElementById("perfect");
@@ -115,7 +117,8 @@ const ctx = canvas.getContext("2d");
 window.addEventListener('load', () => {
     if (tg && tg.ready) tg.ready();
     if (tg && tg.expand) tg.expand();
-    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    canvas.width = window.innerWidth || 375; 
+    canvas.height = window.innerHeight || 800;
     initAdsGram(); 
     loadPlayerData();
     checkDuelStatus(); 
@@ -130,7 +133,7 @@ function loadPlayerData() {
             currentSkin = data.currentSkin || "default"; ownedSkins = data.ownedSkins || ["default"];
             currentPet = data.currentPet || "default"; ownedPets = data.ownedPets || {};
             updateCoinUI();
-            if (phase === "waiting") { if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } draw(); }
+            if (phase === "waiting") { if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } }
         }).catch(err => console.error("Veri çekilemedi", err));
 }
 
@@ -198,7 +201,8 @@ function resetGame() {
   generatePlatform(); generatePlatform(); generatePlatform(); generatePlatform();
   sticks = [{ x: platforms[0].x + platforms[0].w, length: 0, rotation: 0 }];
   trees = []; for(let i=0; i<10; i++) generateTree();
-  heroX = platforms[0].x + platforms[0].w - heroDistanceFromEdge; heroY = 0; draw();
+  heroX = platforms[0].x + platforms[0].w - heroDistanceFromEdge; heroY = 0; 
+  draw();
 }
 
 function generateTree() { const minimumGap = 30, maximumGap = 150; const lastTree = trees[trees.length - 1]; let furthestX = lastTree ? lastTree.x : 0; const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap)); const treeColors = ["#6D8821", "#8FAC34", "#98B333"]; trees.push({ x, color: treeColors[Math.floor(Math.random() * 3)] }); }
@@ -221,8 +225,8 @@ function generatePlatform() {
 // ------------------------------------
 // 6. MOTOR (ANIMATION & INPUT)
 // ------------------------------------
-window.addEventListener("mousedown", function (event) { if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); window.requestAnimationFrame(animate); } });
-window.addEventListener("touchstart", function (event) { if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); window.requestAnimationFrame(animate); } });
+window.addEventListener("mousedown", function (event) { if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); } });
+window.addEventListener("touchstart", function (event) { if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); } });
 window.addEventListener("mouseup", function (event) { if (phase == "stretching") phase = "turning"; });
 window.addEventListener("touchend", function (event) { if (phase == "stretching") phase = "turning"; });
 window.addEventListener("resize", function (event) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; draw(); });
@@ -233,12 +237,20 @@ function animate(timestamp) {
   if (!lastTimestamp) { lastTimestamp = timestamp; window.requestAnimationFrame(animate); return; }
   let dt = timestamp - lastTimestamp; if (dt >= 12 && dt <= 20) { dt = 16.66; } else if (dt > 32) { dt = 16.66; } 
 
+  // Güvenlik kalkanı: Oyun yüklenmeden animate çalışırsa hata vermesin
+  if (sticks.length === 0) { window.requestAnimationFrame(animate); return; }
+  
   const lastStick = sticks[sticks.length - 1];
 
   switch (phase) {
-    case "waiting": return; 
-    case "dead_options": break; 
-    case "stretching": { lastStick.length += dt / stretchingSpeed; break; }
+    case "waiting": 
+        break; // 🔥 ÇÖZÜM: Artık döngü durmuyor, sürekli 60FPS çizim yapıyor!
+    case "dead_options": 
+        break; 
+    case "stretching": { 
+        lastStick.length += dt / stretchingSpeed; 
+        break; 
+    }
     case "turning": {
       lastStick.rotation += dt / turningSpeed;
       if (lastStick.rotation > 90) {
@@ -260,30 +272,42 @@ function animate(timestamp) {
       break;
     }
     case "transitioning": { sceneOffset += dt / transitioningSpeed; const [nextPlatform] = thePlatformTheStickHits(); if (sceneOffset > nextPlatform.x + nextPlatform.w - paddingX) { sticks.push({ x: nextPlatform.x + nextPlatform.w, length: 0, rotation: 0 }); phase = "waiting"; } break; }
+    
     case "falling": {
       if (lastStick.rotation < 180) lastStick.rotation += dt / turningSpeed;
       heroY += dt / fallingSpeed; const maxHeroY = platformHeight + 100 + (window.innerHeight - canvasHeight) / 2;
       
       if (heroY > maxHeroY) {
-        if (currentMonkeyLives > 0) { currentMonkeyLives--; phase = "waiting"; heroY = 0; heroX = lastStick.x - heroDistanceFromEdge; lastStick.length = 0; lastStick.rotation = 0; perfectElement.innerText = `🐒 MAYMUN KURTARDI!`; perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1; draw(); setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); return; }
+        if (currentMonkeyLives > 0) { 
+            currentMonkeyLives--; phase = "waiting"; heroY = 0; heroX = lastStick.x - heroDistanceFromEdge; lastStick.length = 0; lastStick.rotation = 0; 
+            perfectElement.innerText = `🐒 MAYMUN KURTARDI!`; perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1; setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); 
+            break; 
+        }
         
         if (isDuelMode) {
             phase = "dead_options"; 
             restartButton.style.display = "block"; 
             saveScoreToAPI(); 
-            return;
+            break;
         }
 
         let reviveMenuEl = document.getElementById("reviveMenu");
-        if (!adReviveUsedThisRun && reviveMenuEl) { phase = "dead_options"; reviveMenuEl.style.display = "flex"; return; }
+        if (!adReviveUsedThisRun && reviveMenuEl) { 
+            phase = "dead_options"; reviveMenuEl.style.display = "flex"; 
+            break; 
+        }
         
         phase = "dead_options"; 
-        restartButton.style.display = "block"; saveScoreToAPI(); return;
+        restartButton.style.display = "block"; saveScoreToAPI(); 
+        break;
       }
       break;
     }
   }
-  draw(); window.requestAnimationFrame(animate); lastTimestamp = timestamp;
+  
+  draw(); // Çizim fonksiyonu artık HER KAREDE çalışıyor!
+  window.requestAnimationFrame(animate); 
+  lastTimestamp = timestamp;
 }
 
 function thePlatformTheStickHits() { 
@@ -298,15 +322,34 @@ function thePlatformTheStickHits() {
 // ------------------------------------
 // 7. RENDER (ÇİZİM MOTORU)
 // ------------------------------------
-function draw() { ctx.save(); ctx.clearRect(0, 0, window.innerWidth, window.innerHeight); drawBackground(); ctx.translate((window.innerWidth - canvasWidth) / 2 - sceneOffset, (window.innerHeight - canvasHeight) / 2); drawPlatforms(); drawPet(); drawHero(); drawSticks(); ctx.restore(); }
+function draw() { 
+    let wWidth = window.innerWidth || 375;
+    let wHeight = window.innerHeight || 800;
+    
+    ctx.save(); 
+    ctx.clearRect(0, 0, wWidth, wHeight); 
+    drawBackground(); 
+    ctx.translate((wWidth - canvasWidth) / 2 - sceneOffset, (wHeight - canvasHeight) / 2); 
+    drawPlatforms(); 
+    drawPet(); 
+    drawHero(); 
+    drawSticks(); 
+    ctx.restore(); 
+}
 
 restartButton.addEventListener("click", function (event) { event.preventDefault(); resetGame(); });
 
 function drawPlatforms() { 
   const lastStick = sticks[sticks.length - 1];
+  let wHeight = window.innerHeight || 800;
+  
   platforms.forEach(({ x, w }) => { 
-      ctx.fillStyle = "black"; ctx.fillRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2); 
-      if (lastStick && lastStick.x < x) { ctx.fillStyle = "red"; let pArea = getPerfectAreaSize(w); ctx.fillRect(x + w / 2 - pArea / 2, canvasHeight - platformHeight, pArea, pArea); } 
+      ctx.fillStyle = "black"; 
+      ctx.fillRect(x, canvasHeight - platformHeight, w, platformHeight + (wHeight - canvasHeight) / 2); 
+      if (lastStick && lastStick.x < x) { 
+          ctx.fillStyle = "red"; let pArea = getPerfectAreaSize(w); 
+          ctx.fillRect(x + w / 2 - pArea / 2, canvasHeight - platformHeight, pArea, pArea); 
+      } 
   }); 
 }
 
@@ -318,12 +361,12 @@ function drawRoundedRect(x, y, width, height, radius) { ctx.beginPath(); ctx.mov
 
 function drawSticks() { sticks.forEach((stick) => { ctx.save(); ctx.translate(stick.x, canvasHeight - platformHeight); ctx.rotate((Math.PI / 180) * stick.rotation); ctx.beginPath(); ctx.lineWidth = 2; ctx.moveTo(0, 0); ctx.lineTo(0, -stick.length); ctx.stroke(); ctx.restore(); }); }
 
-function drawBackground() { var gradient = ctx.createLinearGradient(0, 0, 0, window.innerHeight); gradient.addColorStop(0, "#BBD691"); gradient.addColorStop(1, "#FEF1E1"); ctx.fillStyle = gradient; ctx.fillRect(0, 0, window.innerWidth, window.innerHeight); drawHill(hill1BaseHeight, hill1Amplitude, hill1Stretch, "#95C629"); drawHill(hill2BaseHeight, hill2Amplitude, hill2Stretch, "#659F1C"); trees.forEach((tree) => drawTree(tree.x, tree.color)); }
+function drawBackground() { let wWidth = window.innerWidth || 375; let wHeight = window.innerHeight || 800; var gradient = ctx.createLinearGradient(0, 0, 0, wHeight); gradient.addColorStop(0, "#BBD691"); gradient.addColorStop(1, "#FEF1E1"); ctx.fillStyle = gradient; ctx.fillRect(0, 0, wWidth, wHeight); drawHill(hill1BaseHeight, hill1Amplitude, hill1Stretch, "#95C629"); drawHill(hill2BaseHeight, hill2Amplitude, hill2Stretch, "#659F1C"); trees.forEach((tree) => drawTree(tree.x, tree.color)); }
 
-function drawHill(baseHeight, amplitude, stretch, color) { ctx.beginPath(); ctx.moveTo(0, window.innerHeight); ctx.lineTo(0, getHillY(0, baseHeight, amplitude, stretch)); for (let i = 0; i < window.innerWidth; i++) { ctx.lineTo(i, getHillY(i, baseHeight, amplitude, stretch)); } ctx.lineTo(window.innerWidth, window.innerHeight); ctx.fillStyle = color; ctx.fill(); }
+function drawHill(baseHeight, amplitude, stretch, color) { let wWidth = window.innerWidth || 375; let wHeight = window.innerHeight || 800; ctx.beginPath(); ctx.moveTo(0, wHeight); ctx.lineTo(0, getHillY(0, baseHeight, amplitude, stretch)); for (let i = 0; i < wWidth; i++) { ctx.lineTo(i, getHillY(i, baseHeight, amplitude, stretch)); } ctx.lineTo(wWidth, wHeight); ctx.fillStyle = color; ctx.fill(); }
 
-function getHillY(windowX, baseHeight, amplitude, stretch) { return Math.sinus((sceneOffset * backgroundSpeedMultiplier + windowX) * stretch) * amplitude + window.innerHeight - baseHeight; }
-function getTreeY(x, baseHeight, amplitude) { return Math.sinus(x) * amplitude + window.innerHeight - baseHeight; }
+function getHillY(windowX, baseHeight, amplitude, stretch) { let wHeight = window.innerHeight || 800; return Math.sinus((sceneOffset * backgroundSpeedMultiplier + windowX) * stretch) * amplitude + wHeight - baseHeight; }
+function getTreeY(x, baseHeight, amplitude) { let wHeight = window.innerHeight || 800; return Math.sinus(x) * amplitude + wHeight - baseHeight; }
 
 // ------------------------------------
 // 8. UI VE MARKET İŞLEMLERİ
