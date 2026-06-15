@@ -22,12 +22,27 @@ let currentPet = "default"; let ownedPets = {};
 const skinData = { "default": { name: "Varsayılan", price: 0, body: "black", bandana: "red" }, "yesil": { name: "Yeşil Ninja", price: 20, body: "#228B22", bandana: "black" }, "bronz": { name: "Bronz Ninja", price: 30, body: "#cd7f32", bandana: "#5c4033" }, "demir": { name: "Demir Ninja", price: 40, body: "#a9a9a9", bandana: "#696969" }, "altin": { name: "Altın Ninja", price: 50, body: "#ffd700", bandana: "#b8860b" }, "hiper": { name: "Hiper Ninja", price: 65, body: "#800080", bandana: "#00ffff" }, "golge": { name: "Gölge Katili", price: 80, body: "#1a1a1a", bandana: "#4a0000" }, "buzul": { name: "Buzul Ninja", price: 100, body: "#add8e6", bandana: "#ffffff" } };
 const petData = { "kopek": { name: "Altın Avcısı", price: 200, desc: "Daha hızlı Jeton", emoji: "🐶" }, "kedi": { name: "Gözcü Kedi", price: 250, desc: "Büyük Kombo Alanı", emoji: "🐱" }, "maymun": { name: "Kuyruklu Maymun", price: 400, desc: "Ekstra Can & Jeton", emoji: "🐒" }, "kurt": { name: "Gölge Kurdu", price: 750, desc: "Jeton + Dev Kırmızı Alan", emoji: "🐺" } };
 
-// 🔥 YENİ: PNG GÖRSELLERİ ÖN YÜKLEME SİSTEMİ
-const loadedImages = {};
+// 🔥 YENİ: OFF-SCREEN CACHE (SIFIR KASMA SİSTEMİ)
+// Bu sistem resimleri/emojileri saniyede 60 kere baştan çizmez. Hafızada minik bir kopya tutar.
+const preRenderedPets = {};
 Object.keys(petData).forEach(key => {
+    // Görünmez, sadece 32x32 piksellik bir hafıza tuvali yaratıyoruz
+    let c = document.createElement('canvas');
+    c.width = 32; c.height = 32;
+    let cCtx = c.getContext('2d');
+    
+    // Önce Emojiyi çizelim (İnternet yavaşsa veya PNG dosyası henüz yoksa geçici kalkan olur)
+    cCtx.font = "22px Arial";
+    cCtx.fillText(petData[key].emoji, 2, 24);
+    preRenderedPets[key] = c;
+
+    // Eğer PNG dosyası bulunursa, emojiyi silip üstüne PNG'yi kalıcı olarak çizeriz
     let img = new Image();
-    img.src = key + '.png'; // kopek.png, kedi.png, maymun.png, kurt.png
-    loadedImages[key] = img;
+    img.src = key + '.png'; // Örn: kedi.png
+    img.onload = () => {
+        cCtx.clearRect(0, 0, 32, 32);
+        cCtx.drawImage(img, 0, 0, 26, 26);
+    };
 });
 
 const introductionElement = document.getElementById("introduction");
@@ -99,7 +114,6 @@ document.getElementById("watchEarnBtn").addEventListener("click", () => {
         } 
     }).catch(() => { });
 });
-
 
 // ------------------------------------
 // 4. OYUN İÇİ DEĞİŞKENLER
@@ -203,7 +217,6 @@ function generateTree() {
 
 function generatePlatform() {
   let minimumGap, maximumGap, minimumWidth, maximumWidth;
-
   if (score >= 5000) { minimumGap = 120; maximumGap = 250; minimumWidth = 10; maximumWidth = 25; }
   else if (score >= 4000) { minimumGap = 100; maximumGap = 230; minimumWidth = 15; maximumWidth = 35; }
   else if (score >= 3000) { minimumGap = 90; maximumGap = 210; minimumWidth = 20; maximumWidth = 45; }
@@ -274,8 +287,7 @@ function animate(timestamp) {
       } else {
         const maxHeroX = sticks.last().x + sticks.last().length + heroWidth;
         if (heroX > maxHeroX) { 
-            heroX = maxHeroX; 
-            phase = "falling"; 
+            heroX = maxHeroX; phase = "falling"; 
             fallSound.currentTime = 0; fallSound.play().catch(e=>{});
         }
       }
@@ -305,9 +317,7 @@ function animate(timestamp) {
         
         let reviveMenuEl = document.getElementById("reviveMenu");
         if (!adReviveUsedThisRun && reviveMenuEl) {
-            phase = "dead_options"; 
-            reviveMenuEl.style.display = "flex"; 
-            return;
+            phase = "dead_options"; reviveMenuEl.style.display = "flex"; return;
         }
 
         restartButton.style.display = "block"; saveScoreToAPI(); return;
@@ -371,22 +381,18 @@ function drawHero() {
   ctx.restore();
 }
 
-// 🔥 YENİ: EMOJİDEN PNG'YE GEÇİŞ
+// 🔥 YENİ: EMOJİDEN PNG'YE GEÇİŞ (SIFIR KASMA)
 function drawPet() {
   if (currentPet === "default") return; 
   let bounce = (phase === "walking" || phase === "transitioning") ? Math.abs(Math.sin(Date.now() / 100)) * 6 : 0; 
   ctx.save(); 
   ctx.translate(heroX - 32, heroY + canvasHeight - platformHeight - 20 - bounce); 
   
-  let img = loadedImages[currentPet];
-  if(img && img.complete && img.naturalWidth !== 0) {
-      // Eğer PNG dosyası Github'da yüklüyse PNG'yi çizdir (24x24 pixel boyutunda)
-      ctx.drawImage(img, 0, 0, 24, 24); 
-  } else {
-      // Eğer PNG henüz yüklenmediyse veya yoksa çökmeyi önle, geçici olarak Emoji çizdir (Fallback Sistemi)
-      ctx.font = "20px Arial"; 
-      ctx.fillText(petData[currentPet].emoji, 0, 18); 
+  // Resmi Saniyede 60 kere hesaplamak yerine önbellekteki (cache) mini kopyayı yapıştırıyoruz!
+  if (preRenderedPets[currentPet]) {
+      ctx.drawImage(preRenderedPets[currentPet], 0, 0);
   }
+  
   ctx.restore();
 }
 
