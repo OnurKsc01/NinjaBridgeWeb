@@ -1,4 +1,3 @@
-Array.prototype.last = function () { return this[this.length - 1]; };
 Math.sinus = function (degree) { return Math.sin((degree / 180) * Math.PI); };
 
 // ------------------------------------
@@ -69,8 +68,8 @@ document.getElementById("reviveAdBtn").addEventListener("click", () => {
     adController.show().then((result) => { 
         if (result.done) { 
             adReviveUsedThisRun = true; document.getElementById("reviveMenu").style.display = "none"; 
-            phase = "waiting"; heroY = 0; heroX = sticks.last().x - heroDistanceFromEdge; 
-            sticks.last().length = 0; sticks.last().rotation = 0; 
+            phase = "waiting"; heroY = 0; heroX = sticks[sticks.length - 1].x - heroDistanceFromEdge; 
+            sticks[sticks.length - 1].length = 0; sticks[sticks.length - 1].rotation = 0; 
             perfectElement.innerText = "📺 CANLANDIN!"; perfectElement.style.color = "#8e44ad"; perfectElement.style.opacity = 1; 
             draw(); setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); 
         } 
@@ -135,7 +134,6 @@ function loadPlayerData() {
         }).catch(err => console.error("Veri çekilemedi", err));
 }
 
-// 🔥 DÜELLO CANLI TAKİP SORGUSU
 function checkDuelStatus() {
     fetch(`https://ninja-bridge-api.onrender.com/api/score/duel-status/${tgUserId}`)
         .then(res => res.json())
@@ -235,14 +233,16 @@ function animate(timestamp) {
   if (!lastTimestamp) { lastTimestamp = timestamp; window.requestAnimationFrame(animate); return; }
   let dt = timestamp - lastTimestamp; if (dt >= 12 && dt <= 20) { dt = 16.66; } else if (dt > 32) { dt = 16.66; } 
 
+  const lastStick = sticks[sticks.length - 1];
+
   switch (phase) {
     case "waiting": return; 
     case "dead_options": break; 
-    case "stretching": { sticks.last().length += dt / stretchingSpeed; break; }
+    case "stretching": { lastStick.length += dt / stretchingSpeed; break; }
     case "turning": {
-      sticks.last().rotation += dt / turningSpeed;
-      if (sticks.last().rotation > 90) {
-        sticks.last().rotation = 90; const [nextPlatform, perfectHit] = thePlatformTheStickHits();
+      lastStick.rotation += dt / turningSpeed;
+      if (lastStick.rotation > 90) {
+        lastStick.rotation = 90; const [nextPlatform, perfectHit] = thePlatformTheStickHits();
         if (nextPlatform) {
           let earnedPts = 0;
           if (perfectHit) { combo++; earnedPts = 1 + combo; score += earnedPts; perfectElement.innerText = `🔥 KUSURSUZ! +${earnedPts}`; perfectElement.style.opacity = 1; setTimeout(() => (perfectElement.style.opacity = 0), 1000); comboSound.currentTime = 0; comboSound.play().catch(e => {}); } 
@@ -256,22 +256,19 @@ function animate(timestamp) {
     case "walking": {
       heroX += dt / walkingSpeed; const [nextPlatform] = thePlatformTheStickHits();
       if (nextPlatform) { const maxHeroX = nextPlatform.x + nextPlatform.w - heroDistanceFromEdge; if (heroX > maxHeroX) { heroX = maxHeroX; phase = "transitioning"; } } 
-      else { const maxHeroX = sticks.last().x + sticks.last().length + heroWidth; if (heroX > maxHeroX) { heroX = maxHeroX; phase = "falling"; fallSound.currentTime = 0; fallSound.play().catch(e=>{}); } }
+      else { const maxHeroX = lastStick.x + lastStick.length + heroWidth; if (heroX > maxHeroX) { heroX = maxHeroX; phase = "falling"; fallSound.currentTime = 0; fallSound.play().catch(e=>{}); } }
       break;
     }
     case "transitioning": { sceneOffset += dt / transitioningSpeed; const [nextPlatform] = thePlatformTheStickHits(); if (sceneOffset > nextPlatform.x + nextPlatform.w - paddingX) { sticks.push({ x: nextPlatform.x + nextPlatform.w, length: 0, rotation: 0 }); phase = "waiting"; } break; }
-    
-    // 🔥 SORUNUN ÇÖZÜLDÜĞÜ DÜŞME AŞAMASI
     case "falling": {
-      if (sticks.last().rotation < 180) sticks.last().rotation += dt / turningSpeed;
+      if (lastStick.rotation < 180) lastStick.rotation += dt / turningSpeed;
       heroY += dt / fallingSpeed; const maxHeroY = platformHeight + 100 + (window.innerHeight - canvasHeight) / 2;
       
       if (heroY > maxHeroY) {
-        if (currentMonkeyLives > 0) { currentMonkeyLives--; phase = "waiting"; heroY = 0; heroX = sticks.last().x - heroDistanceFromEdge; sticks.last().length = 0; sticks.last().rotation = 0; perfectElement.innerText = `🐒 MAYMUN KURTARDI!`; perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1; draw(); setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); return; }
+        if (currentMonkeyLives > 0) { currentMonkeyLives--; phase = "waiting"; heroY = 0; heroX = lastStick.x - heroDistanceFromEdge; lastStick.length = 0; lastStick.rotation = 0; perfectElement.innerText = `🐒 MAYMUN KURTARDI!`; perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1; draw(); setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); return; }
         
-        // 🔥 ÇÖZÜM: EĞER DÜELLODAYSAK OYUNU DONDUR (phase="dead_options")
         if (isDuelMode) {
-            phase = "dead_options"; // <-- İŞTE O HAYAT KURTARAN FREN!
+            phase = "dead_options"; 
             restartButton.style.display = "block"; 
             saveScoreToAPI(); 
             return;
@@ -280,7 +277,7 @@ function animate(timestamp) {
         let reviveMenuEl = document.getElementById("reviveMenu");
         if (!adReviveUsedThisRun && reviveMenuEl) { phase = "dead_options"; reviveMenuEl.style.display = "flex"; return; }
         
-        phase = "dead_options"; // <-- DİĞER FREN
+        phase = "dead_options"; 
         restartButton.style.display = "block"; saveScoreToAPI(); return;
       }
       break;
@@ -289,7 +286,14 @@ function animate(timestamp) {
   draw(); window.requestAnimationFrame(animate); lastTimestamp = timestamp;
 }
 
-function thePlatformTheStickHits() { if (sticks.last().rotation != 90) throw Error(`Stick is ${sticks.last().rotation}°`); const stickFarX = sticks.last().x + sticks.last().length; const platformTheStickHits = platforms.find((platform) => platform.x < stickFarX && stickFarX < platform.x + platform.w); let pArea = getPerfectAreaSize(platformTheStickHits ? platformTheStickHits.w : 0); if (platformTheStickHits && platformTheStickHits.x + platformTheStickHits.w / 2 - pArea / 2 < stickFarX && stickFarX < platformTheStickHits.x + platformTheStickHits.w / 2 + pArea / 2) return [platformTheStickHits, true]; return [platformTheStickHits, false]; }
+function thePlatformTheStickHits() { 
+  const lastStick = sticks[sticks.length - 1];
+  if (lastStick.rotation != 90) throw Error(`Stick is ${lastStick.rotation}°`); 
+  const stickFarX = lastStick.x + lastStick.length; 
+  const platformTheStickHits = platforms.find((platform) => platform.x < stickFarX && stickFarX < platform.x + platform.w); 
+  let pArea = getPerfectAreaSize(platformTheStickHits ? platformTheStickHits.w : 0); 
+  if (platformTheStickHits && platformTheStickHits.x + platformTheStickHits.w / 2 - pArea / 2 < stickFarX && stickFarX < platformTheStickHits.x + platformTheStickHits.w / 2 + pArea / 2) return [platformTheStickHits, true]; return [platformTheStickHits, false]; 
+}
 
 // ------------------------------------
 // 7. RENDER (ÇİZİM MOTORU)
@@ -298,7 +302,13 @@ function draw() { ctx.save(); ctx.clearRect(0, 0, window.innerWidth, window.inne
 
 restartButton.addEventListener("click", function (event) { event.preventDefault(); resetGame(); });
 
-function drawPlatforms() { platforms.forEach(({ x, w }) => { ctx.fillStyle = "black"; ctx.fillRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2); if (sticks.last().x < x) { ctx.fillStyle = "red"; let pArea = getPerfectAreaSize(w); ctx.fillRect(x + w / 2 - pArea / 2, canvasHeight - platformHeight, pArea, pArea); } }); }
+function drawPlatforms() { 
+  const lastStick = sticks[sticks.length - 1];
+  platforms.forEach(({ x, w }) => { 
+      ctx.fillStyle = "black"; ctx.fillRect(x, canvasHeight - platformHeight, w, platformHeight + (window.innerHeight - canvasHeight) / 2); 
+      if (lastStick && lastStick.x < x) { ctx.fillStyle = "red"; let pArea = getPerfectAreaSize(w); ctx.fillRect(x + w / 2 - pArea / 2, canvasHeight - platformHeight, pArea, pArea); } 
+  }); 
+}
 
 function drawHero() { ctx.save(); let skin = skinData[currentSkin] || skinData["default"]; ctx.fillStyle = skin.body; ctx.translate(heroX - heroWidth / 2, heroY + canvasHeight - platformHeight - heroHeight / 2); drawRoundedRect(-heroWidth / 2, -heroHeight / 2, heroWidth, heroHeight - 4, 5); const legDistance = 5; ctx.beginPath(); ctx.arc(legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.beginPath(); ctx.arc(-legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.beginPath(); ctx.fillStyle = "white"; ctx.arc(5, -7, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.fillStyle = skin.bandana; ctx.fillRect(-heroWidth / 2 - 1, -12, heroWidth + 2, 4.5); ctx.beginPath(); ctx.moveTo(-9, -14.5); ctx.lineTo(-17, -18.5); ctx.lineTo(-14, -8.5); ctx.fill(); ctx.beginPath(); ctx.moveTo(-10, -10.5); ctx.lineTo(-15, -3.5); ctx.lineTo(-5, -7); ctx.fill(); ctx.restore(); }
 
@@ -316,7 +326,7 @@ function getHillY(windowX, baseHeight, amplitude, stretch) { return Math.sinus((
 function getTreeY(x, baseHeight, amplitude) { return Math.sinus(x) * amplitude + window.innerHeight - baseHeight; }
 
 // ------------------------------------
-// 8. UI VE MARKET İŞLEMLERİ (KORUMALI)
+// 8. UI VE MARKET İŞLEMLERİ
 // ------------------------------------
 
 document.getElementById("leaderboardBtn").addEventListener("click", () => { 
