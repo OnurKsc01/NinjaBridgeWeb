@@ -22,23 +22,19 @@ let currentPet = "default"; let ownedPets = {};
 const skinData = { "default": { name: "Varsayılan", price: 0, body: "black", bandana: "red" }, "yesil": { name: "Yeşil Ninja", price: 20, body: "#228B22", bandana: "black" }, "bronz": { name: "Bronz Ninja", price: 30, body: "#cd7f32", bandana: "#5c4033" }, "demir": { name: "Demir Ninja", price: 40, body: "#a9a9a9", bandana: "#696969" }, "altin": { name: "Altın Ninja", price: 50, body: "#ffd700", bandana: "#b8860b" }, "hiper": { name: "Hiper Ninja", price: 65, body: "#800080", bandana: "#00ffff" }, "golge": { name: "Gölge Katili", price: 80, body: "#1a1a1a", bandana: "#4a0000" }, "buzul": { name: "Buzul Ninja", price: 100, body: "#add8e6", bandana: "#ffffff" } };
 const petData = { "kopek": { name: "Altın Avcısı", price: 200, desc: "Daha hızlı Jeton", emoji: "🐶" }, "kedi": { name: "Gözcü Kedi", price: 250, desc: "Büyük Kombo Alanı", emoji: "🐱" }, "maymun": { name: "Kuyruklu Maymun", price: 400, desc: "Ekstra Can & Jeton", emoji: "🐒" }, "kurt": { name: "Gölge Kurdu", price: 750, desc: "Jeton + Dev Kırmızı Alan", emoji: "🐺" } };
 
-// 🔥 YENİ: OFF-SCREEN CACHE (SIFIR KASMA SİSTEMİ)
-// Bu sistem resimleri/emojileri saniyede 60 kere baştan çizmez. Hafızada minik bir kopya tutar.
+// OFF-SCREEN CACHE (Resimleri Hafızaya Alma)
 const preRenderedPets = {};
 Object.keys(petData).forEach(key => {
-    // Görünmez, sadece 32x32 piksellik bir hafıza tuvali yaratıyoruz
     let c = document.createElement('canvas');
     c.width = 32; c.height = 32;
     let cCtx = c.getContext('2d');
     
-    // Önce Emojiyi çizelim (İnternet yavaşsa veya PNG dosyası henüz yoksa geçici kalkan olur)
     cCtx.font = "22px Arial";
     cCtx.fillText(petData[key].emoji, 2, 24);
     preRenderedPets[key] = c;
 
-    // Eğer PNG dosyası bulunursa, emojiyi silip üstüne PNG'yi kalıcı olarak çizeriz
     let img = new Image();
-    img.src = key + '.png'; // Örn: kedi.png
+    img.src = key + '.png'; 
     img.onload = () => {
         cCtx.clearRect(0, 0, 32, 32);
         cCtx.drawImage(img, 0, 0, 26, 26);
@@ -100,7 +96,13 @@ document.getElementById("skipReviveBtn").addEventListener("click", () => {
     document.getElementById("reviveMenu").style.display = "none"; restartButton.style.display = "block"; saveScoreToAPI(); 
 });
 
+// 🔥 KORUMA EKLENDİ: Oyun devam ederken jeton reklamı açılamaz
 document.getElementById("watchEarnBtn").addEventListener("click", () => {
+    if (phase !== "waiting") {
+        if(tg && tg.showAlert) tg.showAlert("Oyun devam ederken reklam izlenemez! Lütfen yanmayı bekleyin.");
+        return;
+    }
+    
     if (!adController) { if(tg && tg.showAlert) tg.showAlert("Reklam yüklenemedi. İnternetinizi kontrol edin."); return; }
     adController.show().then((result) => { 
         if (result.done) { 
@@ -381,14 +383,12 @@ function drawHero() {
   ctx.restore();
 }
 
-// 🔥 YENİ: EMOJİDEN PNG'YE GEÇİŞ (SIFIR KASMA)
 function drawPet() {
   if (currentPet === "default") return; 
   let bounce = (phase === "walking" || phase === "transitioning") ? Math.abs(Math.sin(Date.now() / 100)) * 6 : 0; 
   ctx.save(); 
   ctx.translate(heroX - 32, heroY + canvasHeight - platformHeight - 20 - bounce); 
   
-  // Resmi Saniyede 60 kere hesaplamak yerine önbellekteki (cache) mini kopyayı yapıştırıyoruz!
   if (preRenderedPets[currentPet]) {
       ctx.drawImage(preRenderedPets[currentPet], 0, 0);
   }
@@ -438,9 +438,15 @@ function getHillY(windowX, baseHeight, amplitude, stretch) { return Math.sinus((
 function getTreeY(x, baseHeight, amplitude) { return Math.sinus(x) * amplitude + window.innerHeight - baseHeight; }
 
 // ------------------------------------
-// 8. UI VE MARKET İŞLEMLERİ
+// 8. UI VE MARKET İŞLEMLERİ (KORUMA EKLENDİ)
 // ------------------------------------
+
+// 🔥 KORUMA: Oyun devam ederken menüler açılamaz
 document.getElementById("leaderboardBtn").addEventListener("click", () => { 
+    if (phase !== "waiting") {
+        if(tg && tg.showAlert) tg.showAlert("Oyun devam ederken skor tablosu açılamaz! Lütfen yanmayı bekleyin.");
+        return;
+    }
     document.getElementById("leaderboardModal").style.display = "block"; 
     const list = document.getElementById("scoreList"); list.innerHTML = "<li style='text-align:center;'>Yükleniyor... ⏳</li>"; 
     fetch(`https://ninja-bridge-api.onrender.com/api/score/global?t=${Date.now()}`).then(res => res.json()).then(data => { 
@@ -450,7 +456,14 @@ document.getElementById("leaderboardBtn").addEventListener("click", () => {
 }); 
 document.getElementById("closeLeaderboard").addEventListener("click", () => { document.getElementById("leaderboardModal").style.display = "none"; });
 
-document.getElementById("shopBtn").addEventListener("click", () => { document.getElementById("shopModal").style.display = "block"; renderShop(); });
+// 🔥 KORUMA: Oyun devam ederken market açılamaz
+document.getElementById("shopBtn").addEventListener("click", () => { 
+    if (phase !== "waiting") {
+        if(tg && tg.showAlert) tg.showAlert("Oyun devam ederken market açılamaz! Lütfen yanmayı bekleyin.");
+        return;
+    }
+    document.getElementById("shopModal").style.display = "block"; renderShop(); 
+});
 document.getElementById("closeShop").addEventListener("click", () => { document.getElementById("shopModal").style.display = "none"; });
 
 function renderShop() {
