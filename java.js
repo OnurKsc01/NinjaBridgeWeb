@@ -22,6 +22,14 @@ let currentPet = "default"; let ownedPets = {};
 const skinData = { "default": { name: "Varsayılan", price: 0, body: "black", bandana: "red" }, "yesil": { name: "Yeşil Ninja", price: 20, body: "#228B22", bandana: "black" }, "bronz": { name: "Bronz Ninja", price: 30, body: "#cd7f32", bandana: "#5c4033" }, "demir": { name: "Demir Ninja", price: 40, body: "#a9a9a9", bandana: "#696969" }, "altin": { name: "Altın Ninja", price: 50, body: "#ffd700", bandana: "#b8860b" }, "hiper": { name: "Hiper Ninja", price: 65, body: "#800080", bandana: "#00ffff" }, "golge": { name: "Gölge Katili", price: 80, body: "#1a1a1a", bandana: "#4a0000" }, "buzul": { name: "Buzul Ninja", price: 100, body: "#add8e6", bandana: "#ffffff" } };
 const petData = { "kopek": { name: "Altın Avcısı", price: 200, desc: "Daha hızlı Jeton", emoji: "🐶" }, "kedi": { name: "Gözcü Kedi", price: 250, desc: "Büyük Kombo Alanı", emoji: "🐱" }, "maymun": { name: "Kuyruklu Maymun", price: 400, desc: "Ekstra Can & Jeton", emoji: "🐒" }, "kurt": { name: "Gölge Kurdu", price: 750, desc: "Jeton + Dev Kırmızı Alan", emoji: "🐺" } };
 
+// 🔥 YENİ: PNG GÖRSELLERİ ÖN YÜKLEME SİSTEMİ
+const loadedImages = {};
+Object.keys(petData).forEach(key => {
+    let img = new Image();
+    img.src = key + '.png'; // kopek.png, kedi.png, maymun.png, kurt.png
+    loadedImages[key] = img;
+});
+
 const introductionElement = document.getElementById("introduction");
 const perfectElement = document.getElementById("perfect");
 const restartButton = document.getElementById("restart");
@@ -30,14 +38,13 @@ const coinCountElement = document.getElementById("coinCount");
 const shopCoinCountElement = document.getElementById("shopCoinCount");
 
 // ------------------------------------
-// 🔥 YENİ: SES MOTORU
+// 2. SES MOTORU
 // ------------------------------------
 const bgMusic = new Audio('bg.mp3'); bgMusic.loop = true; bgMusic.volume = 0.3; 
 const comboSound = new Audio('combo.mp3'); comboSound.volume = 0.8;
 const fallSound = new Audio('dusme.mp3'); fallSound.volume = 0.8;
 let soundsUnlocked = false;
 
-// Tarayıcı kuralları gereği, sesleri başlatmak için kullanıcının ekrana ilk dokunuşunu yakalıyoruz.
 function unlockSounds() {
     if (!soundsUnlocked) {
         bgMusic.play().catch(()=>{}); 
@@ -48,7 +55,7 @@ function unlockSounds() {
 }
 
 // ------------------------------------
-// 2. REKLAM (ADSGRAM) SİSTEMİ
+// 3. REKLAM (ADSGRAM) SİSTEMİ
 // ------------------------------------
 let adController = null; 
 let adReviveUsedThisRun = false; 
@@ -95,7 +102,7 @@ document.getElementById("watchEarnBtn").addEventListener("click", () => {
 
 
 // ------------------------------------
-// 3. OYUN İÇİ DEĞİŞKENLER
+// 4. OYUN İÇİ DEĞİŞKENLER
 // ------------------------------------
 let phase = "waiting"; let lastTimestamp; let heroX, heroY, sceneOffset; 
 let platforms = [], sticks = [], trees = [];
@@ -113,7 +120,7 @@ const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
 // ------------------------------------
-// 4. BAŞLATMA VE API BAĞLANTILARI
+// 5. BAŞLATMA VE API BAĞLANTILARI
 // ------------------------------------
 window.addEventListener('load', () => {
     if (tg && tg.ready) tg.ready();
@@ -194,7 +201,6 @@ function generateTree() {
   const treeColors = ["#6D8821", "#8FAC34", "#98B333"]; trees.push({ x, color: treeColors[Math.floor(Math.random() * 3)] });
 }
 
-// 🔥 YENİ: KADEMELİ ZORLUK SEVİYESİ (Skor arttıkça daralan ve uzaklaşan platformlar)
 function generatePlatform() {
   let minimumGap, maximumGap, minimumWidth, maximumWidth;
 
@@ -206,9 +212,8 @@ function generatePlatform() {
   else if (score >= 750) { minimumGap = 60; maximumGap = 150; minimumWidth = 35; maximumWidth = 75; }
   else if (score >= 500) { minimumGap = 50; maximumGap = 130; minimumWidth = 40; maximumWidth = 85; }
   else if (score >= 250) { minimumGap = 45; maximumGap = 110; minimumWidth = 45; maximumWidth = 95; }
-  else { minimumGap = 40; maximumGap = 90; minimumWidth = 50; maximumWidth = 100; } // Başlangıç zorluğu
+  else { minimumGap = 40; maximumGap = 90; minimumWidth = 50; maximumWidth = 100; } 
 
-  // Ekrandan taşmasını engelleme kalkanı
   let maxScreenGap = window.innerWidth - 130;
   if (maximumGap > maxScreenGap) { maximumGap = Math.max(minimumGap + 10, maxScreenGap); }
 
@@ -218,7 +223,7 @@ function generatePlatform() {
 }
 
 // ------------------------------------
-// 5. MOTOR (ANIMATION & INPUT)
+// 6. MOTOR (ANIMATION & INPUT)
 // ------------------------------------
 window.addEventListener("mousedown", function (event) { if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); window.requestAnimationFrame(animate); }});
 window.addEventListener("touchstart", function (event) { if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); window.requestAnimationFrame(animate); }});
@@ -248,7 +253,6 @@ function animate(timestamp) {
              combo++; earnedPts = 1 + combo; score += earnedPts;
              perfectElement.innerText = `🔥 KUSURSUZ! +${earnedPts}`;
              perfectElement.style.opacity = 1; setTimeout(() => (perfectElement.style.opacity = 0), 1000);
-             // 🔥 SES: Kusursuz kombo vuruş sesi
              comboSound.currentTime = 0; comboSound.play().catch(e => {});
           } else {
              combo = 0; earnedPts = 1; score += earnedPts; perfectElement.innerText = "";
@@ -272,7 +276,6 @@ function animate(timestamp) {
         if (heroX > maxHeroX) { 
             heroX = maxHeroX; 
             phase = "falling"; 
-            // 🔥 SES: Düşme sesi
             fallSound.currentTime = 0; fallSound.play().catch(e=>{});
         }
       }
@@ -326,7 +329,7 @@ function thePlatformTheStickHits() {
 }
 
 // ------------------------------------
-// 6. RENDER (ÇİZİM MOTORU)
+// 7. RENDER (ÇİZİM MOTORU)
 // ------------------------------------
 function draw() {
   ctx.save(); ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
@@ -368,12 +371,23 @@ function drawHero() {
   ctx.restore();
 }
 
+// 🔥 YENİ: EMOJİDEN PNG'YE GEÇİŞ
 function drawPet() {
   if (currentPet === "default") return; 
-  let pet = petData[currentPet]; ctx.save(); 
   let bounce = (phase === "walking" || phase === "transitioning") ? Math.abs(Math.sin(Date.now() / 100)) * 6 : 0; 
-  ctx.translate(heroX - 28, heroY + canvasHeight - platformHeight - 5 - bounce); 
-  ctx.font = "20px Arial"; ctx.fillText(pet.emoji, -10, 5); ctx.restore();
+  ctx.save(); 
+  ctx.translate(heroX - 32, heroY + canvasHeight - platformHeight - 20 - bounce); 
+  
+  let img = loadedImages[currentPet];
+  if(img && img.complete && img.naturalWidth !== 0) {
+      // Eğer PNG dosyası Github'da yüklüyse PNG'yi çizdir (24x24 pixel boyutunda)
+      ctx.drawImage(img, 0, 0, 24, 24); 
+  } else {
+      // Eğer PNG henüz yüklenmediyse veya yoksa çökmeyi önle, geçici olarak Emoji çizdir (Fallback Sistemi)
+      ctx.font = "20px Arial"; 
+      ctx.fillText(petData[currentPet].emoji, 0, 18); 
+  }
+  ctx.restore();
 }
 
 function drawRoundedRect(x, y, width, height, radius) {
@@ -418,7 +432,7 @@ function getHillY(windowX, baseHeight, amplitude, stretch) { return Math.sinus((
 function getTreeY(x, baseHeight, amplitude) { return Math.sinus(x) * amplitude + window.innerHeight - baseHeight; }
 
 // ------------------------------------
-// 7. UI VE MARKET İŞLEMLERİ
+// 8. UI VE MARKET İŞLEMLERİ
 // ------------------------------------
 document.getElementById("leaderboardBtn").addEventListener("click", () => { 
     document.getElementById("leaderboardModal").style.display = "block"; 
