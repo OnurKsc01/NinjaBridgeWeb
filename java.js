@@ -6,6 +6,23 @@ Math.sinus = function (degree) {
   return Math.sin((degree / 180) * Math.PI);
 };
 
+// ------------------------------------
+// 1. TELEGRAM BAĞLANTISI VE KİMLİK
+// ------------------------------------
+let tg = window.Telegram?.WebApp;
+let user = tg?.initDataUnsafe?.user;
+let tgUserId = user ? user.id : 123456789;
+let tgUserName = user ? user.first_name : "Test Oyuncusu";
+
+// Grup ID'sini hem parametreden hem URL'den yakalama
+let startParam = tg?.initDataUnsafe?.start_param;
+const urlParams = new URLSearchParams(window.location.search);
+let urlGroupId = urlParams.get('groupid') || urlParams.get('startapp');
+let tgGroupId = startParam ? Number(startParam) : (urlGroupId ? Number(urlGroupId) : 0);
+
+// ------------------------------------
+// 2. OYUN DEĞİŞKENLERİ
+// ------------------------------------
 let phase = "waiting"; 
 let lastTimestamp; 
 let heroX; 
@@ -47,6 +64,7 @@ const perfectElement = document.getElementById("perfect");
 const restartButton = document.getElementById("restart");
 const scoreElement = document.getElementById("score");
 
+// Oyunu başlat
 resetGame();
 
 function resetGame() {
@@ -75,6 +93,24 @@ function resetGame() {
   heroY = 0;
 
   draw();
+}
+
+// ------------------------------------
+// 3. API'YE SKOR KAYDETME FONKSİYONU
+// ------------------------------------
+function saveScoreToAPI() {
+    fetch('https://ninja-bridge-api.onrender.com/api/score/save', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, 
+        body: JSON.stringify({ 
+            userId: tgUserId, 
+            firstName: tgUserName, 
+            score: score, 
+            groupId: tgGroupId, 
+            earnedCoins: 0, // Henüz jeton sistemini eklemedik
+            earnedGems: 0 
+        }) 
+    }).catch(e => console.error("Kayıt hatası:", e));
 }
 
 function generateTree() {
@@ -210,10 +246,15 @@ function animate(timestamp) {
     case "falling": {
       if (sticks.last().rotation < 180)
         sticks.last().rotation += (timestamp - lastTimestamp) / turningSpeed;
+      
       heroY += (timestamp - lastTimestamp) / fallingSpeed;
       const maxHeroY = platformHeight + 100 + (window.innerHeight - canvasHeight) / 2;
+      
       if (heroY > maxHeroY) {
         restartButton.style.display = "block";
+        
+        // 🔥 BURAYA EKLENDİ: Karakter aşağı düşünce skoru veritabanına atar
+        saveScoreToAPI(); 
         return;
       }
       break;
