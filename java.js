@@ -1,26 +1,6 @@
 Array.prototype.last = function () { return this[this.length - 1]; };
 Math.sinus = function (degree) { return Math.sin((degree / 180) * Math.PI); };
 
-
-// Telegram'ın tamamen hazır olduğundan emin ol
-function initGame() {
-    console.log("Oyun Başlatılıyor...");
-    
-    // Telegram kontrolü
-    if (window.Telegram && window.Telegram.WebApp) {
-        window.Telegram.WebApp.ready();
-        window.Telegram.WebApp.expand();
-    }
-    
-    // Şimdi senin oyun motorun başlasın
-    resetGame();
-}
-
-// Sayfa yüklenince başlat
-window.addEventListener('load', initGame);
-
-// ... (Geri kalan motor kodların)
-
 // ------------------------------------
 // TELEGRAM & OYUNCU VERİLERİ
 // ------------------------------------
@@ -34,17 +14,14 @@ const urlParams = new URLSearchParams(window.location.search);
 let urlGroupId = urlParams.get('groupid') || urlParams.get('startapp');
 let tgGroupId = startParam ? Number(startParam) : (urlGroupId ? Number(urlGroupId) : 0);
 
-// API'den Gelecek Veriler
 let playerCoins = 0; 
 let playerGems = 0; 
 let sessionEarnedCoins = 0; 
 let stepCount = 0; 
-// Şimdilik sadece logic olarak var, ekrana çizdirilmiyor (kasma yapmasın diye)
 let currentSkin = "default"; 
 let currentPet = "default"; 
 let ownedPets = {}; 
 
-// HTML Elementleri
 const introductionElement = document.getElementById("introduction");
 const perfectElement = document.getElementById("perfect");
 const restartButton = document.getElementById("restart");
@@ -76,33 +53,38 @@ const transitioningSpeed = 2, fallingSpeed = 2;
 const heroWidth = 17, heroHeight = 30; 
 
 const canvas = document.getElementById("game");
-canvas.width = window.innerWidth; 
-canvas.height = window.innerHeight;
 const ctx = canvas.getContext("2d");
 
 // ------------------------------------
-// API BAĞLANTILARI
+// BAŞLATMA VE API BAĞLANTILARI
 // ------------------------------------
+window.addEventListener('load', () => {
+    if (tg && tg.ready) tg.ready();
+    if (tg && tg.expand) tg.expand();
+    
+    canvas.width = window.innerWidth; 
+    canvas.height = window.innerHeight;
+    
+    loadPlayerData();
+    resetGame();
+});
+
 function loadPlayerData() {
     fetch(`https://ninja-bridge-api.onrender.com/api/score/player/${tgUserId}`)
         .then(res => res.json())
         .then(data => {
             playerCoins = data.coins || 0; 
             playerGems = data.gems || 0;
-            currentSkin = data.currentSkin || "default"; 
-            currentPet = data.currentPet || "default"; 
-            ownedPets = data.ownedPets || {}; 
             updateCoinUI(); 
         }).catch(err => console.error("Veri çekilemedi", err));
 }
 
 function updateCoinUI() { 
-    coinCountElement.innerHTML = `🪙 ${playerCoins} | 💎 ${playerGems}`; 
-    shopCoinCountElement.innerHTML = `🪙 ${playerCoins} | 💎 ${playerGems}`; 
+    if(coinCountElement) coinCountElement.innerHTML = `🪙 ${playerCoins} | 💎 ${playerGems}`; 
+    if(shopCoinCountElement) shopCoinCountElement.innerHTML = `🪙 ${playerCoins} | 💎 ${playerGems}`; 
 }
 
 function saveScoreToAPI() {
-    // Ekranda cüzdanı güncelle
     if (sessionEarnedCoins > 0) {
         playerCoins += sessionEarnedCoins;
         updateCoinUI();
@@ -117,11 +99,6 @@ function saveScoreToAPI() {
 function processCoinGeneration(earnedPts) {
     stepCount += earnedPts; 
     let reqSteps = 8; 
-    // Logic olarak kurt/köpek hesabı (Çizim yok, sadece matematik)
-    if (currentPet === "kopek" || currentPet === "kurt") { 
-        let lvl = ownedPets[currentPet] || 1; 
-        reqSteps = Math.max(1, 8 - lvl); 
-    } 
     if (stepCount >= reqSteps) { 
         let coinsToAdd = Math.floor(stepCount / reqSteps);
         sessionEarnedCoins += coinsToAdd; 
@@ -129,14 +106,10 @@ function processCoinGeneration(earnedPts) {
     }
 }
 
-// Menüler açıkken Canvas'a tıklamayı engelle
 function isMenuOpen() { 
-    return document.getElementById("shopModal").style.display === "block" || 
-           document.getElementById("leaderboardModal").style.display === "block"; 
+    return (document.getElementById("shopModal") && document.getElementById("shopModal").style.display === "block") || 
+           (document.getElementById("leaderboardModal") && document.getElementById("leaderboardModal").style.display === "block"); 
 }
-
-loadPlayerData();
-resetGame();
 
 function resetGame() {
   phase = "waiting"; lastTimestamp = undefined; sceneOffset = 0; score = 0; combo = 0; 
@@ -206,7 +179,7 @@ function animate(timestamp) {
              combo = 0; earnedPts = 1; score += earnedPts; perfectElement.innerText = "";
           }
           
-          processCoinGeneration(earnedPts); // Jeton hesaplaması
+          processCoinGeneration(earnedPts);
           scoreElement.innerText = score; 
           
           generatePlatform(); generateTree(); generateTree();
@@ -242,7 +215,7 @@ function animate(timestamp) {
       const maxHeroY = platformHeight + 100 + (window.innerHeight - canvasHeight) / 2;
       if (heroY > maxHeroY) {
         restartButton.style.display = "block";
-        saveScoreToAPI(); // Kaydet ve Bitir
+        saveScoreToAPI(); 
         return;
       }
       break;
@@ -289,12 +262,7 @@ function drawPlatforms() {
 
 function drawHero() {
   ctx.save();
-  // Renk mantığı
-  let bodyColor = "black"; let bandanaColor = "red";
-  if(currentSkin === "yesil") { bodyColor = "#228B22"; bandanaColor = "black"; }
-  else if(currentSkin === "altin") { bodyColor = "#ffd700"; bandanaColor = "#b8860b"; }
-  
-  ctx.fillStyle = bodyColor;
+  ctx.fillStyle = "black";
   ctx.translate(heroX - heroWidth / 2, heroY + canvasHeight - platformHeight - heroHeight / 2);
   drawRoundedRect(-heroWidth / 2, -heroHeight / 2, heroWidth, heroHeight - 4, 5);
   
@@ -304,7 +272,7 @@ function drawHero() {
   
   ctx.beginPath(); ctx.fillStyle = "white"; ctx.arc(5, -7, 3, 0, Math.PI * 2, false); ctx.fill();
   
-  ctx.fillStyle = bandanaColor;
+  ctx.fillStyle = "red";
   ctx.fillRect(-heroWidth / 2 - 1, -12, heroWidth + 2, 4.5);
   ctx.beginPath(); ctx.moveTo(-9, -14.5); ctx.lineTo(-17, -18.5); ctx.lineTo(-14, -8.5); ctx.fill();
   ctx.beginPath(); ctx.moveTo(-10, -10.5); ctx.lineTo(-15, -3.5); ctx.lineTo(-5, -7); ctx.fill();
@@ -375,6 +343,6 @@ document.getElementById("closeLeaderboard").addEventListener("click", () => { do
 document.getElementById("shopBtn").addEventListener("click", () => { 
     document.getElementById("shopModal").style.display = "block"; 
     const list = document.getElementById("shopList");
-    list.innerHTML = `<li style="padding: 10px; text-align:center; color:gray;">(Market yapısı eklenmeye hazır. Şimdilik sadece cüzdan entegre edildi.)</li>`;
+    list.innerHTML = `<li style="padding: 10px; text-align:center; color:gray;">(Market modülleri sonraki aşamada eklenecek)</li>`;
 });
 document.getElementById("closeShop").addEventListener("click", () => { document.getElementById("shopModal").style.display = "none"; });
