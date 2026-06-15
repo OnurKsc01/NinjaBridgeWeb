@@ -19,7 +19,7 @@ let sessionEarnedCoins = 0; let stepCount = 0;
 let currentSkin = "default"; let ownedSkins = ["default"]; 
 let currentPet = "default"; let ownedPets = {}; 
 
-// 🔥 YENİ DÜELLO DEĞİŞKENLERİ
+// 🔥 DÜELLO DEĞİŞKENLERİ
 let isDuelMode = false;
 let opponentName = "";
 let opponentTargetScore = -1;
@@ -119,7 +119,7 @@ window.addEventListener('load', () => {
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
     initAdsGram(); 
     loadPlayerData();
-    checkDuelStatus(); // 🔥 Düello durumunu sorgula
+    checkDuelStatus(); 
     resetGame();
 });
 
@@ -135,7 +135,7 @@ function loadPlayerData() {
         }).catch(err => console.error("Veri çekilemedi", err));
 }
 
-// 🔥 YENİ: DÜELLO CANLI TAKİP SORGUSU
+// 🔥 DÜELLO CANLI TAKİP SORGUSU
 function checkDuelStatus() {
     fetch(`https://ninja-bridge-api.onrender.com/api/score/duel-status/${tgUserId}`)
         .then(res => res.json())
@@ -145,7 +145,6 @@ function checkDuelStatus() {
                 opponentName = data.opponentName;
                 opponentTargetScore = data.opponentScore;
                 
-                // Ekrandaki mor banner'ı aç ve bilgileri yaz
                 const banner = document.getElementById("duelBanner");
                 const oppEl = document.getElementById("duelOpponent");
                 const targetEl = document.getElementById("duelTarget");
@@ -261,6 +260,8 @@ function animate(timestamp) {
       break;
     }
     case "transitioning": { sceneOffset += dt / transitioningSpeed; const [nextPlatform] = thePlatformTheStickHits(); if (sceneOffset > nextPlatform.x + nextPlatform.w - paddingX) { sticks.push({ x: nextPlatform.x + nextPlatform.w, length: 0, rotation: 0 }); phase = "waiting"; } break; }
+    
+    // 🔥 SORUNUN ÇÖZÜLDÜĞÜ DÜŞME AŞAMASI
     case "falling": {
       if (sticks.last().rotation < 180) sticks.last().rotation += dt / turningSpeed;
       heroY += dt / fallingSpeed; const maxHeroY = platformHeight + 100 + (window.innerHeight - canvasHeight) / 2;
@@ -268,8 +269,9 @@ function animate(timestamp) {
       if (heroY > maxHeroY) {
         if (currentMonkeyLives > 0) { currentMonkeyLives--; phase = "waiting"; heroY = 0; heroX = sticks.last().x - heroDistanceFromEdge; sticks.last().length = 0; sticks.last().rotation = 0; perfectElement.innerText = `🐒 MAYMUN KURTARDI!`; perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1; draw(); setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); return; }
         
-        // 🔥 ÇÖZÜM: EĞER DÜELLODAYSAK REKLAM MENÜSÜNÜ BYPASS ET (DİREKT BİTİR)
+        // 🔥 ÇÖZÜM: EĞER DÜELLODAYSAK OYUNU DONDUR (phase="dead_options")
         if (isDuelMode) {
+            phase = "dead_options"; // <-- İŞTE O HAYAT KURTARAN FREN!
             restartButton.style.display = "block"; 
             saveScoreToAPI(); 
             return;
@@ -277,6 +279,8 @@ function animate(timestamp) {
 
         let reviveMenuEl = document.getElementById("reviveMenu");
         if (!adReviveUsedThisRun && reviveMenuEl) { phase = "dead_options"; reviveMenuEl.style.display = "flex"; return; }
+        
+        phase = "dead_options"; // <-- DİĞER FREN
         restartButton.style.display = "block"; saveScoreToAPI(); return;
       }
       break;
@@ -302,10 +306,63 @@ function drawPet() { if (currentPet === "default") return; let bounce = (phase =
 
 function drawRoundedRect(x, y, width, height, radius) { ctx.beginPath(); ctx.moveTo(x, y + radius); ctx.lineTo(x, y + height - radius); ctx.arcTo(x, y + height, x + radius, y + height, radius); ctx.lineTo(x + width - radius, y + height); ctx.arcTo(x + width, y + height, x + width, y + height - radius, radius); ctx.lineTo(x + width, y + radius); ctx.arcTo(x + width, y, x + width - radius, y, radius); ctx.lineTo(x + radius, y); ctx.arcTo(x, y, x, y + radius, radius); ctx.fill(); }
 
-function drawSticks() { Explicit: sticks.forEach((stick) => { ctx.save(); ctx.translate(stick.x, canvasHeight - platformHeight); ctx.rotate((Math.PI / 180) * stick.rotation); ctx.beginPath(); ctx.lineWidth = 2; ctx.moveTo(0, 0); ctx.lineTo(0, -stick.length); ctx.stroke(); ctx.restore(); }); }
+function drawSticks() { sticks.forEach((stick) => { ctx.save(); ctx.translate(stick.x, canvasHeight - platformHeight); ctx.rotate((Math.PI / 180) * stick.rotation); ctx.beginPath(); ctx.lineWidth = 2; ctx.moveTo(0, 0); ctx.lineTo(0, -stick.length); ctx.stroke(); ctx.restore(); }); }
 
 function drawBackground() { var gradient = ctx.createLinearGradient(0, 0, 0, window.innerHeight); gradient.addColorStop(0, "#BBD691"); gradient.addColorStop(1, "#FEF1E1"); ctx.fillStyle = gradient; ctx.fillRect(0, 0, window.innerWidth, window.innerHeight); drawHill(hill1BaseHeight, hill1Amplitude, hill1Stretch, "#95C629"); drawHill(hill2BaseHeight, hill2Amplitude, hill2Stretch, "#659F1C"); trees.forEach((tree) => drawTree(tree.x, tree.color)); }
 
 function drawHill(baseHeight, amplitude, stretch, color) { ctx.beginPath(); ctx.moveTo(0, window.innerHeight); ctx.lineTo(0, getHillY(0, baseHeight, amplitude, stretch)); for (let i = 0; i < window.innerWidth; i++) { ctx.lineTo(i, getHillY(i, baseHeight, amplitude, stretch)); } ctx.lineTo(window.innerWidth, window.innerHeight); ctx.fillStyle = color; ctx.fill(); }
 
-// ... (Geri kalan UI/Market fonksiyonları aynen kalacak)
+function getHillY(windowX, baseHeight, amplitude, stretch) { return Math.sinus((sceneOffset * backgroundSpeedMultiplier + windowX) * stretch) * amplitude + window.innerHeight - baseHeight; }
+function getTreeY(x, baseHeight, amplitude) { return Math.sinus(x) * amplitude + window.innerHeight - baseHeight; }
+
+// ------------------------------------
+// 8. UI VE MARKET İŞLEMLERİ (KORUMALI)
+// ------------------------------------
+
+document.getElementById("leaderboardBtn").addEventListener("click", () => { 
+    if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert("Oyun devam ederken açılamaz!"); return; }
+    document.getElementById("leaderboardModal").style.display = "block"; 
+    const list = document.getElementById("scoreList"); list.innerHTML = "<li style='text-align:center;'>Yükleniyor... ⏳</li>"; 
+    fetch(`https://ninja-bridge-api.onrender.com/api/score/global?t=${Date.now()}`).then(res => res.json()).then(data => { 
+        list.innerHTML = ""; if(data.length === 0) { list.innerHTML = "<li>Henüz kimse oynamadı!</li>"; return; } 
+        data.forEach((item, i) => { list.innerHTML += `<li style="padding:4px; border-bottom:1px solid #ddd;"><b>${i + 1}.</b> ${item.name} <span style="float:right;">${item.score} Puan</span></li>`; }); 
+    }).catch(() => list.innerHTML = "<li style='color:red;'>Hata!</li>"); 
+}); 
+document.getElementById("closeLeaderboard").addEventListener("click", () => { document.getElementById("leaderboardModal").style.display = "none"; });
+
+document.getElementById("shopBtn").addEventListener("click", () => { 
+    if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert("Oyun devam ederken market açılamaz!"); return; }
+    document.getElementById("shopModal").style.display = "block"; renderShop(); 
+});
+document.getElementById("closeShop").addEventListener("click", () => { document.getElementById("shopModal").style.display = "none"; });
+
+function renderShop() {
+    const list = document.getElementById("shopList");
+    let html = `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; text-align:center;">💎 <b>ELMAS BORSASI</b></li>`;
+    html += `<li style="padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee;"><span>🪙 1000 Jeton Bozdur</span> <button style="background:#9b59b6; padding: 5px 10px; font-size:12px; margin:0; border:none; color:white; border-radius:5px; cursor:pointer;" onclick="convertGems()">💎 1 Al</button></li>`;
+    
+    html += `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; margin-top:6px; text-align:center;">🥷 <b>KOSTÜMLER</b></li>`;
+    Object.keys(skinData).forEach(key => { const skin = skinData[key]; let actionHTML = ""; if (currentSkin === key) actionHTML = `<span style=\"font-size:13px;\">✅</span>`; else if (ownedSkins.includes(key)) actionHTML = `<button style=\"padding: 5px 10px; font-size:12px; margin:0; border:none; background:#34495e; color:white; border-radius:5px; cursor:pointer;\" onclick=\"equipSkin('${key}')\">Kuşan</button>`; else actionHTML = `<button style=\"padding: 5px 10px; font-size:12px; margin:0; border:none; background:#2196F3; color:white; border-radius:5px; cursor:pointer;\" onclick=\"buySkin('${key}', ${skin.price})\">🪙 ${skin.price}</button>`; html += `<li style=\"padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee;\"><span><span style=\"color:${skin.body}; text-shadow: 1px 1px 1px black;\">⬤</span> ${skin.name}</span> ${actionHTML}</li>`; });
+    
+    html += `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; margin-top:6px; text-align:center;">🐾 <b>YOLDAŞLAR</b></li>`;
+    Object.keys(petData).forEach(key => { 
+        const pet = petData[key]; let isOwned = ownedPets.hasOwnProperty(key); let level = isOwned ? ownedPets[key] : 0; 
+        if (!isOwned) { html += `<li style=\"padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee;\"><span style=\"line-height:1.2;\">${pet.emoji} ${pet.name} (Sv.1)<br><small style=\"color:gray; font-size:11px;\">${pet.desc}</small></span> <button style=\"padding: 5px 10px; font-size:12px; margin:0; border:none; background:#2196F3; color:white; border-radius:5px; cursor:pointer;\" onclick=\"buyPet('${key}', ${pet.price})\">🪙 ${pet.price}</button></li>`; } 
+        else { 
+            let eqBtn = (currentPet === key) ? `<span style=\"font-size:13px; margin-right:5px;\">✅</span>` : `<button style=\"padding: 5px 10px; font-size:12px; margin-right:5px; border:none; background:#34495e; color:white; border-radius:5px; cursor:pointer;\" onclick=\"equipPet('${key}')\">Kuşan</button>`; 
+            let upgBtn = ""; 
+            if (level < 5 && key === "kurt") { let costVal = level * 2; upgBtn = `<button style=\"background:#e67e22; padding: 4px 8px; font-size:11px; border:none; color:white; border-radius:5px; cursor:pointer;\" onclick=\"upgradePet('${key}', ${level+1}, ${costVal})\">⬆️ 💎 ${costVal}</button>`; }
+            else if (level < 4 && key !== "kurt") { let costVal = (level === 1) ? 1 : (level === 2) ? 3 : 5; upgBtn = `<button style=\"background:#e67e22; padding: 4px 8px; font-size:11px; border:none; color:white; border-radius:5px; cursor:pointer;\" onclick=\"upgradePet('${key}', ${level+1}, ${costVal})\">⬆️ 💎 ${costVal}</button>`; } 
+            else { upgBtn = `<span style=\"font-size:11px; color:red; font-weight:bold;\">MAX</span>`; } 
+            html += `<li style=\"padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee;\"><span style=\"line-height:1.2;\">${pet.emoji} ${pet.name} (Sv.${level})<br><small style=\"color:gray; font-size:11px;\">${pet.desc}</small></span> <div style=\"display:flex; align-items:center;\">${eqBtn}${upgBtn}</div></li>`; 
+        } 
+    }); list.innerHTML = html;
+}
+
+let isConverting = false;
+window.convertGems = function() { if (phase !== "waiting") return; if(playerCoins < 1000) { if(tg && tg.showAlert) tg.showAlert("1000 Jetonun yok!"); return; } if (isConverting) return; isConverting = true; fetch('https://ninja-bridge-api.onrender.com/api/score/convert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId }) }).then(res => res.json()).then(data => { isConverting = false; if(data.success) { playerCoins -= 1000; playerGems += 1; updateCoinUI(); renderShop(); } }).catch(() => { isConverting = false; }); }
+window.upgradePet = function(petKey, nextLevel, costVal) { if (phase !== "waiting") return; if (playerGems < costVal) { if(tg && tg.showAlert) tg.showAlert("Yetersiz Elmas!"); return; } if(tg && tg.showConfirm) { tg.showConfirm(`${petData[petKey].name} yoldaşını Seviye ${nextLevel} yapacaksın. Onaylıyor musun?`, function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/upgradepet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, petName: petKey, coinCost: 0, gemCost: costVal, nextLevel: nextLevel }) }).then(res => res.json()).then(data => { if(data.success) { playerGems -= costVal; ownedPets[petKey] = nextLevel; updateCoinUI(); renderShop(); } }); } }); } }
+window.buySkin = function(skinKey, price) { if (phase !== "waiting") return; if(playerCoins < price) { if(tg && tg.showAlert) tg.showAlert("Yetersiz Jeton!"); return; } if(tg && tg.showConfirm) { tg.showConfirm(`${skinData[skinKey].name} kostümünü alacaksın. Onaylıyor musun?`, function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/buyskin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey, price: price }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= price; ownedSkins.push(skinKey); updateCoinUI(); renderShop(); } }); } }); } }
+window.equipSkin = function(skinKey) { if (phase !== "waiting") return; fetch('https://ninja-bridge-api.onrender.com/api/score/equipskin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey }) }).then(res => res.json()).then(data => { if(data.success) { currentSkin = skinKey; renderShop(); draw(); } }); }
+window.buyPet = function(petKey, price) { if (phase !== "waiting") return; if(playerCoins < price) { if(tg && tg.showAlert) tg.showAlert("Yetersiz Jeton!"); return; } if(tg && tg.showConfirm) { tg.showConfirm(`${petData[petKey].name} yoldaşını sahipleneceksin. Onaylıyor musun?`, function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/buypet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey, price: price }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= price; ownedPets[petKey] = 1; updateCoinUI(); renderShop(); } }); } }); } }
+window.equipPet = function(petKey) { if (phase !== "waiting") return; fetch('https://ninja-bridge-api.onrender.com/api/score/equippet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey }) }).then(res => res.json()).then(data => { if(data.success) { currentPet = petKey; renderShop(); draw(); } }); }
