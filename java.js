@@ -23,7 +23,7 @@ const texts = {
         askPet: "{name} yoldaşını Seviye {lvl} yapacaksın. Onaylıyor musun?", askSkin: "{name} kostümünü alacaksın. Onaylıyor musun?", askAdopt: "{name} yoldaşını sahipleneceksin. Onaylıyor musun?",
         askGem: "1000 Jetonu 1 Elmasa çevireceksin. Onaylıyor musun?",
         duelP1: "düştü!", duelP2: "Skoru:", duelP3: "Kazanmak için onu geç!",
-        monsterDie: "💀 CANAVARA YEM OLDUN!" // YENİ
+        monsterDie: "💀 CANAVARA YEM OLDUN!" 
     },
     en: {
         btnScore: "🏆 Score", btnShop: "🛒 Shop", btnAd: "📺 +Coins",
@@ -42,7 +42,7 @@ const texts = {
         askPet: "Upgrade {name} to Level {lvl}. Confirm?", askSkin: "Buy {name}. Confirm?", askAdopt: "Adopt {name}. Confirm?",
         askGem: "Exchange 1000 Coins for 1 Gem. Confirm?",
         duelP1: "fell!", duelP2: "Score:", duelP3: "Beat it to win!",
-        monsterDie: "💀 KILLED BY A MONSTER!" // YENİ
+        monsterDie: "💀 KILLED BY A MONSTER!" 
     }
 };
 
@@ -51,30 +51,23 @@ function updateUITexts() {
     document.getElementById("leaderboardBtn").innerText = t.btnScore;
     document.getElementById("shopBtn").innerText = t.btnShop;
     document.getElementById("watchEarnBtn").innerText = t.btnAd;
-    
     const langBtn = document.getElementById("langBtn");
     if(langBtn) langBtn.innerText = currentLang === "tr" ? "🌍 EN" : "🌍 TR";
-
     if(phase === "waiting" && score === 0) document.getElementById("introduction").innerText = t.intro;
     document.getElementById("restart").innerText = t.restart;
     document.getElementById("reviveAdBtn").innerText = t.reviveAd;
     document.getElementById("skipReviveBtn").innerText = t.reviveSkip;
-
     const lbTitle = document.querySelector('#leaderboardModal h2');
     if(lbTitle) lbTitle.innerText = t.leaderboardTitle;
     document.getElementById("closeLeaderboard").innerText = t.close;
-
     const spTitle = document.querySelector('#shopModal h2');
     if(spTitle) spTitle.innerText = t.shopTitle;
     document.getElementById("closeShop").innerText = t.close;
-    
     const shopBal = document.getElementById("shopBalanceText");
     if(shopBal) shopBal.innerText = t.balance;
-
     const dp1 = document.getElementById("duelDeathP1"); if(dp1) dp1.innerText = t.duelP1;
     const dp2 = document.getElementById("duelDeathP2"); if(dp2) dp2.innerText = t.duelP2;
     const dp3 = document.getElementById("duelDeathP3"); if(dp3) dp3.innerText = t.duelP3;
-    
     if(document.getElementById("shopModal").style.display === "block") renderShop();
 }
 
@@ -109,9 +102,9 @@ let duelCheckInterval = null;
 
 // 🔥 YENİ SEZON 2: TEMALAR VE CANAVARLAR 🔥
 const worldThemes = {
-    1: { top: "#BBD691", bot: "#FEF1E1", h1: "#95C629", h2: "#659F1C", tColors: ["#6D8821", "#8FAC34", "#98B333"] }, // Orman (0-999)
-    2: { top: "#FDEB71", bot: "#F8D800", h1: "#E67E22", h2: "#D35400", tColors: ["#A04000", "#BA4A00", "#CA6F1E"] }, // Çöl (1000-1999)
-    3: { top: "#E0C3FC", bot: "#8EC5FC", h1: "#BDC3C7", h2: "#ECF0F1", tColors: ["#FFFFFF", "#F2F3F4", "#E5E8E8"] }  // Kar (2000+)
+    1: { top: "#BBD691", bot: "#FEF1E1", h1: "#95C629", h2: "#659F1C", tColors: ["#6D8821", "#8FAC34", "#98B333"] }, // Orman
+    2: { top: "#FDEB71", bot: "#F8D800", h1: "#E67E22", h2: "#D35400", tColors: ["#A04000", "#BA4A00", "#CA6F1E"] }, // Çöl 
+    3: { top: "#E0C3FC", bot: "#8EC5FC", h1: "#BDC3C7", h2: "#ECF0F1", tColors: ["#FFFFFF", "#F2F3F4", "#E5E8E8"] }  // Kar 
 };
 
 function getTheme() {
@@ -122,8 +115,8 @@ function getTheme() {
 
 let monsters = [];
 const monsterData = {
-    2: ["scorpion", "snake", "mummy"], // 2. Dünyada çıkacaklar
-    3: ["ice_golem", "yeti", "ghost"]  // 3. Dünyada çıkacaklar
+    2: ["scorpion", "snake", "mummy"], 
+    3: ["ice_golem", "yeti", "ghost"]  
 };
 
 const preRenderedMonsters = {};
@@ -133,32 +126,13 @@ Object.values(monsterData).flat().forEach(m => {
     preRenderedMonsters[m] = img;
 });
 
-const skinData = { 
-    "default": { nameTr: "Varsayılan", nameEn: "Default", price: 0, body: "black", bandana: "red" }, 
-    "yesil": { nameTr: "Yeşil Ninja", nameEn: "Green Ninja", price: 20, body: "#228B22", bandana: "black" }, 
-    "bronz": { nameTr: "Bronz Ninja", nameEn: "Bronze Ninja", price: 30, body: "#cd7f32", bandana: "#5c4033" }, 
-    "demir": { nameTr: "Demir Ninja", nameEn: "Iron Ninja", price: 40, body: "#a9a9a9", bandana: "#696969" }, 
-    "altin": { nameTr: "Altın Ninja", nameEn: "Gold Ninja", price: 50, body: "#ffd700", bandana: "#b8860b" }, 
-    "hiper": { nameTr: "Hiper Ninja", nameEn: "Hyper Ninja", price: 65, body: "#800080", bandana: "#00ffff" }, 
-    "golge": { nameTr: "Gölge Katili", nameEn: "Shadow Killer", price: 80, body: "#1a1a1a", bandana: "#4a0000" }, 
-    "buzul": { nameTr: "Buzul Ninja", nameEn: "Ice Ninja", price: 100, body: "#add8e6", bandana: "#ffffff" } 
-};
-const petData = { 
-    "kopek": { nameTr: "Altın Avcısı", nameEn: "Gold Hunter", descTr: "Daha hızlı Jeton", descEn: "Faster Coins", price: 200, emoji: "🐶" }, 
-    "kedi": { nameTr: "Gözcü Kedi", nameEn: "Scout Cat", descTr: "Büyük Kombo Alanı", descEn: "Bigger Combo Zone", price: 250, emoji: "🐱" }, 
-    "maymun": { nameTr: "Kuyruklu Maymun", nameEn: "Tailed Monkey", descTr: "Ekstra Can & Jeton", descEn: "Extra Life & Coins", price: 400, emoji: "🐒" }, 
-    "kurt": { nameTr: "Gölge Kurdu", nameEn: "Shadow Wolf", descTr: "Jeton + Dev Kırmızı Alan", descEn: "Coins + Huge Perfect Zone", price: 750, emoji: "🐺" } 
-};
+const skinData = { "default": { nameTr: "Varsayılan", nameEn: "Default", price: 0, body: "black", bandana: "red" }, "yesil": { nameTr: "Yeşil Ninja", nameEn: "Green Ninja", price: 20, body: "#228B22", bandana: "black" }, "bronz": { nameTr: "Bronz Ninja", nameEn: "Bronze Ninja", price: 30, body: "#cd7f32", bandana: "#5c4033" }, "demir": { nameTr: "Demir Ninja", nameEn: "Iron Ninja", price: 40, body: "#a9a9a9", bandana: "#696969" }, "altin": { nameTr: "Altın Ninja", nameEn: "Gold Ninja", price: 50, body: "#ffd700", bandana: "#b8860b" }, "hiper": { nameTr: "Hiper Ninja", nameEn: "Hyper Ninja", price: 65, body: "#800080", bandana: "#00ffff" }, "golge": { nameTr: "Gölge Katili", nameEn: "Shadow Killer", price: 80, body: "#1a1a1a", bandana: "#4a0000" }, "buzul": { nameTr: "Buzul Ninja", nameEn: "Ice Ninja", price: 100, body: "#add8e6", bandana: "#ffffff" } };
+const petData = { "kopek": { nameTr: "Altın Avcısı", nameEn: "Gold Hunter", descTr: "Daha hızlı Jeton", descEn: "Faster Coins", price: 200, emoji: "🐶" }, "kedi": { nameTr: "Gözcü Kedi", nameEn: "Scout Cat", descTr: "Büyük Kombo Alanı", descEn: "Bigger Combo Zone", price: 250, emoji: "🐱" }, "maymun": { nameTr: "Kuyruklu Maymun", nameEn: "Tailed Monkey", descTr: "Ekstra Can & Jeton", descEn: "Extra Life & Coins", price: 400, emoji: "🐒" }, "kurt": { nameTr: "Gölge Kurdu", nameEn: "Shadow Wolf", descTr: "Jeton + Dev Kırmızı Alan", descEn: "Coins + Huge Perfect Zone", price: 750, emoji: "🐺" } };
 
 const preRenderedPets = {};
 try { Object.keys(petData).forEach(key => { let c = document.createElement('canvas'); c.width = 32; c.height = 32; let cCtx = c.getContext('2d'); cCtx.font = "22px Arial"; cCtx.fillText(petData[key].emoji, 2, 24); preRenderedPets[key] = c; let img = new Image(); img.src = key + '.png'; img.onload = () => { cCtx.clearRect(0, 0, 32, 32); cCtx.drawImage(img, 0, 0, 26, 26); }; }); } catch(e) {}
 
-const introductionElement = document.getElementById("introduction");
-const perfectElement = document.getElementById("perfect");
-const restartButton = document.getElementById("restart");
-const scoreElement = document.getElementById("score");
-const coinCountElement = document.getElementById("coinCount");
-const shopCoinCountElement = document.getElementById("shopCoinCount");
+const introductionElement = document.getElementById("introduction"); const perfectElement = document.getElementById("perfect"); const restartButton = document.getElementById("restart"); const scoreElement = document.getElementById("score"); const coinCountElement = document.getElementById("coinCount"); const shopCoinCountElement = document.getElementById("shopCoinCount");
 
 // ------------------------------------
 // 3. SES VE REKLAM MOTORU
@@ -188,7 +162,6 @@ document.getElementById("reviveAdBtn").addEventListener("click", () => {
 });
 
 document.getElementById("skipReviveBtn").addEventListener("click", () => { document.getElementById("reviveMenu").style.display = "none"; restartButton.style.display = "block"; saveScoreToAPI(); });
-
 document.getElementById("watchEarnBtn").addEventListener("click", () => {
     if (phase !== "waiting") return;
     if (!adController) { if(tg && tg.showAlert) tg.showAlert(texts[currentLang].msgAdFail); return; }
@@ -227,48 +200,33 @@ window.addEventListener('load', () => {
 });
 
 function loadPlayerData() {
-    fetch(`https://ninja-bridge-api.onrender.com/api/score/player/${tgUserId}?t=${Date.now()}`)
-        .then(res => res.json())
-        .then(data => {
-            playerCoins = data.coins || 0; playerGems = data.gems || 0;
-            currentSkin = data.currentSkin || "default"; ownedSkins = data.ownedSkins || ["default"];
-            currentPet = data.currentPet || "default"; ownedPets = data.ownedPets || {};
-            updateCoinUI();
-            if (phase === "waiting") { if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } draw(); }
-        }).catch(err => console.error(err));
+    fetch(`https://ninja-bridge-api.onrender.com/api/score/player/${tgUserId}?t=${Date.now()}`).then(res => res.json()).then(data => {
+        playerCoins = data.coins || 0; playerGems = data.gems || 0;
+        currentSkin = data.currentSkin || "default"; ownedSkins = data.ownedSkins || ["default"];
+        currentPet = data.currentPet || "default"; ownedPets = data.ownedPets || {};
+        updateCoinUI(); if (phase === "waiting") { if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } draw(); }
+    }).catch(err => console.error(err));
 }
 
 function checkDuelStatus() {
-    fetch(`https://ninja-bridge-api.onrender.com/api/score/duel-status/${tgUserId}?t=${Date.now()}`)
-        .then(res => res.json())
-        .then(data => {
-            if (data && data.active) {
-                isDuelMode = true; opponentName = data.opponentName; opponentTargetScore = data.opponentScore;
-                if (opponentTargetScore !== -1) {
-                    const banner = document.getElementById("duelDeathBanner");
-                    if (banner && banner.style.display === "none") {
-                        document.getElementById("duelDeathName").innerText = opponentName;
-                        document.getElementById("duelDeathScore").innerText = opponentTargetScore;
-                        banner.style.display = "block"; banner.style.opacity = "1";
-                        setTimeout(() => { banner.style.opacity = "0"; setTimeout(() => { banner.style.display = "none"; }, 1000); }, 4000);
-                    }
-                    if (duelCheckInterval) { clearInterval(duelCheckInterval); duelCheckInterval = null; }
-                } else { if (!duelCheckInterval) duelCheckInterval = setInterval(checkDuelStatus, 3000); }
-            } else { isDuelMode = false; if (duelCheckInterval) { clearInterval(duelCheckInterval); duelCheckInterval = null; } }
-        }).catch(() => {});
+    fetch(`https://ninja-bridge-api.onrender.com/api/score/duel-status/${tgUserId}?t=${Date.now()}`).then(res => res.json()).then(data => {
+        if (data && data.active) {
+            isDuelMode = true; opponentName = data.opponentName; opponentTargetScore = data.opponentScore;
+            if (opponentTargetScore !== -1) {
+                const banner = document.getElementById("duelDeathBanner");
+                if (banner && banner.style.display === "none") {
+                    document.getElementById("duelDeathName").innerText = opponentName; document.getElementById("duelDeathScore").innerText = opponentTargetScore;
+                    banner.style.display = "block"; banner.style.opacity = "1";
+                    setTimeout(() => { banner.style.opacity = "0"; setTimeout(() => { banner.style.display = "none"; }, 1000); }, 4000);
+                }
+                if (duelCheckInterval) { clearInterval(duelCheckInterval); duelCheckInterval = null; }
+            } else { if (!duelCheckInterval) duelCheckInterval = setInterval(checkDuelStatus, 3000); }
+        } else { isDuelMode = false; if (duelCheckInterval) { clearInterval(duelCheckInterval); duelCheckInterval = null; } }
+    }).catch(() => {});
 }
 
-function updateCoinUI() { 
-    if(coinCountElement) coinCountElement.innerHTML = `🪙 ${playerCoins} | 💎 ${playerGems}`; 
-    if(shopCoinCountElement) shopCoinCountElement.innerHTML = `🪙 ${playerCoins} | 💎 ${playerGems}`; 
-}
-
-function saveScoreToAPI() {
-    fetch('https://ninja-bridge-api.onrender.com/api/score/save', { 
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: tgGroupId, earnedCoins: sessionEarnedCoins, earnedGems: 0 }) 
-    }).then(() => { sessionEarnedCoins = 0; }).catch(e => {});
-}
-
+function updateCoinUI() { if(coinCountElement) coinCountElement.innerHTML = `🪙 ${playerCoins} | 💎 ${playerGems}`; if(shopCoinCountElement) shopCoinCountElement.innerHTML = `🪙 ${playerCoins} | 💎 ${playerGems}`; }
+function saveScoreToAPI() { fetch('https://ninja-bridge-api.onrender.com/api/score/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: tgGroupId, earnedCoins: sessionEarnedCoins, earnedGems: 0 }) }).then(() => { sessionEarnedCoins = 0; }).catch(e => {}); }
 function getPerfectAreaSize(platformWidth) { let baseArea = 10; if (currentPet === "kedi") { let lvl = ownedPets["kedi"] || 1; baseArea = 20 + (lvl * 5); } else if (currentPet === "kurt") { let lvl = ownedPets["kurt"] || 1; baseArea = 15 + (lvl * 6); } return Math.min(baseArea, platformWidth * 0.8); }
 function getMonkeyStats() { let lvl = ownedPets["maymun"] || 1; return { lives: Math.floor((lvl - 1) / 2) + 1, bonusCoins: (lvl % 2 === 0) ? lvl * 5 : 0 }; }
 function processCoinGeneration(earnedPts) { stepCount += earnedPts; let reqSteps = 8; if (currentPet === "kopek" || currentPet === "kurt") { let lvl = ownedPets[currentPet] || 1; reqSteps = Math.max(1, 8 - lvl); } if (stepCount >= reqSteps) { let coinsToAdd = Math.floor(stepCount / reqSteps); playerCoins += coinsToAdd; sessionEarnedCoins += coinsToAdd; updateCoinUI(); stepCount = stepCount % reqSteps; } }
@@ -279,11 +237,9 @@ function resetGame() {
   if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } else { currentMonkeyLives = 0; }
   introductionElement.style.opacity = 1; perfectElement.style.opacity = 0; restartButton.style.display = "none"; 
   if(document.getElementById("reviveMenu")) document.getElementById("reviveMenu").style.display = "none";
-  
   const banner = document.getElementById("duelDeathBanner"); if (banner) { banner.style.display = "none"; banner.style.opacity = "0"; }
   isDuelMode = false; opponentTargetScore = -1; checkDuelStatus(); 
-
-  monsters = []; // Canavarları sıfırla
+  monsters = []; 
   scoreElement.innerText = score; platforms = [{ x: 50, w: 50 }];
   generatePlatform(); generatePlatform(); generatePlatform(); generatePlatform();
   sticks = [{ x: platforms[0].x + platforms[0].w, length: 0, rotation: 0 }];
@@ -292,11 +248,9 @@ function resetGame() {
 }
 
 function generateTree() { 
-    const minimumGap = 30, maximumGap = 150; 
-    const lastTree = trees[trees.length - 1]; 
-    let furthestX = lastTree ? lastTree.x : 0; 
+    const minimumGap = 30, maximumGap = 150; const lastTree = trees[trees.length - 1]; let furthestX = lastTree ? lastTree.x : 0; 
     const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap)); 
-    const themeColors = getTheme().tColors; // Bulunduğu dünyanın ağaç renkleri
+    const themeColors = getTheme().tColors; 
     trees.push({ x, color: themeColors[Math.floor(Math.random() * 3)] }); 
 }
 
@@ -307,21 +261,37 @@ function generatePlatform() {
   const lastPlatform = platforms[platforms.length - 1]; let furthestX = lastPlatform.x + lastPlatform.w; const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap)); const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth)); 
   platforms.push({ x, w });
   
-  // 🔥 CANAVAR ÇIKMA SİSTEMİ (Puan 1000'i geçince başlar)
+  // 🔥 KADEMELİ CANAVAR SİSTEMİ 🔥
   if (score >= 1000 && platforms.length > 2) {
-      let spawnChance = score >= 2000 ? 0.35 : 0.20; // 2. dünyada %20, 3. dünyada %35 ihtimal
+      let spawnChance = score >= 2000 ? 0.35 : 0.30; 
       if (Math.random() < spawnChance) {
-          let worldId = score >= 2000 ? 3 : 2;
-          let mList = monsterData[worldId];
+          let isWorld3 = score >= 2000;
+          let mList = isWorld3 ? monsterData[3] : monsterData[2];
           let mType = mList[Math.floor(Math.random() * mList.length)];
-          monsters.push({
-              platformIndex: platforms.length - 1,
-              x: x + w / 2,
-              type: mType,
-              dir: Math.random() > 0.5 ? 1 : -1, // Rastgele sağa veya sola başlar
-              speed: 0.15 + (Math.random() * 0.1), // Yavaş, uyuz bir hız
-              dead: false
-          });
+          
+          if (!isWorld3) {
+              // 🌍 2. DÜNYA: BOŞLUKLARIN ARASINDA YUKARI/AŞAĞI HAREKET EDEN ZAMANLAMA CANAVARI
+              let gapStartX = lastPlatform.x + lastPlatform.w;
+              let gapWidth = x - gapStartX;
+              monsters.push({
+                  world: 2, platformIndex: platforms.length - 1, 
+                  x: gapStartX + gapWidth / 2, // Boşluğun tam ortası
+                  y: Math.random() > 0.5 ? -150 : 100, // En tepeden veya en dipten başla
+                  dir: Math.random() > 0.5 ? 1 : -1, 
+                  speed: 2 + Math.random() * 1.5, // Uçuş hızı
+                  type: mType, dead: false
+              });
+          } else {
+              // 🌍 3. DÜNYA: PLATFORMUN ÜSTÜNDE YATAY HAREKET EDEN ÖLÜMCÜL CANAVAR
+              monsters.push({
+                  world: 3, platformIndex: platforms.length - 1,
+                  x: x + w / 2, // Platformun ortası
+                  y: 0,
+                  dir: Math.random() > 0.5 ? 1 : -1, 
+                  speed: 0.8 + Math.random() * 0.5, // Yürüme hızı
+                  type: mType, dead: false
+              });
+          }
       }
   }
 }
@@ -352,9 +322,9 @@ function animate(timestamp) {
               combo++; earnedPts = 1 + combo; score += earnedPts; 
               perfectElement.innerText = `${texts[currentLang].perfect} +${earnedPts}`; perfectElement.style.opacity = 1; setTimeout(() => (perfectElement.style.opacity = 0), 1000); comboSound.currentTime = 0; comboSound.play().catch(e => {}); 
               
-              // 🔥 KUSURSUZ VURUŞ CANAVARI EZER!
+              // 🔥 KUSURSUZ VURUŞ SADECE 3. DÜNYA (PLATFORM) CANAVARINI EZER
               let pIdx = platforms.indexOf(nextPlatform);
-              let m = monsters.find(mo => mo.platformIndex === pIdx);
+              let m = monsters.find(mo => mo.platformIndex === pIdx && mo.world === 3);
               if (m) m.dead = true; 
           } 
           else { combo = 0; earnedPts = 1; score += earnedPts; perfectElement.innerText = ""; }
@@ -366,19 +336,35 @@ function animate(timestamp) {
       break;
     }
     case "walking": {
-      // 🔥 CANAVARLARI HAREKET ETTİR VE ÇARPIŞMAYI KONTROL ET
+      // 🔥 CANAVAR HAREKETLERİ VE ÇARPIŞMALAR 🔥
       monsters.forEach(m => {
           if (m.dead) return;
-          let p = platforms[m.platformIndex];
-          if (p) {
-              m.x += m.dir * m.speed * (dt / 16.66);
-              if (m.x > p.x + p.w - 12) m.dir = -1; // Platform kenarından dön
-              if (m.x < p.x + 12) m.dir = 1;
+          
+          if (m.world === 2) {
+              // 2. Dünya: Boşlukta Çok Geniş Dikey (Yukarı-Aşağı) Hareket
+              m.y += m.dir * m.speed * (dt / 16.66);
+              if (m.y > 120) m.dir = -1; // Aşağı sınırı (çubuğun bayağı altı)
+              if (m.y < -180) m.dir = 1; // Yukarı sınırı (Ninjanın çok çok üstü)
 
-              // Eğer kahraman canavara değerse
-              if (Math.abs(heroX - m.x) < 15) {
+              // Ninja köprüden geçerken zamanlamayı tutturamaz ve canavara çarparsa
+              if (Math.abs(heroX - m.x) < 15 && Math.abs(m.y) < 35) {
                   phase = "dead_monster";
                   fallSound.currentTime = 0; fallSound.play().catch(e=>{});
+              }
+          } 
+          else if (m.world === 3) {
+              // 3. Dünya: Platform Üzerinde Yatay (Sağ-Sol) Hareket
+              let p = platforms[m.platformIndex];
+              if (p) {
+                  m.x += m.dir * m.speed * (dt / 16.66);
+                  if (m.x > p.x + p.w - 12) m.dir = -1; 
+                  if (m.x < p.x + 12) m.dir = 1;
+
+                  // Ninja platforma inerken (kusursuz yapamadıysa) canavara çarparsa
+                  if (Math.abs(heroX - m.x) < 15) {
+                      phase = "dead_monster";
+                      fallSound.currentTime = 0; fallSound.play().catch(e=>{});
+                  }
               }
           }
       });
@@ -398,7 +384,7 @@ function animate(timestamp) {
             perfectElement.innerText = texts[currentLang].monkey; perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1; 
             setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); 
             
-            // Maymun kurtardıysa canavarı öldür ki bi daha çarpmasın
+            // Maymun kurtardıysa çarptığı canavarı yoldan çek ki tekrar ölmesin
             let m = monsters.find(mo => Math.abs(heroX - mo.x) < 30);
             if (m) m.dead = true;
             break; 
@@ -462,20 +448,17 @@ function drawPlatforms() {
 
 function drawMonsters() {
     monsters.forEach(m => {
-        let p = platforms[m.platformIndex];
-        if (!p || m.x < sceneOffset - 50) return; // Ekranda değilse çizme
+        if (m.x < sceneOffset - 50) return; // Ekranda değilse çizme
         
         ctx.save(); 
-        ctx.translate(m.x, canvasHeight - platformHeight); 
+        ctx.translate(m.x, canvasHeight - platformHeight + m.y); 
         
         if (m.dead) { 
             ctx.globalAlpha = 0.5; 
             ctx.scale(1, 0.2); // Çubuk ezdiği için canavar yassılaşır
         } 
         
-        // Resim varsa ve başarıyla yüklendiyse onu çiz, yoksa mor kutu çiz
         if (preRenderedMonsters[m.type] && preRenderedMonsters[m.type].complete && preRenderedMonsters[m.type].naturalWidth !== 0) { 
-            // -16, -32 çizimi resmi tam platformun üstüne oturtur
             ctx.drawImage(preRenderedMonsters[m.type], -16, -32, 32, 32); 
         } else { 
             ctx.fillStyle = "purple"; 
@@ -495,7 +478,7 @@ function drawSticks() { sticks.forEach((stick) => { ctx.save(); ctx.translate(st
 
 function drawBackground() { 
     let wWidth = window.innerWidth || 375; let wHeight = window.innerHeight || 800; 
-    let theme = getTheme(); // Hangi dünyadaysak onun renklerini çek
+    let theme = getTheme(); 
 
     var gradient = ctx.createLinearGradient(0, 0, 0, wHeight); 
     gradient.addColorStop(0, theme.top); 
@@ -576,7 +559,6 @@ window.convertGems = function() {
     const t = texts[currentLang]; 
     if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; } 
     if(playerCoins < 1000) { if(tg && tg.showAlert) tg.showAlert(t.msgNoCoin1000); return; } 
-    
     if(tg && tg.showConfirm) {
         tg.showConfirm(t.askGem, function(agreed) {
             if(agreed) {
