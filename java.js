@@ -18,10 +18,11 @@ let sessionEarnedCoins = 0; let stepCount = 0;
 let currentSkin = "default"; let ownedSkins = ["default"]; 
 let currentPet = "default"; let ownedPets = {}; 
 
-// 🔥 DÜELLO DEĞİŞKENLERİ
+// 🔥 DÜELLO DEĞİŞKENLERİ VE RADAR
 let isDuelMode = false;
 let opponentName = "";
 let opponentTargetScore = -1;
+let duelCheckInterval = null; // Canlı takip radarı
 
 const skinData = { "default": { name: "Varsayılan", price: 0, body: "black", bandana: "red" }, "yesil": { name: "Yeşil Ninja", price: 20, body: "#228B22", bandana: "black" }, "bronz": { name: "Bronz Ninja", price: 30, body: "#cd7f32", bandana: "#5c4033" }, "demir": { name: "Demir Ninja", price: 40, body: "#a9a9a9", bandana: "#696969" }, "altin": { name: "Altın Ninja", price: 50, body: "#ffd700", bandana: "#b8860b" }, "hiper": { name: "Hiper Ninja", price: 65, body: "#800080", bandana: "#00ffff" }, "golge": { name: "Gölge Katili", price: 80, body: "#1a1a1a", bandana: "#4a0000" }, "buzul": { name: "Buzul Ninja", price: 100, body: "#add8e6", bandana: "#ffffff" } };
 const petData = { "kopek": { name: "Altın Avcısı", price: 200, desc: "Daha hızlı Jeton", emoji: "🐶" }, "kedi": { name: "Gözcü Kedi", price: 250, desc: "Büyük Kombo Alanı", emoji: "🐱" }, "maymun": { name: "Kuyruklu Maymun", price: 400, desc: "Ekstra Can & Jeton", emoji: "🐒" }, "kurt": { name: "Gölge Kurdu", price: 750, desc: "Jeton + Dev Kırmızı Alan", emoji: "🐺" } };
@@ -136,7 +137,7 @@ function loadPlayerData() {
         }).catch(err => console.error("Veri çekilemedi", err));
 }
 
-// 🔥 DÜELLO BİLDİRİM MANTIĞI BURADA ÇALIŞIYOR
+// 🔥 CANLI RADARLI DÜELLO BİLDİRİM SİSTEMİ
 function checkDuelStatus() {
     fetch(`https://ninja-bridge-api.onrender.com/api/score/duel-status/${tgUserId}`)
         .then(res => res.json())
@@ -146,21 +147,39 @@ function checkDuelStatus() {
                 opponentName = data.opponentName;
                 opponentTargetScore = data.opponentScore;
                 
-                // Rakip eğer oynamış ve yanmışsa (-1 değilse) ölüm afişini göster
+                // Eğer rakip oynayıp yandıysa (-1 değilse) afişi göster
                 if (opponentTargetScore !== -1) {
                     const banner = document.getElementById("duelDeathBanner");
-                    if (banner) {
+                    if (banner && banner.style.display === "none") {
                         document.getElementById("duelDeathName").innerText = opponentName;
                         document.getElementById("duelDeathScore").innerText = opponentTargetScore;
                         banner.style.display = "block";
                         banner.style.opacity = "1";
                         
-                        // 4 saniye sonra ekrandan yavaşça kaybolsun ki oyun alanını engellemesin
+                        // 4 saniye sonra ekrandan yavaşça kaybolsun
                         setTimeout(() => {
                             banner.style.opacity = "0";
                             setTimeout(() => { banner.style.display = "none"; }, 1000);
                         }, 4000);
                     }
+                    
+                    // Rakip düştüğüne göre artık radara (sorguya) gerek yok, kapat.
+                    if (duelCheckInterval) {
+                        clearInterval(duelCheckInterval);
+                        duelCheckInterval = null;
+                    }
+                } else {
+                    // Rakip henüz düşmemiş (-1). Her 3 saniyede bir gizlice kontrol etmeye başla.
+                    if (!duelCheckInterval) {
+                        duelCheckInterval = setInterval(checkDuelStatus, 3000);
+                    }
+                }
+            } else {
+                // Düello aktif değilse veya bittiyse radarı kapat
+                isDuelMode = false;
+                if (duelCheckInterval) {
+                    clearInterval(duelCheckInterval);
+                    duelCheckInterval = null;
                 }
             }
         }).catch(() => {});
@@ -280,7 +299,7 @@ function animate(timestamp) {
             perfectElement.innerText = `🐒 MAYMUN KURTARDI!`; perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1; draw(); setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); break; 
         }
         
-        // 🔥 DÜELLO REKLAM BYPASS: Düellodaysa reklama girmeden direk bitir
+        // Düellodaysa reklama girmeden direk bitir
         if (isDuelMode) {
             phase = "dead_options"; 
             restartButton.style.display = "block"; 
@@ -351,7 +370,7 @@ function getHillY(windowX, baseHeight, amplitude, stretch) { let wHeight = windo
 function getTreeY(x, baseHeight, amplitude) { let wHeight = window.innerHeight || 800; return Math.sinus(x) * amplitude + wHeight - baseHeight; }
 
 // ------------------------------------
-// 8. UI VE MARKET İŞLEMLERİ (SADECE MARKET KORUMASI EKLİ)
+// 8. UI VE MARKET İŞLEMLERİ 
 // ------------------------------------
 
 document.getElementById("leaderboardBtn").addEventListener("click", () => { 
