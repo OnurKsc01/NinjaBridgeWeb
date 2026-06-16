@@ -102,9 +102,9 @@ let duelCheckInterval = null;
 
 // 🔥 YENİ SEZON 2: TEMALAR VE CANAVARLAR 🔥
 const worldThemes = {
-    1: { top: "#BBD691", bot: "#FEF1E1", h1: "#95C629", h2: "#659F1C", tColors: ["#6D8821", "#8FAC34", "#98B333"] }, // Orman
-    2: { top: "#FDEB71", bot: "#F8D800", h1: "#E67E22", h2: "#D35400", tColors: ["#A04000", "#BA4A00", "#CA6F1E"] }, // Çöl 
-    3: { top: "#E0C3FC", bot: "#8EC5FC", h1: "#BDC3C7", h2: "#ECF0F1", tColors: ["#FFFFFF", "#F2F3F4", "#E5E8E8"] }  // Kar 
+    1: { top: "#BBD691", bot: "#FEF1E1", h1: "#95C629", h2: "#659F1C", tColors: ["#6D8821", "#8FAC34", "#98B333"] }, 
+    2: { top: "#FDEB71", bot: "#F8D800", h1: "#E67E22", h2: "#D35400", tColors: ["#A04000", "#BA4A00", "#CA6F1E"] }, 
+    3: { top: "#E0C3FC", bot: "#8EC5FC", h1: "#BDC3C7", h2: "#ECF0F1", tColors: ["#FFFFFF", "#F2F3F4", "#E5E8E8"] }  
 };
 
 function getTheme() {
@@ -133,6 +133,20 @@ const preRenderedPets = {};
 try { Object.keys(petData).forEach(key => { let c = document.createElement('canvas'); c.width = 32; c.height = 32; let cCtx = c.getContext('2d'); cCtx.font = "22px Arial"; cCtx.fillText(petData[key].emoji, 2, 24); preRenderedPets[key] = c; let img = new Image(); img.src = key + '.png'; img.onload = () => { cCtx.clearRect(0, 0, 32, 32); cCtx.drawImage(img, 0, 0, 26, 26); }; }); } catch(e) {}
 
 const introductionElement = document.getElementById("introduction"); const perfectElement = document.getElementById("perfect"); const restartButton = document.getElementById("restart"); const scoreElement = document.getElementById("score"); const coinCountElement = document.getElementById("coinCount"); const shopCoinCountElement = document.getElementById("shopCoinCount");
+
+// ------------------------------------
+// 🎯 GELİŞTİRİCİ HİLESİ (SKORA 10 KERE TIKLA)
+// ------------------------------------
+let devClickCount = 0;
+scoreElement.addEventListener("click", () => {
+    devClickCount++;
+    if (devClickCount >= 10) {
+        score += 1000;
+        scoreElement.innerText = score;
+        devClickCount = 0;
+        if(tg && tg.showAlert) tg.showAlert("👑 Geliştirici Hilesi Aktif: +1000 Puan Eklendi!");
+    }
+});
 
 // ------------------------------------
 // 3. SES VE REKLAM MOTORU
@@ -180,7 +194,7 @@ document.getElementById("watchEarnBtn").addEventListener("click", () => {
 // ------------------------------------
 let phase = "waiting"; let lastTimestamp; let heroX, heroY, sceneOffset; 
 let platforms = [], sticks = [], trees = [];
-let score = 0, combo = 0; let currentMonkeyLives = 0;
+let combo = 0; let currentMonkeyLives = 0;
 
 const canvasWidth = 375, canvasHeight = 375, platformHeight = 100; 
 const heroDistanceFromEdge = 10, paddingX = 100;
@@ -270,25 +284,23 @@ function generatePlatform() {
           let mType = mList[Math.floor(Math.random() * mList.length)];
           
           if (!isWorld3) {
-              // 🌍 2. DÜNYA: BOŞLUKLARIN ARASINDA YUKARI/AŞAĞI HAREKET EDEN ZAMANLAMA CANAVARI
               let gapStartX = lastPlatform.x + lastPlatform.w;
               let gapWidth = x - gapStartX;
               monsters.push({
                   world: 2, platformIndex: platforms.length - 1, 
-                  x: gapStartX + gapWidth / 2, // Boşluğun tam ortası
-                  y: Math.random() > 0.5 ? -150 : 100, // En tepeden veya en dipten başla
+                  x: gapStartX + gapWidth / 2, 
+                  y: Math.random() > 0.5 ? -150 : 100, 
                   dir: Math.random() > 0.5 ? 1 : -1, 
-                  speed: 2 + Math.random() * 1.5, // Uçuş hızı
+                  speed: 2 + Math.random() * 1.5, 
                   type: mType, dead: false
               });
           } else {
-              // 🌍 3. DÜNYA: PLATFORMUN ÜSTÜNDE YATAY HAREKET EDEN ÖLÜMCÜL CANAVAR
               monsters.push({
                   world: 3, platformIndex: platforms.length - 1,
-                  x: x + w / 2, // Platformun ortası
+                  x: x + w / 2, 
                   y: 0,
                   dir: Math.random() > 0.5 ? 1 : -1, 
-                  speed: 0.8 + Math.random() * 0.5, // Yürüme hızı
+                  speed: 0.8 + Math.random() * 0.5, 
                   type: mType, dead: false
               });
           }
@@ -308,18 +320,14 @@ function animate(timestamp) {
   if (!lastTimestamp) { lastTimestamp = timestamp; window.requestAnimationFrame(animate); return; }
   let dt = timestamp - lastTimestamp; if (dt >= 12 && dt <= 20) { dt = 16.66; } else if (dt > 32) { dt = 16.66; } 
 
-  // 🔥 ÇÖZÜM BURADA: CANAVARLAR ARTIK NİNJA DURSA DA HAREKET EDECEK! 🔥
   monsters.forEach(m => {
       if (m.dead) return;
-      
       if (m.world === 2) {
-          // 2. Dünya: Boşlukta Çok Geniş Dikey (Yukarı-Aşağı) Hareket
           m.y += m.dir * m.speed * (dt / 16.66);
-          if (m.y > 120) m.dir = -1; // Aşağı sınırı (çubuğun bayağı altı)
-          if (m.y < -180) m.dir = 1; // Yukarı sınırı (Ninjanın çok çok üstü)
+          if (m.y > 120) m.dir = -1; 
+          if (m.y < -180) m.dir = 1; 
       } 
       else if (m.world === 3) {
-          // 3. Dünya: Platform Üzerinde Yatay (Sağ-Sol) Hareket
           let p = platforms[m.platformIndex];
           if (p) {
               m.x += m.dir * m.speed * (dt / 16.66);
@@ -343,7 +351,6 @@ function animate(timestamp) {
               combo++; earnedPts = 1 + combo; score += earnedPts; 
               perfectElement.innerText = `${texts[currentLang].perfect} +${earnedPts}`; perfectElement.style.opacity = 1; setTimeout(() => (perfectElement.style.opacity = 0), 1000); comboSound.currentTime = 0; comboSound.play().catch(e => {}); 
               
-              // KUSURSUZ VURUŞ SADECE 3. DÜNYA (PLATFORM) CANAVARINI EZER
               let pIdx = platforms.indexOf(nextPlatform);
               let m = monsters.find(mo => mo.platformIndex === pIdx && mo.world === 3);
               if (m) m.dead = true; 
@@ -357,19 +364,15 @@ function animate(timestamp) {
       break;
     }
     case "walking": {
-      // 🔥 SADECE ÇARPIŞMALARI KONTROL ET 🔥
       monsters.forEach(m => {
           if (m.dead) return;
-          
           if (m.world === 2) {
-              // Ninja köprüden geçerken zamanlamayı tutturamaz ve canavara çarparsa
               if (Math.abs(heroX - m.x) < 15 && Math.abs(m.y) < 35) {
                   phase = "dead_monster";
                   fallSound.currentTime = 0; fallSound.play().catch(e=>{});
               }
           } 
           else if (m.world === 3) {
-              // Ninja platforma inerken (kusursuz yapamadıysa) canavara çarparsa
               let p = platforms[m.platformIndex];
               if (p && Math.abs(heroX - m.x) < 15) {
                   phase = "dead_monster";
@@ -392,36 +395,28 @@ function animate(timestamp) {
             currentMonkeyLives--; phase = "waiting"; 
             perfectElement.innerText = texts[currentLang].monkey; perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1; 
             setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); 
-            
-            // Maymun kurtardıysa çarptığı canavarı yoldan çek ki tekrar ölmesin
             let m = monsters.find(mo => Math.abs(heroX - mo.x) < 30);
             if (m) m.dead = true;
             break; 
         }
-        
         perfectElement.innerText = texts[currentLang].monsterDie; perfectElement.style.color = "#e74c3c"; perfectElement.style.opacity = 1; 
-
         if (isDuelMode) { phase = "dead_options"; restartButton.style.display = "block"; saveScoreToAPI(); break; }
         let reviveMenuEl = document.getElementById("reviveMenu");
         if (!adReviveUsedThisRun && reviveMenuEl) { phase = "dead_options"; reviveMenuEl.style.display = "flex"; break; }
-        
         phase = "dead_options"; restartButton.style.display = "block"; saveScoreToAPI(); break;
     }
 
     case "falling": {
       if (sticks[sticks.length - 1].rotation < 180) sticks[sticks.length - 1].rotation += dt / turningSpeed;
       heroY += dt / fallingSpeed; const maxHeroY = platformHeight + 100 + (window.innerHeight || 800) / 2;
-      
       if (heroY > maxHeroY) {
         if (currentMonkeyLives > 0) { 
             currentMonkeyLives--; phase = "waiting"; heroY = 0; heroX = sticks[sticks.length - 1].x - heroDistanceFromEdge; sticks[sticks.length - 1].length = 0; sticks[sticks.length - 1].rotation = 0; 
             perfectElement.innerText = texts[currentLang].monkey; perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1; draw(); setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); break; 
         }
-        
         if (isDuelMode) { phase = "dead_options"; perfectElement.innerText = texts[currentLang].duelEnded; perfectElement.style.color = "#e74c3c"; perfectElement.style.opacity = 1; restartButton.style.display = "block"; saveScoreToAPI(); break; }
         let reviveMenuEl = document.getElementById("reviveMenu");
         if (!adReviveUsedThisRun && reviveMenuEl) { phase = "dead_options"; reviveMenuEl.style.display = "flex"; break; }
-        
         phase = "dead_options"; restartButton.style.display = "block"; saveScoreToAPI(); break;
       }
       break;
@@ -457,21 +452,14 @@ function drawPlatforms() {
 
 function drawMonsters() {
     monsters.forEach(m => {
-        if (m.x < sceneOffset - 50) return; // Ekranda değilse çizme
-        
+        if (m.x < sceneOffset - 50) return; 
         ctx.save(); 
         ctx.translate(m.x, canvasHeight - platformHeight + m.y); 
-        
-        if (m.dead) { 
-            ctx.globalAlpha = 0.5; 
-            ctx.scale(1, 0.2); // Çubuk ezdiği için canavar yassılaşır
-        } 
-        
+        if (m.dead) { ctx.globalAlpha = 0.5; ctx.scale(1, 0.2); } 
         if (preRenderedMonsters[m.type] && preRenderedMonsters[m.type].complete && preRenderedMonsters[m.type].naturalWidth !== 0) { 
             ctx.drawImage(preRenderedMonsters[m.type], -16, -32, 32, 32); 
         } else { 
-            ctx.fillStyle = "purple"; 
-            ctx.fillRect(-10, -20, 20, 20); 
+            ctx.fillStyle = "purple"; ctx.fillRect(-10, -20, 20, 20); 
         } 
         ctx.restore(); 
     });
@@ -488,12 +476,9 @@ function drawSticks() { sticks.forEach((stick) => { ctx.save(); ctx.translate(st
 function drawBackground() { 
     let wWidth = window.innerWidth || 375; let wHeight = window.innerHeight || 800; 
     let theme = getTheme(); 
-
     var gradient = ctx.createLinearGradient(0, 0, 0, wHeight); 
-    gradient.addColorStop(0, theme.top); 
-    gradient.addColorStop(1, theme.bot); 
+    gradient.addColorStop(0, theme.top); gradient.addColorStop(1, theme.bot); 
     ctx.fillStyle = gradient; ctx.fillRect(0, 0, wWidth, wHeight); 
-    
     drawHill(hill1BaseHeight, hill1Amplitude, hill1Stretch, theme.h1); 
     drawHill(hill2BaseHeight, hill2Amplitude, hill2Stretch, theme.h2); 
     trees.forEach((tree) => drawTree(tree.x, tree.color)); 
@@ -533,23 +518,17 @@ function renderShop() {
     const list = document.getElementById("shopList");
     let html = `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; text-align:center;">💎 <b>${t.shopGemExchange}</b></li>`;
     html += `<li style="padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee;"><span>${t.shopExchangeBtn}</span> <button style="background:#9b59b6; padding: 5px 10px; font-size:12px; margin:0; border:none; color:white; border-radius:5px; cursor:pointer;" onclick="convertGems()">${t.shopGetGem}</button></li>`;
-    
     html += `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; margin-top:6px; text-align:center;">🥷 <b>${t.shopSkins}</b></li>`;
     Object.keys(skinData).forEach(key => { 
-        const skin = skinData[key]; 
-        let sName = currentLang === "tr" ? skin.nameTr : skin.nameEn;
-        let actionHTML = ""; 
+        const skin = skinData[key]; let sName = currentLang === "tr" ? skin.nameTr : skin.nameEn; let actionHTML = ""; 
         if (currentSkin === key) actionHTML = `<span style=\"font-size:13px;\">${t.equipped}</span>`; 
         else if (ownedSkins.includes(key)) actionHTML = `<button style=\"padding: 5px 10px; font-size:12px; margin:0; border:none; background:#34495e; color:white; border-radius:5px; cursor:pointer;\" onclick=\"equipSkin('${key}')\">${t.equip}</button>`; 
         else actionHTML = `<button style=\"padding: 5px 10px; font-size:12px; margin:0; border:none; background:#2196F3; color:white; border-radius:5px; cursor:pointer;\" onclick=\"buySkin('${key}', ${skin.price})\">🪙 ${skin.price}</button>`; 
         html += `<li style=\"padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee;\"><span><span style=\"color:${skin.body}; text-shadow: 1px 1px 1px black;\">⬤</span> ${sName}</span> ${actionHTML}</li>`; 
     });
-    
     html += `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; margin-top:6px; text-align:center;">🐾 <b>${t.shopPets}</b></li>`;
     Object.keys(petData).forEach(key => { 
-        const pet = petData[key]; 
-        let pName = currentLang === "tr" ? pet.nameTr : pet.nameEn;
-        let pDesc = currentLang === "tr" ? pet.descTr : pet.descEn;
+        const pet = petData[key]; let pName = currentLang === "tr" ? pet.nameTr : pet.nameEn; let pDesc = currentLang === "tr" ? pet.descTr : pet.descEn;
         let isOwned = ownedPets.hasOwnProperty(key); let level = isOwned ? ownedPets[key] : 0; 
         if (!isOwned) { 
             html += `<li style=\"padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee;\"><span style=\"line-height:1.2;\">${pet.emoji} ${pName} (Sv.1)<br><small style=\"color:gray; font-size:11px;\">${pDesc}</small></span> <button style=\"padding: 5px 10px; font-size:12px; margin:0; border:none; background:#2196F3; color:white; border-radius:5px; cursor:pointer;\" onclick=\"buyPet('${key}', ${pet.price})\">🪙 ${pet.price}</button></li>`; 
@@ -564,20 +543,7 @@ function renderShop() {
     }); list.innerHTML = html;
 }
 
-window.convertGems = function() { 
-    const t = texts[currentLang]; 
-    if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; } 
-    if(playerCoins < 1000) { if(tg && tg.showAlert) tg.showAlert(t.msgNoCoin1000); return; } 
-    if(tg && tg.showConfirm) {
-        tg.showConfirm(t.askGem, function(agreed) {
-            if(agreed) {
-                fetch('https://ninja-bridge-api.onrender.com/api/score/convert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId }) })
-                .then(res => res.json()).then(data => { if(data.success) { playerCoins -= 1000; playerGems += 1; updateCoinUI(); renderShop(); } });
-            }
-        });
-    }
-}
-
+window.convertGems = function() { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; } if(playerCoins < 1000) { if(tg && tg.showAlert) tg.showAlert(t.msgNoCoin1000); return; } if(tg && tg.showConfirm) { tg.showConfirm(t.askGem, function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/convert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= 1000; playerGems += 1; updateCoinUI(); renderShop(); } }); } }); } }
 window.upgradePet = function(petKey, nextLevel, costVal) { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; } if (playerGems < costVal) { if(tg && tg.showAlert) tg.showAlert(t.msgNoGem); return; } if(tg && tg.showConfirm) { let pName = currentLang==="tr"?petData[petKey].nameTr:petData[petKey].nameEn; tg.showConfirm(t.askPet.replace("{name}", pName).replace("{lvl}", nextLevel), function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/upgradepet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, petName: petKey, coinCost: 0, gemCost: costVal, nextLevel: nextLevel }) }).then(res => res.json()).then(data => { if(data.success) { playerGems -= costVal; ownedPets[petKey] = nextLevel; updateCoinUI(); renderShop(); } }); } }); } }
 window.buySkin = function(skinKey, price) { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; } if(playerCoins < price) { if(tg && tg.showAlert) tg.showAlert(t.msgNoCoin); return; } if(tg && tg.showConfirm) { let sName = currentLang==="tr"?skinData[skinKey].nameTr:skinData[skinKey].nameEn; tg.showConfirm(t.askSkin.replace("{name}", sName), function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/buyskin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey, price: price }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= price; ownedSkins.push(skinKey); updateCoinUI(); renderShop(); } }); } }); } }
 window.equipSkin = function(skinKey) { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgNoEquipSkin); return; } fetch('https://ninja-bridge-api.onrender.com/api/score/equipskin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey }) }).then(res => res.json()).then(data => { if(data.success) { currentSkin = skinKey; renderShop(); draw(); } }); }
