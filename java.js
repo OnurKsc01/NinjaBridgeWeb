@@ -22,7 +22,8 @@ const texts = {
         msgNoEquipSkin: "Oyun esnasında kostüm değiştirilemez!", msgNoEquipPet: "Oyun esnasında yoldaş değiştirilemez!",
         askPet: "{name} yoldaşını Seviye {lvl} yapacaksın. Onaylıyor musun?", askSkin: "{name} kostümünü alacaksın. Onaylıyor musun?", askAdopt: "{name} yoldaşını sahipleneceksin. Onaylıyor musun?",
         askGem: "1000 Jetonu 1 Elmasa çevireceksin. Onaylıyor musun?",
-        duelP1: "düştü!", duelP2: "Skoru:", duelP3: "Kazanmak için onu geç!"
+        duelP1: "düştü!", duelP2: "Skoru:", duelP3: "Kazanmak için onu geç!",
+        monsterDie: "💀 CANAVARA YEM OLDUN!" // YENİ
     },
     en: {
         btnScore: "🏆 Score", btnShop: "🛒 Shop", btnAd: "📺 +Coins",
@@ -40,7 +41,8 @@ const texts = {
         msgNoEquipSkin: "Cannot equip skin while playing!", msgNoEquipPet: "Cannot equip pet while playing!",
         askPet: "Upgrade {name} to Level {lvl}. Confirm?", askSkin: "Buy {name}. Confirm?", askAdopt: "Adopt {name}. Confirm?",
         askGem: "Exchange 1000 Coins for 1 Gem. Confirm?",
-        duelP1: "fell!", duelP2: "Score:", duelP3: "Beat it to win!"
+        duelP1: "fell!", duelP2: "Score:", duelP3: "Beat it to win!",
+        monsterDie: "💀 KILLED BY A MONSTER!" // YENİ
     }
 };
 
@@ -105,7 +107,32 @@ let opponentName = "";
 let opponentTargetScore = -1;
 let duelCheckInterval = null; 
 
-// 🔥 Eşyaların İsimleri Artık Çift Dilli
+// 🔥 YENİ SEZON 2: TEMALAR VE CANAVARLAR 🔥
+const worldThemes = {
+    1: { top: "#BBD691", bot: "#FEF1E1", h1: "#95C629", h2: "#659F1C", tColors: ["#6D8821", "#8FAC34", "#98B333"] }, // Orman (0-999)
+    2: { top: "#FDEB71", bot: "#F8D800", h1: "#E67E22", h2: "#D35400", tColors: ["#A04000", "#BA4A00", "#CA6F1E"] }, // Çöl (1000-1999)
+    3: { top: "#E0C3FC", bot: "#8EC5FC", h1: "#BDC3C7", h2: "#ECF0F1", tColors: ["#FFFFFF", "#F2F3F4", "#E5E8E8"] }  // Kar (2000+)
+};
+
+function getTheme() {
+    if (score >= 2000) return worldThemes[3];
+    if (score >= 1000) return worldThemes[2];
+    return worldThemes[1];
+}
+
+let monsters = [];
+const monsterData = {
+    2: ["scorpion", "snake", "mummy"], // 2. Dünyada çıkacaklar
+    3: ["ice_golem", "yeti", "ghost"]  // 3. Dünyada çıkacaklar
+};
+
+const preRenderedMonsters = {};
+Object.values(monsterData).flat().forEach(m => {
+    let img = new Image();
+    img.src = m + '.png';
+    preRenderedMonsters[m] = img;
+});
+
 const skinData = { 
     "default": { nameTr: "Varsayılan", nameEn: "Default", price: 0, body: "black", bandana: "red" }, 
     "yesil": { nameTr: "Yeşil Ninja", nameEn: "Green Ninja", price: 20, body: "#228B22", bandana: "black" }, 
@@ -237,7 +264,6 @@ function updateCoinUI() {
 }
 
 function saveScoreToAPI() {
-    if (sessionEarnedCoins > 0) { playerCoins += sessionEarnedCoins; updateCoinUI(); }
     fetch('https://ninja-bridge-api.onrender.com/api/score/save', { 
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: tgGroupId, earnedCoins: sessionEarnedCoins, earnedGems: 0 }) 
     }).then(() => { sessionEarnedCoins = 0; }).catch(e => {});
@@ -257,6 +283,7 @@ function resetGame() {
   const banner = document.getElementById("duelDeathBanner"); if (banner) { banner.style.display = "none"; banner.style.opacity = "0"; }
   isDuelMode = false; opponentTargetScore = -1; checkDuelStatus(); 
 
+  monsters = []; // Canavarları sıfırla
   scoreElement.innerText = score; platforms = [{ x: 50, w: 50 }];
   generatePlatform(); generatePlatform(); generatePlatform(); generatePlatform();
   sticks = [{ x: platforms[0].x + platforms[0].w, length: 0, rotation: 0 }];
@@ -264,13 +291,39 @@ function resetGame() {
   heroX = platforms[0].x + platforms[0].w - heroDistanceFromEdge; heroY = 0; draw();
 }
 
-function generateTree() { const minimumGap = 30, maximumGap = 150; const lastTree = trees[trees.length - 1]; let furthestX = lastTree ? lastTree.x : 0; const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap)); const treeColors = ["#6D8821", "#8FAC34", "#98B333"]; trees.push({ x, color: treeColors[Math.floor(Math.random() * 3)] }); }
+function generateTree() { 
+    const minimumGap = 30, maximumGap = 150; 
+    const lastTree = trees[trees.length - 1]; 
+    let furthestX = lastTree ? lastTree.x : 0; 
+    const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap)); 
+    const themeColors = getTheme().tColors; // Bulunduğu dünyanın ağaç renkleri
+    trees.push({ x, color: themeColors[Math.floor(Math.random() * 3)] }); 
+}
 
 function generatePlatform() {
   let minimumGap, maximumGap, minimumWidth, maximumWidth;
   if (score >= 5000) { minimumGap = 120; maximumGap = 250; minimumWidth = 10; maximumWidth = 25; } else if (score >= 4000) { minimumGap = 100; maximumGap = 230; minimumWidth = 15; maximumWidth = 35; } else if (score >= 3000) { minimumGap = 90; maximumGap = 210; minimumWidth = 20; maximumWidth = 45; } else if (score >= 2000) { minimumGap = 80; maximumGap = 190; minimumWidth = 25; maximumWidth = 55; } else if (score >= 1000) { minimumGap = 70; maximumGap = 170; minimumWidth = 30; maximumWidth = 65; } else if (score >= 750) { minimumGap = 60; maximumGap = 150; minimumWidth = 35; maximumWidth = 75; } else if (score >= 500) { minimumGap = 50; maximumGap = 130; minimumWidth = 40; maximumWidth = 85; } else if (score >= 250) { minimumGap = 45; maximumGap = 110; minimumWidth = 45; maximumWidth = 95; } else { minimumGap = 40; maximumGap = 90; minimumWidth = 50; maximumWidth = 100; } 
   let maxScreenGap = window.innerWidth - 130; if (maximumGap > maxScreenGap) { maximumGap = Math.max(minimumGap + 10, maxScreenGap); }
-  const lastPlatform = platforms[platforms.length - 1]; let furthestX = lastPlatform.x + lastPlatform.w; const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap)); const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth)); platforms.push({ x, w });
+  const lastPlatform = platforms[platforms.length - 1]; let furthestX = lastPlatform.x + lastPlatform.w; const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap)); const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth)); 
+  platforms.push({ x, w });
+  
+  // 🔥 CANAVAR ÇIKMA SİSTEMİ (Puan 1000'i geçince başlar)
+  if (score >= 1000 && platforms.length > 2) {
+      let spawnChance = score >= 2000 ? 0.35 : 0.20; // 2. dünyada %20, 3. dünyada %35 ihtimal
+      if (Math.random() < spawnChance) {
+          let worldId = score >= 2000 ? 3 : 2;
+          let mList = monsterData[worldId];
+          let mType = mList[Math.floor(Math.random() * mList.length)];
+          monsters.push({
+              platformIndex: platforms.length - 1,
+              x: x + w / 2,
+              type: mType,
+              dir: Math.random() > 0.5 ? 1 : -1, // Rastgele sağa veya sola başlar
+              speed: 0.15 + (Math.random() * 0.1), // Yavaş, uyuz bir hız
+              dead: false
+          });
+      }
+  }
 }
 
 window.addEventListener("mousedown", function (event) { if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); } });
@@ -295,8 +348,17 @@ function animate(timestamp) {
         sticks[sticks.length - 1].rotation = 90; const [nextPlatform, perfectHit] = thePlatformTheStickHits();
         if (nextPlatform) {
           let earnedPts = 0;
-          if (perfectHit) { combo++; earnedPts = 1 + combo; score += earnedPts; perfectElement.innerText = `${texts[currentLang].perfect} +${earnedPts}`; perfectElement.style.opacity = 1; setTimeout(() => (perfectElement.style.opacity = 0), 1000); comboSound.currentTime = 0; comboSound.play().catch(e => {}); } 
+          if (perfectHit) { 
+              combo++; earnedPts = 1 + combo; score += earnedPts; 
+              perfectElement.innerText = `${texts[currentLang].perfect} +${earnedPts}`; perfectElement.style.opacity = 1; setTimeout(() => (perfectElement.style.opacity = 0), 1000); comboSound.currentTime = 0; comboSound.play().catch(e => {}); 
+              
+              // 🔥 KUSURSUZ VURUŞ CANAVARI EZER!
+              let pIdx = platforms.indexOf(nextPlatform);
+              let m = monsters.find(mo => mo.platformIndex === pIdx);
+              if (m) m.dead = true; 
+          } 
           else { combo = 0; earnedPts = 1; score += earnedPts; perfectElement.innerText = ""; }
+          
           processCoinGeneration(earnedPts); scoreElement.innerText = score; generatePlatform(); generateTree(); generateTree();
         }
         phase = "walking";
@@ -304,6 +366,25 @@ function animate(timestamp) {
       break;
     }
     case "walking": {
+      // 🔥 CANAVARLARI HAREKET ETTİR VE ÇARPIŞMAYI KONTROL ET
+      monsters.forEach(m => {
+          if (m.dead) return;
+          let p = platforms[m.platformIndex];
+          if (p) {
+              m.x += m.dir * m.speed * (dt / 16.66);
+              if (m.x > p.x + p.w - 12) m.dir = -1; // Platform kenarından dön
+              if (m.x < p.x + 12) m.dir = 1;
+
+              // Eğer kahraman canavara değerse
+              if (Math.abs(heroX - m.x) < 15) {
+                  phase = "dead_monster";
+                  fallSound.currentTime = 0; fallSound.play().catch(e=>{});
+              }
+          }
+      });
+
+      if (phase === "dead_monster") break;
+
       heroX += dt / walkingSpeed; const [nextPlatform] = thePlatformTheStickHits();
       if (nextPlatform) { const maxHeroX = nextPlatform.x + nextPlatform.w - heroDistanceFromEdge; if (heroX > maxHeroX) { heroX = maxHeroX; phase = "transitioning"; } } 
       else { const maxHeroX = sticks[sticks.length - 1].x + sticks[sticks.length - 1].length + heroWidth; if (heroX > maxHeroX) { heroX = maxHeroX; phase = "falling"; fallSound.currentTime = 0; fallSound.play().catch(e=>{}); } }
@@ -311,6 +392,27 @@ function animate(timestamp) {
     }
     case "transitioning": { sceneOffset += dt / transitioningSpeed; const [nextPlatform] = thePlatformTheStickHits(); if (sceneOffset > nextPlatform.x + nextPlatform.w - paddingX) { sticks.push({ x: nextPlatform.x + nextPlatform.w, length: 0, rotation: 0 }); phase = "waiting"; } break; }
     
+    case "dead_monster": {
+        if (currentMonkeyLives > 0) { 
+            currentMonkeyLives--; phase = "waiting"; 
+            perfectElement.innerText = texts[currentLang].monkey; perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1; 
+            setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); 
+            
+            // Maymun kurtardıysa canavarı öldür ki bi daha çarpmasın
+            let m = monsters.find(mo => Math.abs(heroX - mo.x) < 30);
+            if (m) m.dead = true;
+            break; 
+        }
+        
+        perfectElement.innerText = texts[currentLang].monsterDie; perfectElement.style.color = "#e74c3c"; perfectElement.style.opacity = 1; 
+
+        if (isDuelMode) { phase = "dead_options"; restartButton.style.display = "block"; saveScoreToAPI(); break; }
+        let reviveMenuEl = document.getElementById("reviveMenu");
+        if (!adReviveUsedThisRun && reviveMenuEl) { phase = "dead_options"; reviveMenuEl.style.display = "flex"; break; }
+        
+        phase = "dead_options"; restartButton.style.display = "block"; saveScoreToAPI(); break;
+    }
+
     case "falling": {
       if (sticks[sticks.length - 1].rotation < 180) sticks[sticks.length - 1].rotation += dt / turningSpeed;
       heroY += dt / fallingSpeed; const maxHeroY = platformHeight + 100 + (window.innerHeight || 800) / 2;
@@ -321,10 +423,7 @@ function animate(timestamp) {
             perfectElement.innerText = texts[currentLang].monkey; perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1; draw(); setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); break; 
         }
         
-        if (isDuelMode) {
-            phase = "dead_options"; perfectElement.innerText = texts[currentLang].duelEnded; perfectElement.style.color = "#e74c3c"; perfectElement.style.opacity = 1; restartButton.style.display = "block"; saveScoreToAPI(); break;
-        }
-
+        if (isDuelMode) { phase = "dead_options"; perfectElement.innerText = texts[currentLang].duelEnded; perfectElement.style.color = "#e74c3c"; perfectElement.style.opacity = 1; restartButton.style.display = "block"; saveScoreToAPI(); break; }
         let reviveMenuEl = document.getElementById("reviveMenu");
         if (!adReviveUsedThisRun && reviveMenuEl) { phase = "dead_options"; reviveMenuEl.style.display = "flex"; break; }
         
@@ -348,7 +447,7 @@ function draw() {
     let wWidth = window.innerWidth || 375; let wHeight = window.innerHeight || 800;
     ctx.save(); ctx.clearRect(0, 0, wWidth, wHeight); drawBackground(); 
     ctx.translate((wWidth - canvasWidth) / 2 - sceneOffset, (wHeight - canvasHeight) / 2); 
-    drawPlatforms(); drawPet(); drawHero(); drawSticks(); ctx.restore(); 
+    drawPlatforms(); drawMonsters(); drawPet(); drawHero(); drawSticks(); ctx.restore(); 
 }
 
 restartButton.addEventListener("click", function (event) { event.preventDefault(); resetGame(); });
@@ -361,6 +460,31 @@ function drawPlatforms() {
   }); 
 }
 
+function drawMonsters() {
+    monsters.forEach(m => {
+        let p = platforms[m.platformIndex];
+        if (!p || m.x < sceneOffset - 50) return; // Ekranda değilse çizme
+        
+        ctx.save(); 
+        ctx.translate(m.x, canvasHeight - platformHeight); 
+        
+        if (m.dead) { 
+            ctx.globalAlpha = 0.5; 
+            ctx.scale(1, 0.2); // Çubuk ezdiği için canavar yassılaşır
+        } 
+        
+        // Resim varsa ve başarıyla yüklendiyse onu çiz, yoksa mor kutu çiz
+        if (preRenderedMonsters[m.type] && preRenderedMonsters[m.type].complete && preRenderedMonsters[m.type].naturalWidth !== 0) { 
+            // -16, -32 çizimi resmi tam platformun üstüne oturtur
+            ctx.drawImage(preRenderedMonsters[m.type], -16, -32, 32, 32); 
+        } else { 
+            ctx.fillStyle = "purple"; 
+            ctx.fillRect(-10, -20, 20, 20); 
+        } 
+        ctx.restore(); 
+    });
+}
+
 function drawHero() { ctx.save(); let skin = skinData[currentSkin] || skinData["default"]; ctx.fillStyle = skin.body; ctx.translate(heroX - heroWidth / 2, heroY + canvasHeight - platformHeight - heroHeight / 2); drawRoundedRect(-heroWidth / 2, -heroHeight / 2, heroWidth, heroHeight - 4, 5); const legDistance = 5; ctx.beginPath(); ctx.arc(legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.beginPath(); ctx.arc(-legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.beginPath(); ctx.fillStyle = "white"; ctx.arc(5, -7, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.fillStyle = skin.bandana; ctx.fillRect(-heroWidth / 2 - 1, -12, heroWidth + 2, 4.5); ctx.beginPath(); ctx.moveTo(-9, -14.5); ctx.lineTo(-17, -18.5); ctx.lineTo(-14, -8.5); ctx.fill(); ctx.beginPath(); ctx.moveTo(-10, -10.5); ctx.lineTo(-15, -3.5); ctx.lineTo(-5, -7); ctx.fill(); ctx.restore(); }
 
 function drawPet() { if (currentPet === "default") return; let bounce = (phase === "walking" || phase === "transitioning") ? Math.abs(Math.sin(Date.now() / 100)) * 6 : 0; ctx.save(); ctx.translate(heroX - 32, heroY + canvasHeight - platformHeight - 20 - bounce); if (preRenderedPets[currentPet]) { ctx.drawImage(preRenderedPets[currentPet], 0, 0); } ctx.restore(); }
@@ -369,7 +493,19 @@ function drawRoundedRect(x, y, width, height, radius) { ctx.beginPath(); ctx.mov
 
 function drawSticks() { sticks.forEach((stick) => { ctx.save(); ctx.translate(stick.x, canvasHeight - platformHeight); ctx.rotate((Math.PI / 180) * stick.rotation); ctx.beginPath(); ctx.lineWidth = 2; ctx.moveTo(0, 0); ctx.lineTo(0, -stick.length); ctx.stroke(); ctx.restore(); }); }
 
-function drawBackground() { let wWidth = window.innerWidth || 375; let wHeight = window.innerHeight || 800; var gradient = ctx.createLinearGradient(0, 0, 0, wHeight); gradient.addColorStop(0, "#BBD691"); gradient.addColorStop(1, "#FEF1E1"); ctx.fillStyle = gradient; ctx.fillRect(0, 0, wWidth, wHeight); drawHill(hill1BaseHeight, hill1Amplitude, hill1Stretch, "#95C629"); drawHill(hill2BaseHeight, hill2Amplitude, hill2Stretch, "#659F1C"); trees.forEach((tree) => drawTree(tree.x, tree.color)); }
+function drawBackground() { 
+    let wWidth = window.innerWidth || 375; let wHeight = window.innerHeight || 800; 
+    let theme = getTheme(); // Hangi dünyadaysak onun renklerini çek
+
+    var gradient = ctx.createLinearGradient(0, 0, 0, wHeight); 
+    gradient.addColorStop(0, theme.top); 
+    gradient.addColorStop(1, theme.bot); 
+    ctx.fillStyle = gradient; ctx.fillRect(0, 0, wWidth, wHeight); 
+    
+    drawHill(hill1BaseHeight, hill1Amplitude, hill1Stretch, theme.h1); 
+    drawHill(hill2BaseHeight, hill2Amplitude, hill2Stretch, theme.h2); 
+    trees.forEach((tree) => drawTree(tree.x, tree.color)); 
+}
 
 function drawHill(baseHeight, amplitude, stretch, color) { let wWidth = window.innerWidth || 375; let wHeight = window.innerHeight || 800; ctx.beginPath(); ctx.moveTo(0, wHeight); ctx.lineTo(0, getHillY(0, baseHeight, amplitude, stretch)); for (let i = 0; i < wWidth; i++) { ctx.lineTo(i, getHillY(i, baseHeight, amplitude, stretch)); } ctx.lineTo(wWidth, wHeight); ctx.fillStyle = color; ctx.fill(); }
 
@@ -441,24 +577,11 @@ window.convertGems = function() {
     if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; } 
     if(playerCoins < 1000) { if(tg && tg.showAlert) tg.showAlert(t.msgNoCoin1000); return; } 
     
-    // 🔥 Elmas alımına da diğerleri gibi Onay (showConfirm) Eklendi!
     if(tg && tg.showConfirm) {
         tg.showConfirm(t.askGem, function(agreed) {
             if(agreed) {
-                fetch('https://ninja-bridge-api.onrender.com/api/score/convert', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ userId: tgUserId }) 
-                })
-                .then(res => res.json())
-                .then(data => { 
-                    if(data.success) { 
-                        playerCoins -= 1000; 
-                        playerGems += 1; 
-                        updateCoinUI(); 
-                        renderShop(); 
-                    } 
-                });
+                fetch('https://ninja-bridge-api.onrender.com/api/score/convert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId }) })
+                .then(res => res.json()).then(data => { if(data.success) { playerCoins -= 1000; playerGems += 1; updateCoinUI(); renderShop(); } });
             }
         });
     }
