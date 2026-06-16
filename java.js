@@ -308,6 +308,27 @@ function animate(timestamp) {
   if (!lastTimestamp) { lastTimestamp = timestamp; window.requestAnimationFrame(animate); return; }
   let dt = timestamp - lastTimestamp; if (dt >= 12 && dt <= 20) { dt = 16.66; } else if (dt > 32) { dt = 16.66; } 
 
+  // 🔥 ÇÖZÜM BURADA: CANAVARLAR ARTIK NİNJA DURSA DA HAREKET EDECEK! 🔥
+  monsters.forEach(m => {
+      if (m.dead) return;
+      
+      if (m.world === 2) {
+          // 2. Dünya: Boşlukta Çok Geniş Dikey (Yukarı-Aşağı) Hareket
+          m.y += m.dir * m.speed * (dt / 16.66);
+          if (m.y > 120) m.dir = -1; // Aşağı sınırı (çubuğun bayağı altı)
+          if (m.y < -180) m.dir = 1; // Yukarı sınırı (Ninjanın çok çok üstü)
+      } 
+      else if (m.world === 3) {
+          // 3. Dünya: Platform Üzerinde Yatay (Sağ-Sol) Hareket
+          let p = platforms[m.platformIndex];
+          if (p) {
+              m.x += m.dir * m.speed * (dt / 16.66);
+              if (m.x > p.x + p.w - 12) m.dir = -1; 
+              if (m.x < p.x + 12) m.dir = 1;
+          }
+      }
+  });
+
   switch (phase) {
     case "waiting": break; 
     case "dead_options": break; 
@@ -322,7 +343,7 @@ function animate(timestamp) {
               combo++; earnedPts = 1 + combo; score += earnedPts; 
               perfectElement.innerText = `${texts[currentLang].perfect} +${earnedPts}`; perfectElement.style.opacity = 1; setTimeout(() => (perfectElement.style.opacity = 0), 1000); comboSound.currentTime = 0; comboSound.play().catch(e => {}); 
               
-              // 🔥 KUSURSUZ VURUŞ SADECE 3. DÜNYA (PLATFORM) CANAVARINI EZER
+              // KUSURSUZ VURUŞ SADECE 3. DÜNYA (PLATFORM) CANAVARINI EZER
               let pIdx = platforms.indexOf(nextPlatform);
               let m = monsters.find(mo => mo.platformIndex === pIdx && mo.world === 3);
               if (m) m.dead = true; 
@@ -336,16 +357,11 @@ function animate(timestamp) {
       break;
     }
     case "walking": {
-      // 🔥 CANAVAR HAREKETLERİ VE ÇARPIŞMALAR 🔥
+      // 🔥 SADECE ÇARPIŞMALARI KONTROL ET 🔥
       monsters.forEach(m => {
           if (m.dead) return;
           
           if (m.world === 2) {
-              // 2. Dünya: Boşlukta Çok Geniş Dikey (Yukarı-Aşağı) Hareket
-              m.y += m.dir * m.speed * (dt / 16.66);
-              if (m.y > 120) m.dir = -1; // Aşağı sınırı (çubuğun bayağı altı)
-              if (m.y < -180) m.dir = 1; // Yukarı sınırı (Ninjanın çok çok üstü)
-
               // Ninja köprüden geçerken zamanlamayı tutturamaz ve canavara çarparsa
               if (Math.abs(heroX - m.x) < 15 && Math.abs(m.y) < 35) {
                   phase = "dead_monster";
@@ -353,18 +369,11 @@ function animate(timestamp) {
               }
           } 
           else if (m.world === 3) {
-              // 3. Dünya: Platform Üzerinde Yatay (Sağ-Sol) Hareket
+              // Ninja platforma inerken (kusursuz yapamadıysa) canavara çarparsa
               let p = platforms[m.platformIndex];
-              if (p) {
-                  m.x += m.dir * m.speed * (dt / 16.66);
-                  if (m.x > p.x + p.w - 12) m.dir = -1; 
-                  if (m.x < p.x + 12) m.dir = 1;
-
-                  // Ninja platforma inerken (kusursuz yapamadıysa) canavara çarparsa
-                  if (Math.abs(heroX - m.x) < 15) {
-                      phase = "dead_monster";
-                      fallSound.currentTime = 0; fallSound.play().catch(e=>{});
-                  }
+              if (p && Math.abs(heroX - m.x) < 15) {
+                  phase = "dead_monster";
+                  fallSound.currentTime = 0; fallSound.play().catch(e=>{});
               }
           }
       });
