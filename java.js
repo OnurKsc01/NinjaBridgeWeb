@@ -21,6 +21,7 @@ const texts = {
         msgNoCoin1000: "1000 Jetonun yok!", msgNoGem: "Yetersiz Elmas!", msgNoCoin: "Yetersiz Jeton!",
         msgNoEquipSkin: "Oyun esnasında kostüm değiştirilemez!", msgNoEquipPet: "Oyun esnasında yoldaş değiştirilemez!",
         askPet: "{name} yoldaşını Seviye {lvl} yapacaksın. Onaylıyor musun?", askSkin: "{name} kostümünü alacaksın. Onaylıyor musun?", askAdopt: "{name} yoldaşını sahipleneceksin. Onaylıyor musun?",
+        askGem: "1000 Jetonu 1 Elmasa çevireceksin. Onaylıyor musun?",
         duelP1: "düştü!", duelP2: "Skoru:", duelP3: "Kazanmak için onu geç!"
     },
     en: {
@@ -38,6 +39,7 @@ const texts = {
         msgNoCoin1000: "Not enough Coins (1000)!", msgNoGem: "Not enough Gems!", msgNoCoin: "Not enough Coins!",
         msgNoEquipSkin: "Cannot equip skin while playing!", msgNoEquipPet: "Cannot equip pet while playing!",
         askPet: "Upgrade {name} to Level {lvl}. Confirm?", askSkin: "Buy {name}. Confirm?", askAdopt: "Adopt {name}. Confirm?",
+        askGem: "Exchange 1000 Coins for 1 Gem. Confirm?",
         duelP1: "fell!", duelP2: "Score:", duelP3: "Beat it to win!"
     }
 };
@@ -103,6 +105,7 @@ let opponentName = "";
 let opponentTargetScore = -1;
 let duelCheckInterval = null; 
 
+// 🔥 Eşyaların İsimleri Artık Çift Dilli
 const skinData = { 
     "default": { nameTr: "Varsayılan", nameEn: "Default", price: 0, body: "black", bandana: "red" }, 
     "yesil": { nameTr: "Yeşil Ninja", nameEn: "Green Ninja", price: 20, body: "#228B22", bandana: "black" }, 
@@ -233,8 +236,8 @@ function updateCoinUI() {
     if(shopCoinCountElement) shopCoinCountElement.innerHTML = `🪙 ${playerCoins} | 💎 ${playerGems}`; 
 }
 
-// 🔥 ÇÖZÜM BURADA: playerCoins += sessionEarnedCoins kodu silindi, çünkü görsel olarak zaten eklenmişti!
 function saveScoreToAPI() {
+    if (sessionEarnedCoins > 0) { playerCoins += sessionEarnedCoins; updateCoinUI(); }
     fetch('https://ninja-bridge-api.onrender.com/api/score/save', { 
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: tgGroupId, earnedCoins: sessionEarnedCoins, earnedGems: 0 }) 
     }).then(() => { sessionEarnedCoins = 0; }).catch(e => {});
@@ -433,7 +436,34 @@ function renderShop() {
     }); list.innerHTML = html;
 }
 
-window.convertGems = function() { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; } if(playerCoins < 1000) { if(tg && tg.showAlert) tg.showAlert(t.msgNoCoin1000); return; } if (isConverting) return; isConverting = true; fetch('https://ninja-bridge-api.onrender.com/api/score/convert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId }) }).then(res => res.json()).then(data => { isConverting = false; if(data.success) { playerCoins -= 1000; playerGems += 1; updateCoinUI(); renderShop(); } }).catch(() => { isConverting = false; }); }
+window.convertGems = function() { 
+    const t = texts[currentLang]; 
+    if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; } 
+    if(playerCoins < 1000) { if(tg && tg.showAlert) tg.showAlert(t.msgNoCoin1000); return; } 
+    
+    // 🔥 Elmas alımına da diğerleri gibi Onay (showConfirm) Eklendi!
+    if(tg && tg.showConfirm) {
+        tg.showConfirm(t.askGem, function(agreed) {
+            if(agreed) {
+                fetch('https://ninja-bridge-api.onrender.com/api/score/convert', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ userId: tgUserId }) 
+                })
+                .then(res => res.json())
+                .then(data => { 
+                    if(data.success) { 
+                        playerCoins -= 1000; 
+                        playerGems += 1; 
+                        updateCoinUI(); 
+                        renderShop(); 
+                    } 
+                });
+            }
+        });
+    }
+}
+
 window.upgradePet = function(petKey, nextLevel, costVal) { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; } if (playerGems < costVal) { if(tg && tg.showAlert) tg.showAlert(t.msgNoGem); return; } if(tg && tg.showConfirm) { let pName = currentLang==="tr"?petData[petKey].nameTr:petData[petKey].nameEn; tg.showConfirm(t.askPet.replace("{name}", pName).replace("{lvl}", nextLevel), function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/upgradepet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, petName: petKey, coinCost: 0, gemCost: costVal, nextLevel: nextLevel }) }).then(res => res.json()).then(data => { if(data.success) { playerGems -= costVal; ownedPets[petKey] = nextLevel; updateCoinUI(); renderShop(); } }); } }); } }
 window.buySkin = function(skinKey, price) { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; } if(playerCoins < price) { if(tg && tg.showAlert) tg.showAlert(t.msgNoCoin); return; } if(tg && tg.showConfirm) { let sName = currentLang==="tr"?skinData[skinKey].nameTr:skinData[skinKey].nameEn; tg.showConfirm(t.askSkin.replace("{name}", sName), function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/buyskin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey, price: price }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= price; ownedSkins.push(skinKey); updateCoinUI(); renderShop(); } }); } }); } }
 window.equipSkin = function(skinKey) { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgNoEquipSkin); return; } fetch('https://ninja-bridge-api.onrender.com/api/score/equipskin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey }) }).then(res => res.json()).then(data => { if(data.success) { currentSkin = skinKey; renderShop(); draw(); } }); }
