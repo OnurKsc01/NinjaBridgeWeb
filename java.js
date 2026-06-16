@@ -222,7 +222,6 @@ function resetGame() {
   const banner = document.getElementById("duelDeathBanner");
   if (banner) { banner.style.display = "none"; banner.style.opacity = "0"; }
 
-  // 🔥 ÇÖZÜM BURADA: Her RESTART atıldığında düello ayarlarını sıfırla ve API'den güncel durumu çek!
   isDuelMode = false;
   opponentTargetScore = -1;
   checkDuelStatus(); 
@@ -254,8 +253,17 @@ function generatePlatform() {
 // ------------------------------------
 // 6. MOTOR (ANIMATION & INPUT)
 // ------------------------------------
-window.addEventListener("mousedown", function (event) { if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); window.requestAnimationFrame(animate); } });
-window.addEventListener("touchstart", function (event) { if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); window.requestAnimationFrame(animate); } });
+// 🔥 ÇÖZÜM: Kasmayı yapan hatalı requestAnimationFrame kodları silindi!
+window.addEventListener("mousedown", function (event) { 
+    if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { 
+        lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); 
+    } 
+});
+window.addEventListener("touchstart", function (event) { 
+    if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { 
+        lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); 
+    } 
+});
 window.addEventListener("mouseup", function (event) { if (phase == "stretching") phase = "turning"; });
 window.addEventListener("touchend", function (event) { if (phase == "stretching") phase = "turning"; });
 window.addEventListener("resize", function (event) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; draw(); });
