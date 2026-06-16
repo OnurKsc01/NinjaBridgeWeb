@@ -103,7 +103,6 @@ let opponentName = "";
 let opponentTargetScore = -1;
 let duelCheckInterval = null; 
 
-// 🔥 Eşyaların İsimleri Artık Çift Dilli
 const skinData = { 
     "default": { nameTr: "Varsayılan", nameEn: "Default", price: 0, body: "black", bandana: "red" }, 
     "yesil": { nameTr: "Yeşil Ninja", nameEn: "Green Ninja", price: 20, body: "#228B22", bandana: "black" }, 
@@ -234,8 +233,8 @@ function updateCoinUI() {
     if(shopCoinCountElement) shopCoinCountElement.innerHTML = `🪙 ${playerCoins} | 💎 ${playerGems}`; 
 }
 
+// 🔥 ÇÖZÜM BURADA: playerCoins += sessionEarnedCoins kodu silindi, çünkü görsel olarak zaten eklenmişti!
 function saveScoreToAPI() {
-    if (sessionEarnedCoins > 0) { playerCoins += sessionEarnedCoins; updateCoinUI(); }
     fetch('https://ninja-bridge-api.onrender.com/api/score/save', { 
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: tgGroupId, earnedCoins: sessionEarnedCoins, earnedGems: 0 }) 
     }).then(() => { sessionEarnedCoins = 0; }).catch(e => {});
