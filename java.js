@@ -1,12 +1,12 @@
-Array.prototype.last = function () { return this[this.length - 1]; };
 Math.sinus = function (degree) { return Math.sin((degree / 180) * Math.PI); };
 
 // ------------------------------------
 // 1. TELEGRAM & OYUNCU VERİLERİ
 // ------------------------------------
 let tg = window.Telegram?.WebApp;
-let tgUserId = tg?.initDataUnsafe?.user?.id || 123456789;
-let tgUserName = tg?.initDataUnsafe?.user?.first_name || "Test Oyuncusu";
+let user = tg?.initDataUnsafe?.user;
+let tgUserId = user ? user.id : 123456789;
+let tgUserName = user ? user.first_name : "Test Oyuncusu";
 
 let startParam = tg?.initDataUnsafe?.start_param;
 const urlParams = new URLSearchParams(window.location.search);
@@ -17,6 +17,11 @@ let playerCoins = 0; let playerGems = 0;
 let sessionEarnedCoins = 0; let stepCount = 0; 
 let currentSkin = "default"; let ownedSkins = ["default"]; 
 let currentPet = "default"; let ownedPets = {}; 
+
+// 🔥 DÜELLO DEĞİŞKENLERİ
+let isDuelMode = false;
+let opponentName = "";
+let opponentTargetScore = -1;
 
 const skinData = { "default": { name: "Varsayılan", price: 0, body: "black", bandana: "red" }, "yesil": { name: "Yeşil Ninja", price: 20, body: "#228B22", bandana: "black" }, "bronz": { name: "Bronz Ninja", price: 30, body: "#cd7f32", bandana: "#5c4033" }, "demir": { name: "Demir Ninja", price: 40, body: "#a9a9a9", bandana: "#696969" }, "altin": { name: "Altın Ninja", price: 50, body: "#ffd700", bandana: "#b8860b" }, "hiper": { name: "Hiper Ninja", price: 65, body: "#800080", bandana: "#00ffff" }, "golge": { name: "Gölge Katili", price: 80, body: "#1a1a1a", bandana: "#4a0000" }, "buzul": { name: "Buzul Ninja", price: 100, body: "#add8e6", bandana: "#ffffff" } };
 const petData = { "kopek": { name: "Altın Avcısı", price: 200, desc: "Daha hızlı Jeton", emoji: "🐶" }, "kedi": { name: "Gözcü Kedi", price: 250, desc: "Büyük Kombo Alanı", emoji: "🐱" }, "maymun": { name: "Kuyruklu Maymun", price: 400, desc: "Ekstra Can & Jeton", emoji: "🐒" }, "kurt": { name: "Gölge Kurdu", price: 750, desc: "Jeton + Dev Kırmızı Alan", emoji: "🐺" } };
@@ -65,10 +70,10 @@ document.getElementById("reviveAdBtn").addEventListener("click", () => {
     adController.show().then((result) => { 
         if (result.done) { 
             adReviveUsedThisRun = true; document.getElementById("reviveMenu").style.display = "none"; 
-            phase = "waiting"; heroY = 0; heroX = sticks.last().x - heroDistanceFromEdge; 
-            sticks.last().length = 0; sticks.last().rotation = 0; 
+            phase = "waiting"; heroY = 0; heroX = sticks[sticks.length - 1].x - heroDistanceFromEdge; 
+            sticks[sticks.length - 1].length = 0; sticks[sticks.length - 1].rotation = 0; 
             perfectElement.innerText = "📺 CANLANDIN!"; perfectElement.style.color = "#8e44ad"; perfectElement.style.opacity = 1; 
-            setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); 
+            draw(); setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); 
         } 
     }).catch(() => { });
 });
@@ -112,18 +117,12 @@ const ctx = canvas.getContext("2d");
 window.addEventListener('load', () => {
     if (tg && tg.ready) tg.ready();
     if (tg && tg.expand) tg.expand();
-    resizeCanvas();
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
     initAdsGram(); 
     loadPlayerData();
+    checkDuelStatus(); 
     resetGame();
 });
-
-function resizeCanvas() {
-    canvas.width = window.innerWidth || 375;
-    canvas.height = window.innerHeight || 800;
-    draw();
-}
-window.addEventListener("resize", resizeCanvas);
 
 function loadPlayerData() {
     fetch(`https://ninja-bridge-api.onrender.com/api/score/player/${tgUserId}`)
@@ -133,8 +132,38 @@ function loadPlayerData() {
             currentSkin = data.currentSkin || "default"; ownedSkins = data.ownedSkins || ["default"];
             currentPet = data.currentPet || "default"; ownedPets = data.ownedPets || {};
             updateCoinUI();
-            if (phase === "waiting") { if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } }
+            if (phase === "waiting") { if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } draw(); }
         }).catch(err => console.error("Veri çekilemedi", err));
+}
+
+// 🔥 DÜELLO BİLDİRİM MANTIĞI BURADA ÇALIŞIYOR
+function checkDuelStatus() {
+    fetch(`https://ninja-bridge-api.onrender.com/api/score/duel-status/${tgUserId}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.active) {
+                isDuelMode = true;
+                opponentName = data.opponentName;
+                opponentTargetScore = data.opponentScore;
+                
+                // Rakip eğer oynamış ve yanmışsa (-1 değilse) ölüm afişini göster
+                if (opponentTargetScore !== -1) {
+                    const banner = document.getElementById("duelDeathBanner");
+                    if (banner) {
+                        document.getElementById("duelDeathName").innerText = opponentName;
+                        document.getElementById("duelDeathScore").innerText = opponentTargetScore;
+                        banner.style.display = "block";
+                        banner.style.opacity = "1";
+                        
+                        // 4 saniye sonra ekrandan yavaşça kaybolsun ki oyun alanını engellemesin
+                        setTimeout(() => {
+                            banner.style.opacity = "0";
+                            setTimeout(() => { banner.style.display = "none"; }, 1000);
+                        }, 4000);
+                    }
+                }
+            }
+        }).catch(() => {});
 }
 
 function updateCoinUI() { 
@@ -203,84 +232,81 @@ function generatePlatform() {
 // ------------------------------------
 // 6. MOTOR (ANIMATION & INPUT)
 // ------------------------------------
-window.addEventListener("mousedown", handleInput);
-window.addEventListener("touchstart", handleInput);
-
-function handleInput(event) {
-    if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase === "waiting") {
-        lastTimestamp = undefined;
-        introductionElement.style.opacity = 0;
-        phase = "stretching";
-        unlockSounds();
-    }
-}
-
-window.addEventListener("mouseup", function () { if (phase == "stretching") phase = "turning"; });
-window.addEventListener("touchend", function () { if (phase == "stretching") phase = "turning"; });
+window.addEventListener("mousedown", function (event) { if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); window.requestAnimationFrame(animate); } });
+window.addEventListener("touchstart", function (event) { if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); window.requestAnimationFrame(animate); } });
+window.addEventListener("mouseup", function (event) { if (phase == "stretching") phase = "turning"; });
+window.addEventListener("touchend", function (event) { if (phase == "stretching") phase = "turning"; });
+window.addEventListener("resize", function (event) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; draw(); });
 
 window.requestAnimationFrame(animate);
 
 function animate(timestamp) {
   if (!lastTimestamp) { lastTimestamp = timestamp; window.requestAnimationFrame(animate); return; }
-  let dt = timestamp - lastTimestamp; 
-  if (dt > 32) { dt = 16.66; } 
+  let dt = timestamp - lastTimestamp; if (dt >= 12 && dt <= 20) { dt = 16.66; } else if (dt > 32) { dt = 16.66; } 
 
-  if (sticks.length > 0) {
-      switch (phase) {
-        case "waiting": break; // 🔥 ASIL HATAYI BURADA YAPMIŞTIM, DÜZELTİLDİ
-        case "dead_options": break; 
-        case "stretching": { sticks.last().length += dt / stretchingSpeed; break; }
-        case "turning": {
-          sticks.last().rotation += dt / turningSpeed;
-          if (sticks.last().rotation > 90) {
-            sticks.last().rotation = 90; const [nextPlatform, perfectHit] = thePlatformTheStickHits();
-            if (nextPlatform) {
-              let earnedPts = 0;
-              if (perfectHit) { combo++; earnedPts = 1 + combo; score += earnedPts; perfectElement.innerText = `🔥 KUSURSUZ! +${earnedPts}`; perfectElement.style.opacity = 1; setTimeout(() => (perfectElement.style.opacity = 0), 1000); comboSound.currentTime = 0; comboSound.play().catch(e => {}); } 
-              else { combo = 0; earnedPts = 1; score += earnedPts; perfectElement.innerText = ""; }
-              processCoinGeneration(earnedPts); scoreElement.innerText = score; generatePlatform(); generateTree(); generateTree();
-            }
-            phase = "walking";
-          }
-          break;
+  switch (phase) {
+    case "waiting": break; 
+    case "dead_options": break; 
+    case "stretching": { sticks[sticks.length - 1].length += dt / stretchingSpeed; break; }
+    case "turning": {
+      sticks[sticks.length - 1].rotation += dt / turningSpeed;
+      if (sticks[sticks.length - 1].rotation > 90) {
+        sticks[sticks.length - 1].rotation = 90; const [nextPlatform, perfectHit] = thePlatformTheStickHits();
+        if (nextPlatform) {
+          let earnedPts = 0;
+          if (perfectHit) { combo++; earnedPts = 1 + combo; score += earnedPts; perfectElement.innerText = `🔥 KUSURSUZ! +${earnedPts}`; perfectElement.style.opacity = 1; setTimeout(() => (perfectElement.style.opacity = 0), 1000); comboSound.currentTime = 0; comboSound.play().catch(e => {}); } 
+          else { combo = 0; earnedPts = 1; score += earnedPts; perfectElement.innerText = ""; }
+          processCoinGeneration(earnedPts); scoreElement.innerText = score; generatePlatform(); generateTree(); generateTree();
         }
-        case "walking": {
-          heroX += dt / walkingSpeed; const [nextPlatform] = thePlatformTheStickHits();
-          if (nextPlatform) { const maxHeroX = nextPlatform.x + nextPlatform.w - heroDistanceFromEdge; if (heroX > maxHeroX) { heroX = maxHeroX; phase = "transitioning"; } } 
-          else { const maxHeroX = sticks.last().x + sticks.last().length + heroWidth; if (heroX > maxHeroX) { heroX = maxHeroX; phase = "falling"; fallSound.currentTime = 0; fallSound.play().catch(e=>{}); } }
-          break;
-        }
-        case "transitioning": { sceneOffset += dt / transitioningSpeed; const [nextPlatform] = thePlatformTheStickHits(); if (sceneOffset > nextPlatform.x + nextPlatform.w - paddingX) { sticks.push({ x: nextPlatform.x + nextPlatform.w, length: 0, rotation: 0 }); phase = "waiting"; } break; }
-        
-        case "falling": {
-          if (sticks.last().rotation < 180) sticks.last().rotation += dt / turningSpeed;
-          heroY += dt / fallingSpeed; const maxHeroY = platformHeight + 100 + (window.innerHeight || 800) / 2;
-          
-          if (heroY > maxHeroY) {
-            if (currentMonkeyLives > 0) { 
-                currentMonkeyLives--; phase = "waiting"; heroY = 0; heroX = sticks.last().x - heroDistanceFromEdge; sticks.last().length = 0; sticks.last().rotation = 0; 
-                perfectElement.innerText = `🐒 MAYMUN KURTARDI!`; perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1; setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); break; 
-            }
-            
-            let reviveMenuEl = document.getElementById("reviveMenu");
-            if (!adReviveUsedThisRun && reviveMenuEl) { 
-                phase = "dead_options"; reviveMenuEl.style.display = "flex"; 
-            } else {
-                phase = "dead_options"; restartButton.style.display = "block"; saveScoreToAPI(); 
-            }
-          }
-          break;
-        }
+        phase = "walking";
       }
+      break;
+    }
+    case "walking": {
+      heroX += dt / walkingSpeed; const [nextPlatform] = thePlatformTheStickHits();
+      if (nextPlatform) { const maxHeroX = nextPlatform.x + nextPlatform.w - heroDistanceFromEdge; if (heroX > maxHeroX) { heroX = maxHeroX; phase = "transitioning"; } } 
+      else { const maxHeroX = sticks[sticks.length - 1].x + sticks[sticks.length - 1].length + heroWidth; if (heroX > maxHeroX) { heroX = maxHeroX; phase = "falling"; fallSound.currentTime = 0; fallSound.play().catch(e=>{}); } }
+      break;
+    }
+    case "transitioning": { sceneOffset += dt / transitioningSpeed; const [nextPlatform] = thePlatformTheStickHits(); if (sceneOffset > nextPlatform.x + nextPlatform.w - paddingX) { sticks.push({ x: nextPlatform.x + nextPlatform.w, length: 0, rotation: 0 }); phase = "waiting"; } break; }
+    
+    case "falling": {
+      if (sticks[sticks.length - 1].rotation < 180) sticks[sticks.length - 1].rotation += dt / turningSpeed;
+      heroY += dt / fallingSpeed; const maxHeroY = platformHeight + 100 + (window.innerHeight || 800) / 2;
+      
+      if (heroY > maxHeroY) {
+        if (currentMonkeyLives > 0) { 
+            currentMonkeyLives--; phase = "waiting"; heroY = 0; heroX = sticks[sticks.length - 1].x - heroDistanceFromEdge; sticks[sticks.length - 1].length = 0; sticks[sticks.length - 1].rotation = 0; 
+            perfectElement.innerText = `🐒 MAYMUN KURTARDI!`; perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1; draw(); setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); break; 
+        }
+        
+        // 🔥 DÜELLO REKLAM BYPASS: Düellodaysa reklama girmeden direk bitir
+        if (isDuelMode) {
+            phase = "dead_options"; 
+            restartButton.style.display = "block"; 
+            saveScoreToAPI(); 
+            break;
+        }
+
+        let reviveMenuEl = document.getElementById("reviveMenu");
+        if (!adReviveUsedThisRun && reviveMenuEl) { 
+            phase = "dead_options"; reviveMenuEl.style.display = "flex"; 
+            break; 
+        }
+        
+        phase = "dead_options"; 
+        restartButton.style.display = "block"; saveScoreToAPI(); 
+        break;
+      }
+      break;
+    }
   }
-  draw(); 
-  window.requestAnimationFrame(animate); 
-  lastTimestamp = timestamp;
+  draw(); window.requestAnimationFrame(animate); lastTimestamp = timestamp;
 }
 
 function thePlatformTheStickHits() { 
-  if (sticks.last().rotation != 90) throw Error(`Stick is ${sticks.last().rotation}°`); 
-  const stickFarX = sticks.last().x + sticks.last().length; 
+  if (sticks[sticks.length - 1].rotation != 90) throw Error(`Stick is ${sticks[sticks.length - 1].rotation}°`); 
+  const stickFarX = sticks[sticks.length - 1].x + sticks[sticks.length - 1].length; 
   const platformTheStickHits = platforms.find((platform) => platform.x < stickFarX && stickFarX < platform.x + platform.w); 
   let pArea = getPerfectAreaSize(platformTheStickHits ? platformTheStickHits.w : 0); 
   if (platformTheStickHits && platformTheStickHits.x + platformTheStickHits.w / 2 - pArea / 2 < stickFarX && stickFarX < platformTheStickHits.x + platformTheStickHits.w / 2 + pArea / 2) return [platformTheStickHits, true]; return [platformTheStickHits, false]; 
@@ -303,7 +329,7 @@ function drawPlatforms() {
   let wHeight = window.innerHeight || 800;
   platforms.forEach(({ x, w }) => { 
       ctx.fillStyle = "black"; ctx.fillRect(x, canvasHeight - platformHeight, w, platformHeight + (wHeight - canvasHeight) / 2); 
-      if (sticks.last() && sticks.last().x < x) { ctx.fillStyle = "red"; let pArea = getPerfectAreaSize(w); ctx.fillRect(x + w / 2 - pArea / 2, canvasHeight - platformHeight, pArea, pArea); } 
+      if (sticks[sticks.length - 1] && sticks[sticks.length - 1].x < x) { ctx.fillStyle = "red"; let pArea = getPerfectAreaSize(w); ctx.fillRect(x + w / 2 - pArea / 2, canvasHeight - platformHeight, pArea, pArea); } 
   }); 
 }
 
