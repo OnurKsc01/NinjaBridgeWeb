@@ -22,6 +22,7 @@ let currentPet = "default"; let ownedPets = {};
 let isDuelMode = false;
 let opponentName = "";
 let opponentTargetScore = -1;
+let duelCheckInterval = null; 
 
 const skinData = { "default": { name: "Varsayılan", price: 0, body: "black", bandana: "red" }, "yesil": { name: "Yeşil Ninja", price: 20, body: "#228B22", bandana: "black" }, "bronz": { name: "Bronz Ninja", price: 30, body: "#cd7f32", bandana: "#5c4033" }, "demir": { name: "Demir Ninja", price: 40, body: "#a9a9a9", bandana: "#696969" }, "altin": { name: "Altın Ninja", price: 50, body: "#ffd700", bandana: "#b8860b" }, "hiper": { name: "Hiper Ninja", price: 65, body: "#800080", bandana: "#00ffff" }, "golge": { name: "Gölge Katili", price: 80, body: "#1a1a1a", bandana: "#4a0000" }, "buzul": { name: "Buzul Ninja", price: 100, body: "#add8e6", bandana: "#ffffff" } };
 const petData = { "kopek": { name: "Altın Avcısı", price: 200, desc: "Daha hızlı Jeton", emoji: "🐶" }, "kedi": { name: "Gözcü Kedi", price: 250, desc: "Büyük Kombo Alanı", emoji: "🐱" }, "maymun": { name: "Kuyruklu Maymun", price: 400, desc: "Ekstra Can & Jeton", emoji: "🐒" }, "kurt": { name: "Gölge Kurdu", price: 750, desc: "Jeton + Dev Kırmızı Alan", emoji: "🐺" } };
@@ -125,7 +126,7 @@ window.addEventListener('load', () => {
 });
 
 function loadPlayerData() {
-    fetch(`https://ninja-bridge-api.onrender.com/api/score/player/${tgUserId}`)
+    fetch(`https://ninja-bridge-api.onrender.com/api/score/player/${tgUserId}?t=${Date.now()}`)
         .then(res => res.json())
         .then(data => {
             playerCoins = data.coins || 0; playerGems = data.gems || 0;
@@ -137,7 +138,7 @@ function loadPlayerData() {
 }
 
 function checkDuelStatus() {
-    fetch(`https://ninja-bridge-api.onrender.com/api/score/duel-status/${tgUserId}`)
+    fetch(`https://ninja-bridge-api.onrender.com/api/score/duel-status/${tgUserId}?t=${Date.now()}`)
         .then(res => res.json())
         .then(data => {
             if (data && data.active) {
@@ -147,7 +148,7 @@ function checkDuelStatus() {
                 
                 if (opponentTargetScore !== -1) {
                     const banner = document.getElementById("duelDeathBanner");
-                    if (banner) {
+                    if (banner && banner.style.display === "none") {
                         document.getElementById("duelDeathName").innerText = opponentName;
                         document.getElementById("duelDeathScore").innerText = opponentTargetScore;
                         banner.style.display = "block";
@@ -158,6 +159,21 @@ function checkDuelStatus() {
                             setTimeout(() => { banner.style.display = "none"; }, 1000);
                         }, 4000);
                     }
+                    
+                    if (duelCheckInterval) {
+                        clearInterval(duelCheckInterval);
+                        duelCheckInterval = null;
+                    }
+                } else {
+                    if (!duelCheckInterval) {
+                        duelCheckInterval = setInterval(checkDuelStatus, 3000);
+                    }
+                }
+            } else {
+                isDuelMode = false;
+                if (duelCheckInterval) {
+                    clearInterval(duelCheckInterval);
+                    duelCheckInterval = null;
                 }
             }
         }).catch(() => {});
@@ -203,9 +219,13 @@ function resetGame() {
   introductionElement.style.opacity = 1; perfectElement.style.opacity = 0; restartButton.style.display = "none"; 
   if(document.getElementById("reviveMenu")) document.getElementById("reviveMenu").style.display = "none";
   
-  // 🔥 DÜZELTME 1: Eski oyundan kalma Kırmızı Afişi anında gizle
   const banner = document.getElementById("duelDeathBanner");
   if (banner) { banner.style.display = "none"; banner.style.opacity = "0"; }
+
+  // 🔥 ÇÖZÜM BURADA: Her RESTART atıldığında düello ayarlarını sıfırla ve API'den güncel durumu çek!
+  isDuelMode = false;
+  opponentTargetScore = -1;
+  checkDuelStatus(); 
 
   scoreElement.innerText = score; platforms = [{ x: 50, w: 50 }];
   generatePlatform(); generatePlatform(); generatePlatform(); generatePlatform();
@@ -234,17 +254,8 @@ function generatePlatform() {
 // ------------------------------------
 // 6. MOTOR (ANIMATION & INPUT)
 // ------------------------------------
-// 🔥 DÜZELTME 2: Tıklamalardan requestAnimationFrame komutu silindi. (Kasma sorununun kökten çözümü)
-window.addEventListener("mousedown", function (event) { 
-    if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { 
-        lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); 
-    } 
-});
-window.addEventListener("touchstart", function (event) { 
-    if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { 
-        lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); 
-    } 
-});
+window.addEventListener("mousedown", function (event) { if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); window.requestAnimationFrame(animate); } });
+window.addEventListener("touchstart", function (event) { if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); window.requestAnimationFrame(animate); } });
 window.addEventListener("mouseup", function (event) { if (phase == "stretching") phase = "turning"; });
 window.addEventListener("touchend", function (event) { if (phase == "stretching") phase = "turning"; });
 window.addEventListener("resize", function (event) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; draw(); });
