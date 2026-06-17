@@ -111,7 +111,6 @@ const monsterData = { 2: ["scorpion", "snake", "mummy"], 3: ["ice_golem", "yeti"
 const preRenderedMonsters = {};
 Object.values(monsterData).flat().forEach(m => { let img = new Image(); img.src = m + '.png'; preRenderedMonsters[m] = img; });
 
-// 🔥 YENİ KORUYUCU DÜNYA KOSTÜMLERİ EKLENDİ 🔥
 const skinData = { 
     "default": { nameTr: "Varsayılan", nameEn: "Default", price: 0, body: "black", bandana: "red" }, 
     "yesil": { nameTr: "Yeşil Ninja", nameEn: "Green Ninja", price: 20, body: "#228B22", bandana: "black" }, 
@@ -121,8 +120,6 @@ const skinData = {
     "hiper": { nameTr: "Hiper Ninja", nameEn: "Hyper Ninja", price: 65, body: "#800080", bandana: "#00ffff" }, 
     "golge": { nameTr: "Gölge Katili", nameEn: "Shadow Killer", price: 80, body: "#1a1a1a", bandana: "#4a0000" }, 
     "buzul": { nameTr: "Buzul Ninja", nameEn: "Ice Ninja", price: 100, body: "#add8e6", bandana: "#ffffff" },
-    
-    // YENİ: 3 RENKLİ GRADYAN VE DOKUNULMAZLIK VEREN ELMAS KOSTÜMLERİ
     "col_koruyucusu": { nameTr: "Kum Fırtınası", nameEn: "Sandstorm", price: 0, priceGem: 15, gradient: true, colors: ["#E67E22", "#F1C40F", "#D35400"], bandana: "#5c2a00", descTr: "Çöl canavarlarına dokunulmazlık", descEn: "Immunity to Desert monsters" },
     "buz_bekcisi": { nameTr: "Kuzey Işığı", nameEn: "Aurora", price: 0, priceGem: 25, gradient: true, colors: ["#00FFFF", "#85C1E9", "#2874A6"], bandana: "#ffffff", descTr: "Buz canavarlarına dokunulmazlık", descEn: "Immunity to Ice monsters" },
     "efsanevi": { nameTr: "Kadim Ruh", nameEn: "Ancient Soul", price: 0, priceGem: 35, gradient: true, colors: ["#ff0055", "#8E44AD", "#F1C40F"], bandana: "#000000", descTr: "Tüm canavarlara dokunulmazlık", descEn: "Immunity to ALL monsters" }
@@ -150,12 +147,22 @@ scoreElement.addEventListener("click", () => {
 const bgMusic = new Audio('bg.mp3'); bgMusic.loop = true; bgMusic.volume = 0.3; 
 const comboSound = new Audio('combo.mp3'); comboSound.volume = 0.8;
 const fallSound = new Audio('dusme.mp3'); fallSound.volume = 0.8;
-let soundsUnlocked = false;
 
-function unlockSounds() { if (!soundsUnlocked) { bgMusic.play().catch(()=>{}); comboSound.play().then(() => comboSound.pause()).catch(()=>{}); fallSound.play().then(() => fallSound.pause()).catch(()=>{}); soundsUnlocked = true; } }
+// 🔥 YENİ: VAMPİR JUMPSCARE SES VE GÖRSELLERİ 🔥
+let vampireImg = new Image(); vampireImg.src = 'vampir.png';
+const screamSound = new Audio('ciglik.mp3'); screamSound.volume = 1.0;
+
+let soundsUnlocked = false;
+function unlockSounds() { 
+    if (!soundsUnlocked) { 
+        bgMusic.play().catch(()=>{}); comboSound.play().then(() => comboSound.pause()).catch(()=>{}); 
+        fallSound.play().then(() => fallSound.pause()).catch(()=>{}); 
+        screamSound.play().then(() => screamSound.pause()).catch(()=>{}); // Jumpscare sesi kilidini aç
+        soundsUnlocked = true; 
+    } 
+}
 
 let adController = null; let adReviveUsedThisRun = false; 
-
 function initAdsGram() { try { if (window.Adsgram) { adController = window.Adsgram.init({ blockId: "35103" }); } else { setTimeout(initAdsGram, 500); } } catch (err) {} }
 
 document.getElementById("reviveAdBtn").addEventListener("click", () => {
@@ -190,6 +197,14 @@ document.getElementById("watchEarnBtn").addEventListener("click", () => {
 // ------------------------------------
 let phase = "waiting"; let lastTimestamp; let heroX, heroY, sceneOffset; 
 let platforms = [], sticks = [], trees = []; let combo = 0; let currentMonkeyLives = 0;
+
+// 🔥 YENİ: EASTER EGG DEĞİŞKENLERİ 🔥
+let vampirePlatformTarget = 0;
+let vampireEffectTimer = 0;
+let easterMessage = "";
+let easterMessageTimer = 0;
+let nextMessageMilestone = 500;
+
 const canvasWidth = 375, canvasHeight = 375, platformHeight = 100; const heroDistanceFromEdge = 10, paddingX = 100;
 const backgroundSpeedMultiplier = 0.2; const hill1BaseHeight = 100, hill1Amplitude = 10, hill1Stretch = 1; const hill2BaseHeight = 70, hill2Amplitude = 20, hill2Stretch = 0.5;
 const stretchingSpeed = 4, turningSpeed = 4, walkingSpeed = 4, transitioningSpeed = 2, fallingSpeed = 2; const heroWidth = 17, heroHeight = 30; 
@@ -241,7 +256,15 @@ function resetGame() {
   if(document.getElementById("reviveMenu")) document.getElementById("reviveMenu").style.display = "none";
   const banner = document.getElementById("duelDeathBanner"); if (banner) { banner.style.display = "none"; banner.style.opacity = "0"; }
   isDuelMode = false; opponentTargetScore = -1; checkDuelStatus(); 
-  monsters = []; scoreElement.innerText = score; platforms = [{ x: 50, w: 50 }];
+  monsters = []; 
+  
+  // 🔥 EASTER EGG SIFIRLAMA 🔥
+  vampirePlatformTarget = Math.floor(Math.random() * 140) + 10; // İlk 150 platform arası rastgele bir platform seçer
+  vampireEffectTimer = 0;
+  easterMessageTimer = 0;
+  nextMessageMilestone = 500;
+
+  scoreElement.innerText = score; platforms = [{ x: 50, w: 50 }];
   generatePlatform(); generatePlatform(); generatePlatform(); generatePlatform();
   sticks = [{ x: platforms[0].x + platforms[0].w, length: 0, rotation: 0 }];
   trees = []; for(let i=0; i<10; i++) generateTree();
@@ -257,6 +280,11 @@ function generatePlatform() {
   const lastPlatform = platforms[platforms.length - 1]; let furthestX = lastPlatform.x + lastPlatform.w; const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap)); const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth)); 
   platforms.push({ x, w });
   
+  // 🔥 VAMPİR JUMPSCARE İŞARETLEYİCİSİ 🔥
+  if (platforms.length === vampirePlatformTarget) {
+      platforms[platforms.length - 1].isVampireTrigger = true;
+  }
+
   if (score >= 1000 && platforms.length > 2) {
       let spawnChance = score >= 2000 ? 0.35 : 0.30; 
       if (Math.random() < spawnChance) {
@@ -265,8 +293,7 @@ function generatePlatform() {
           let mType = mList[Math.floor(Math.random() * mList.length)];
           
           if (!isWorld3) {
-              let gapStartX = lastPlatform.x + lastPlatform.w;
-              let gapWidth = x - gapStartX;
+              let gapStartX = lastPlatform.x + lastPlatform.w; let gapWidth = x - gapStartX;
               monsters.push({ world: 2, platformIndex: platforms.length - 1, x: gapStartX + gapWidth / 2, y: Math.random() > 0.5 ? -150 : 100, dir: Math.random() > 0.5 ? 1 : -1, speed: 2 + Math.random() * 1.5, type: mType, dead: false });
           } else {
               monsters.push({ world: 3, platformIndex: platforms.length - 1, x: x + w / 2, y: 0, dir: Math.random() > 0.5 ? 1 : -1, speed: 0.8 + Math.random() * 0.5, type: mType, dead: false });
@@ -289,14 +316,8 @@ function animate(timestamp) {
 
   monsters.forEach(m => {
       if (m.dead) return;
-      if (m.world === 2) {
-          m.y += m.dir * m.speed * (dt / 16.66);
-          if (m.y > 120) m.dir = -1; 
-          if (m.y < -180) m.dir = 1; 
-      } else if (m.world === 3) {
-          let p = platforms[m.platformIndex];
-          if (p) { m.x += m.dir * m.speed * (dt / 16.66); if (m.x > p.x + p.w - 12) m.dir = -1; if (m.x < p.x + 12) m.dir = 1; }
-      }
+      if (m.world === 2) { m.y += m.dir * m.speed * (dt / 16.66); if (m.y > 120) m.dir = -1; if (m.y < -180) m.dir = 1; } 
+      else if (m.world === 3) { let p = platforms[m.platformIndex]; if (p) { m.x += m.dir * m.speed * (dt / 16.66); if (m.x > p.x + p.w - 12) m.dir = -1; if (m.x < p.x + 12) m.dir = 1; } }
   });
 
   switch (phase) {
@@ -310,15 +331,27 @@ function animate(timestamp) {
         if (nextPlatform) {
           let earnedPts = 0;
           if (perfectHit) { 
-              combo++; earnedPts = 1 + combo; score += earnedPts; 
-              perfectElement.innerText = `${texts[currentLang].perfect} +${earnedPts}`; perfectElement.style.opacity = 1; setTimeout(() => (perfectElement.style.opacity = 0), 1000); comboSound.currentTime = 0; comboSound.play().catch(e => {}); 
-              
+              combo++; earnedPts = 1 + combo; 
               let pIdx = platforms.indexOf(nextPlatform);
-              let m = monsters.find(mo => mo.platformIndex === pIdx && mo.world === 3);
-              if (m) m.dead = true; 
+              let m = monsters.find(mo => mo.platformIndex === pIdx && mo.world === 3); if (m) m.dead = true; 
+              perfectElement.innerText = `${texts[currentLang].perfect} +${earnedPts}`; perfectElement.style.opacity = 1; setTimeout(() => (perfectElement.style.opacity = 0), 1000); comboSound.currentTime = 0; comboSound.play().catch(e => {}); 
           } 
-          else { combo = 0; earnedPts = 1; score += earnedPts; perfectElement.innerText = ""; }
+          else { combo = 0; earnedPts = 1; perfectElement.innerText = ""; }
           
+          let oldScore = score;
+          score += earnedPts;
+
+          // 🔥 YAZILI EASTER EGG'LER (SADECE BİR KERE ÇALIŞIR) 🔥
+          if (oldScore < 4 && score >= 4) {
+              easterMessage = "Yapımcı@onurviski";
+              easterMessageTimer = 180; // 3 saniye ekranda kalır
+          }
+          if (score >= nextMessageMilestone) {
+              easterMessage = "Bu zorluklara nasıl gelebildin?";
+              easterMessageTimer = 180;
+              nextMessageMilestone += 500; // Bir sonraki mesajı 500 adım sonrasına kurar
+          }
+
           processCoinGeneration(earnedPts); scoreElement.innerText = score; generatePlatform(); generateTree(); generateTree();
         }
         phase = "walking";
@@ -326,27 +359,25 @@ function animate(timestamp) {
       break;
     }
     case "walking": {
-      
-      // 🔥 ZIRH KONTROLLERİ (DOKUNULMAZLIK) 🔥
       let isImmuneWorld2 = (currentSkin === "col_koruyucusu" || currentSkin === "efsanevi");
       let isImmuneWorld3 = (currentSkin === "buz_bekcisi" || currentSkin === "efsanevi");
 
       monsters.forEach(m => {
           if (m.dead) return;
-          if (m.world === 2) {
-              if (Math.abs(heroX - m.x) < 15 && Math.abs(m.y) < 35) {
-                  if(!isImmuneWorld2) { phase = "dead_monster"; fallSound.currentTime = 0; fallSound.play().catch(e=>{}); }
-              }
-          } 
-          else if (m.world === 3) {
-              let p = platforms[m.platformIndex];
-              if (p && Math.abs(heroX - m.x) < 15) {
-                  if(!isImmuneWorld3) { phase = "dead_monster"; fallSound.currentTime = 0; fallSound.play().catch(e=>{}); }
-              }
-          }
+          if (m.world === 2) { if (Math.abs(heroX - m.x) < 15 && Math.abs(m.y) < 35) { if(!isImmuneWorld2) { phase = "dead_monster"; fallSound.currentTime = 0; fallSound.play().catch(e=>{}); } } } 
+          else if (m.world === 3) { let p = platforms[m.platformIndex]; if (p && Math.abs(heroX - m.x) < 15) { if(!isImmuneWorld3) { phase = "dead_monster"; fallSound.currentTime = 0; fallSound.play().catch(e=>{}); } } }
       });
 
       if (phase === "dead_monster") break;
+
+      // 🔥 VAMPİR JUMPSCARE TETİKLEYİCİ 🔥
+      let currentPlat = platforms.find(p => heroX >= p.x && heroX <= p.x + p.w);
+      if (currentPlat && currentPlat.isVampireTrigger && !currentPlat.vampireTriggered) {
+          currentPlat.vampireTriggered = true;
+          vampireEffectTimer = 45; // Çığlık ve resim ekranda kalma süresi (0.75 sn)
+          screamSound.currentTime = 0;
+          screamSound.play().catch(e=>{});
+      }
 
       heroX += dt / walkingSpeed; const [nextPlatform] = thePlatformTheStickHits();
       if (nextPlatform) { const maxHeroX = nextPlatform.x + nextPlatform.w - heroDistanceFromEdge; if (heroX > maxHeroX) { heroX = maxHeroX; phase = "transitioning"; } } 
@@ -398,6 +429,35 @@ function draw() {
     ctx.save(); ctx.clearRect(0, 0, wWidth, wHeight); drawBackground(); 
     ctx.translate((wWidth - canvasWidth) / 2 - sceneOffset, (wHeight - canvasHeight) / 2); 
     drawPlatforms(); drawMonsters(); drawPet(); drawHero(); drawSticks(); ctx.restore(); 
+
+    // 🔥 UI KATMANI (EASTER EGG VE JUMPSCARE EFEKTLERİ) 🔥
+    if (vampireEffectTimer > 0) {
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, vampireEffectTimer / 15); // Hızlıca belirip kaybolur
+        if (vampireImg.complete && vampireImg.naturalWidth !== 0) {
+            // Ekranın tam ortasına kocaman çiz
+            ctx.drawImage(vampireImg, wWidth/2 - 150, wHeight/2 - 150, 300, 300);
+        }
+        ctx.fillStyle = "rgba(255, 0, 0, 0.4)"; // Kırmızı kan flaşı
+        ctx.fillRect(0, 0, wWidth, wHeight);
+        ctx.restore();
+        vampireEffectTimer--;
+    }
+
+    if (easterMessageTimer > 0) {
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, easterMessageTimer / 30); // Usulca solup kaybolur
+        ctx.font = "bold 26px Arial";
+        ctx.fillStyle = "white";
+        ctx.textAlign = "center";
+        ctx.shadowColor = "black";
+        ctx.shadowBlur = 8;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 2;
+        ctx.fillText(easterMessage, wWidth / 2, wHeight * 0.2); // Üstten %20 boşluk
+        ctx.restore();
+        easterMessageTimer--;
+    }
 }
 
 restartButton.addEventListener("click", function (event) { event.preventDefault(); resetGame(); });
@@ -423,32 +483,12 @@ function drawMonsters() {
     });
 }
 
-// 🔥 SIFIR-KASMA GRADYAN (ÇOK RENKLİ) KOSTÜM ÇİZİMİ 🔥
 function drawHero() { 
-    ctx.save(); 
-    let skin = skinData[currentSkin] || skinData["default"]; 
-    
-    // Eğer kostümün gradiyan özelliği varsa 3 rengi birbirine karıştırarak boya
-    if (skin.gradient) {
-        let grad = ctx.createLinearGradient(0, -heroHeight/2, 0, heroHeight/2);
-        grad.addColorStop(0, skin.colors[0]); // Tepe
-        grad.addColorStop(0.5, skin.colors[1]); // Orta
-        grad.addColorStop(1, skin.colors[2]); // Alt
-        ctx.fillStyle = grad;
-    } else {
-        ctx.fillStyle = skin.body; 
-    }
-
-    ctx.translate(heroX - heroWidth / 2, heroY + canvasHeight - platformHeight - heroHeight / 2); 
-    drawRoundedRect(-heroWidth / 2, -heroHeight / 2, heroWidth, heroHeight - 4, 5); 
-    
-    const legDistance = 5; ctx.beginPath(); ctx.arc(legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill(); 
-    ctx.beginPath(); ctx.arc(-legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill(); 
-    ctx.beginPath(); ctx.fillStyle = "white"; ctx.arc(5, -7, 3, 0, Math.PI * 2, false); ctx.fill(); 
-    ctx.fillStyle = skin.bandana; ctx.fillRect(-heroWidth / 2 - 1, -12, heroWidth + 2, 4.5); 
-    ctx.beginPath(); ctx.moveTo(-9, -14.5); ctx.lineTo(-17, -18.5); ctx.lineTo(-14, -8.5); ctx.fill(); 
-    ctx.beginPath(); ctx.moveTo(-10, -10.5); ctx.lineTo(-15, -3.5); ctx.lineTo(-5, -7); ctx.fill(); 
-    ctx.restore(); 
+    ctx.save(); let skin = skinData[currentSkin] || skinData["default"]; 
+    if (skin.gradient) { let grad = ctx.createLinearGradient(0, -heroHeight/2, 0, heroHeight/2); grad.addColorStop(0, skin.colors[0]); grad.addColorStop(0.5, skin.colors[1]); grad.addColorStop(1, skin.colors[2]); ctx.fillStyle = grad; } 
+    else { ctx.fillStyle = skin.body; }
+    ctx.translate(heroX - heroWidth / 2, heroY + canvasHeight - platformHeight - heroHeight / 2); drawRoundedRect(-heroWidth / 2, -heroHeight / 2, heroWidth, heroHeight - 4, 5); 
+    const legDistance = 5; ctx.beginPath(); ctx.arc(legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.beginPath(); ctx.arc(-legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.beginPath(); ctx.fillStyle = "white"; ctx.arc(5, -7, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.fillStyle = skin.bandana; ctx.fillRect(-heroWidth / 2 - 1, -12, heroWidth + 2, 4.5); ctx.beginPath(); ctx.moveTo(-9, -14.5); ctx.lineTo(-17, -18.5); ctx.lineTo(-14, -8.5); ctx.fill(); ctx.beginPath(); ctx.moveTo(-10, -10.5); ctx.lineTo(-15, -3.5); ctx.lineTo(-5, -7); ctx.fill(); ctx.restore(); 
 }
 
 function drawPet() { if (currentPet === "default") return; let bounce = (phase === "walking" || phase === "transitioning") ? Math.abs(Math.sin(Date.now() / 100)) * 6 : 0; ctx.save(); ctx.translate(heroX - 32, heroY + canvasHeight - platformHeight - 20 - bounce); if (preRenderedPets[currentPet]) { ctx.drawImage(preRenderedPets[currentPet], 0, 0); } ctx.restore(); }
@@ -497,29 +537,20 @@ function renderShop() {
     html += `<li style="padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee;"><span>${t.shopExchangeBtn}</span> <button style="background:#9b59b6; padding: 5px 10px; font-size:12px; margin:0; border:none; color:white; border-radius:5px; cursor:pointer;" onclick="convertGems()">${t.shopGetGem}</button></li>`;
     html += `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; margin-top:6px; text-align:center;">🥷 <b>${t.shopSkins}</b></li>`;
     
-    // KOSTÜMLERİ LİSTELE (GRADYAN VE YENİ UYARILAR EKLENDİ)
     Object.keys(skinData).forEach(key => { 
         const skin = skinData[key]; let sName = currentLang === "tr" ? skin.nameTr : skin.nameEn; 
         let sDesc = currentLang === "tr" ? (skin.descTr || "") : (skin.descEn || "");
         let actionHTML = ""; 
         
-        if (currentSkin === key) {
-            actionHTML = `<span style=\"font-size:13px;\">${t.equipped}</span>`; 
-        } else if (ownedSkins.includes(key)) {
-            actionHTML = `<button style=\"padding: 5px 10px; font-size:12px; margin:0; border:none; background:#34495e; color:white; border-radius:5px; cursor:pointer;\" onclick=\"equipSkin('${key}')\">${t.equip}</button>`; 
-        } else {
-            // Elmas ve Jeton tuşlarını otomatik ayırır
-            if (skin.priceGem > 0) {
-                actionHTML = `<button style=\"padding: 5px 10px; font-size:12px; margin:0; border:none; background:#9b59b6; color:white; border-radius:5px; cursor:pointer;\" onclick=\"buySkin('${key}')\">💎 ${skin.priceGem}</button>`; 
-            } else {
-                actionHTML = `<button style=\"padding: 5px 10px; font-size:12px; margin:0; border:none; background:#2196F3; color:white; border-radius:5px; cursor:pointer;\" onclick=\"buySkin('${key}')\">🪙 ${skin.price}</button>`; 
-            }
+        if (currentSkin === key) { actionHTML = `<span style=\"font-size:13px;\">${t.equipped}</span>`; } 
+        else if (ownedSkins.includes(key)) { actionHTML = `<button style=\"padding: 5px 10px; font-size:12px; margin:0; border:none; background:#34495e; color:white; border-radius:5px; cursor:pointer;\" onclick=\"equipSkin('${key}')\">${t.equip}</button>`; } 
+        else {
+            if (skin.priceGem > 0) { actionHTML = `<button style=\"padding: 5px 10px; font-size:12px; margin:0; border:none; background:#9b59b6; color:white; border-radius:5px; cursor:pointer;\" onclick=\"buySkin('${key}')\">💎 ${skin.priceGem}</button>`; } 
+            else { actionHTML = `<button style=\"padding: 5px 10px; font-size:12px; margin:0; border:none; background:#2196F3; color:white; border-radius:5px; cursor:pointer;\" onclick=\"buySkin('${key}')\">🪙 ${skin.price}</button>`; }
         }
         
-        // Yeni 3 Renkli Gradyan önizlemesi (Markette ikon olarak harika duracak)
         let colorPreview = skin.gradient ? `background: linear-gradient(${skin.colors[0]}, ${skin.colors[2]}); -webkit-background-clip: text; -webkit-text-fill-color: transparent;` : `color:${skin.body};`;
         let descHTML = sDesc ? `<br><small style="color:gray; font-size:11px;">${sDesc}</small>` : "";
-        
         html += `<li style=\"padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee;\"><span style="line-height:1.2;"><span style=\"${colorPreview} text-shadow: 1px 1px 1px black;\">⬤</span> ${sName}${descHTML}</span> ${actionHTML}</li>`; 
     });
     
@@ -541,43 +572,7 @@ function renderShop() {
 
 window.convertGems = function() { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; } if(playerCoins < 1000) { if(tg && tg.showAlert) tg.showAlert(t.msgNoCoin1000); return; } if(tg && tg.showConfirm) { tg.showConfirm(t.askGem, function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/convert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= 1000; playerGems += 1; updateCoinUI(); renderShop(); } }); } }); } }
 window.upgradePet = function(petKey, nextLevel, costVal) { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; } if (playerGems < costVal) { if(tg && tg.showAlert) tg.showAlert(t.msgNoGem); return; } if(tg && tg.showConfirm) { let pName = currentLang==="tr"?petData[petKey].nameTr:petData[petKey].nameEn; tg.showConfirm(t.askPet.replace("{name}", pName).replace("{lvl}", nextLevel), function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/upgradepet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, petName: petKey, coinCost: 0, gemCost: costVal, nextLevel: nextLevel }) }).then(res => res.json()).then(data => { if(data.success) { playerGems -= costVal; ownedPets[petKey] = nextLevel; updateCoinUI(); renderShop(); } }); } }); } }
-
-// 🔥 YENİ: HEM ELMAS HEM JETON DESTEKLİ KOSTÜM SATIN ALMA MOTORU 🔥
-window.buySkin = function(skinKey) { 
-    const t = texts[currentLang]; 
-    const skin = skinData[skinKey];
-    if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; } 
-    
-    let isGemSkin = skin.priceGem && skin.priceGem > 0;
-    let cost = isGemSkin ? skin.priceGem : skin.price;
-
-    if (isGemSkin && playerGems < cost) { if(tg && tg.showAlert) tg.showAlert(t.msgNoGem); return; }
-    if (!isGemSkin && playerCoins < cost) { if(tg && tg.showAlert) tg.showAlert(t.msgNoCoin); return; }
-
-    if(tg && tg.showConfirm) { 
-        let sName = currentLang === "tr" ? skin.nameTr : skin.nameEn; 
-        let confirmMsg = isGemSkin ? t.askSkinGem.replace("{name}", sName).replace("{gem}", cost) : t.askSkin.replace("{name}", sName).replace("{coin}", cost);
-
-        tg.showConfirm(confirmMsg, function(agreed) { 
-            if(agreed) { 
-                fetch('https://ninja-bridge-api.onrender.com/api/score/buyskin', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    // ÖNEMLİ: Backend'in Elmas kesmesi için gemPrice gönderiyoruz. 
-                    body: JSON.stringify({ userId: tgUserId, skinName: skinKey, price: isGemSkin ? 0 : cost, gemPrice: isGemSkin ? cost : 0 }) 
-                }).then(res => res.json()).then(data => { 
-                    if(data.success) { 
-                        if(isGemSkin) playerGems -= cost; else playerCoins -= cost; 
-                        ownedSkins.push(skinKey); 
-                        updateCoinUI(); 
-                        renderShop(); 
-                    } 
-                }); 
-            } 
-        }); 
-    } 
-}
-
+window.buySkin = function(skinKey) { const t = texts[currentLang]; const skin = skinData[skinKey]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; } let isGemSkin = skin.priceGem && skin.priceGem > 0; let cost = isGemSkin ? skin.priceGem : skin.price; if (isGemSkin && playerGems < cost) { if(tg && tg.showAlert) tg.showAlert(t.msgNoGem); return; } if (!isGemSkin && playerCoins < cost) { if(tg && tg.showAlert) tg.showAlert(t.msgNoCoin); return; } if(tg && tg.showConfirm) { let sName = currentLang === "tr" ? skin.nameTr : skin.nameEn; let confirmMsg = isGemSkin ? t.askSkinGem.replace("{name}", sName).replace("{gem}", cost) : t.askSkin.replace("{name}", sName).replace("{coin}", cost); tg.showConfirm(confirmMsg, function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/buyskin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey, price: isGemSkin ? 0 : cost, gemPrice: isGemSkin ? cost : 0 }) }).then(res => res.json()).then(data => { if(data.success) { if(isGemSkin) playerGems -= cost; else playerCoins -= cost; ownedSkins.push(skinKey); updateCoinUI(); renderShop(); } }); } }); } }
 window.equipSkin = function(skinKey) { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgNoEquipSkin); return; } fetch('https://ninja-bridge-api.onrender.com/api/score/equipskin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey }) }).then(res => res.json()).then(data => { if(data.success) { currentSkin = skinKey; renderShop(); draw(); } }); }
 window.buyPet = function(petKey, price) { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; } if(playerCoins < price) { if(tg && tg.showAlert) tg.showAlert(t.msgNoCoin); return; } if(tg && tg.showConfirm) { let pName = currentLang==="tr"?petData[petKey].nameTr:petData[petKey].nameEn; tg.showConfirm(t.askAdopt.replace("{name}", pName), function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/buypet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey, price: price }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= price; ownedPets[petKey] = 1; updateCoinUI(); renderShop(); } }); } }); } }
 window.equipPet = function(petKey) { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgNoEquipPet); return; } fetch('https://ninja-bridge-api.onrender.com/api/score/equippet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey }) }).then(res => res.json()).then(data => { if(data.success) { currentPet = petKey; renderShop(); draw(); } }); }
