@@ -157,7 +157,7 @@ function unlockSounds() {
     if (!soundsUnlocked) { 
         bgMusic.play().catch(()=>{}); comboSound.play().then(() => comboSound.pause()).catch(()=>{}); 
         fallSound.play().then(() => fallSound.pause()).catch(()=>{}); 
-        screamSound.play().then(() => screamSound.pause()).catch(()=>{}); // Jumpscare sesi kilidini aç
+        screamSound.play().then(() => screamSound.pause()).catch(()=>{}); 
         soundsUnlocked = true; 
     } 
 }
@@ -198,7 +198,7 @@ document.getElementById("watchEarnBtn").addEventListener("click", () => {
 let phase = "waiting"; let lastTimestamp; let heroX, heroY, sceneOffset; 
 let platforms = [], sticks = [], trees = []; let combo = 0; let currentMonkeyLives = 0;
 
-// 🔥 YENİ: EASTER EGG DEĞİŞKENLERİ 🔥
+// 🔥 EASTER EGG DEĞİŞKENLERİ 🔥
 let vampirePlatformTarget = 0;
 let vampireEffectTimer = 0;
 let easterMessage = "";
@@ -258,8 +258,8 @@ function resetGame() {
   isDuelMode = false; opponentTargetScore = -1; checkDuelStatus(); 
   monsters = []; 
   
-  // 🔥 EASTER EGG SIFIRLAMA 🔥
-  vampirePlatformTarget = Math.floor(Math.random() * 140) + 10; // İlk 150 platform arası rastgele bir platform seçer
+  // 🔥 EASTER EGG SIFIRLAMA (10 - 40 ARASI) 🔥
+  vampirePlatformTarget = Math.floor(Math.random() * 31) + 10;
   vampireEffectTimer = 0;
   easterMessageTimer = 0;
   nextMessageMilestone = 500;
@@ -280,7 +280,6 @@ function generatePlatform() {
   const lastPlatform = platforms[platforms.length - 1]; let furthestX = lastPlatform.x + lastPlatform.w; const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap)); const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth)); 
   platforms.push({ x, w });
   
-  // 🔥 VAMPİR JUMPSCARE İŞARETLEYİCİSİ 🔥
   if (platforms.length === vampirePlatformTarget) {
       platforms[platforms.length - 1].isVampireTrigger = true;
   }
@@ -341,15 +340,14 @@ function animate(timestamp) {
           let oldScore = score;
           score += earnedPts;
 
-          // 🔥 YAZILI EASTER EGG'LER (SADECE BİR KERE ÇALIŞIR) 🔥
           if (oldScore < 4 && score >= 4) {
               easterMessage = "Yapımcı@onurviski";
-              easterMessageTimer = 180; // 3 saniye ekranda kalır
+              easterMessageTimer = 180; 
           }
           if (score >= nextMessageMilestone) {
               easterMessage = "Bu zorluklara nasıl gelebildin?";
               easterMessageTimer = 180;
-              nextMessageMilestone += 500; // Bir sonraki mesajı 500 adım sonrasına kurar
+              nextMessageMilestone += 500; 
           }
 
           processCoinGeneration(earnedPts); scoreElement.innerText = score; generatePlatform(); generateTree(); generateTree();
@@ -370,11 +368,10 @@ function animate(timestamp) {
 
       if (phase === "dead_monster") break;
 
-      // 🔥 VAMPİR JUMPSCARE TETİKLEYİCİ 🔥
       let currentPlat = platforms.find(p => heroX >= p.x && heroX <= p.x + p.w);
       if (currentPlat && currentPlat.isVampireTrigger && !currentPlat.vampireTriggered) {
           currentPlat.vampireTriggered = true;
-          vampireEffectTimer = 45; // Çığlık ve resim ekranda kalma süresi (0.75 sn)
+          vampireEffectTimer = 45; 
           screamSound.currentTime = 0;
           screamSound.play().catch(e=>{});
       }
@@ -430,15 +427,13 @@ function draw() {
     ctx.translate((wWidth - canvasWidth) / 2 - sceneOffset, (wHeight - canvasHeight) / 2); 
     drawPlatforms(); drawMonsters(); drawPet(); drawHero(); drawSticks(); ctx.restore(); 
 
-    // 🔥 UI KATMANI (EASTER EGG VE JUMPSCARE EFEKTLERİ) 🔥
     if (vampireEffectTimer > 0) {
         ctx.save();
-        ctx.globalAlpha = Math.min(1, vampireEffectTimer / 15); // Hızlıca belirip kaybolur
+        ctx.globalAlpha = Math.min(1, vampireEffectTimer / 15); 
         if (vampireImg.complete && vampireImg.naturalWidth !== 0) {
-            // Ekranın tam ortasına kocaman çiz
             ctx.drawImage(vampireImg, wWidth/2 - 150, wHeight/2 - 150, 300, 300);
         }
-        ctx.fillStyle = "rgba(255, 0, 0, 0.4)"; // Kırmızı kan flaşı
+        ctx.fillStyle = "rgba(255, 0, 0, 0.4)"; 
         ctx.fillRect(0, 0, wWidth, wHeight);
         ctx.restore();
         vampireEffectTimer--;
@@ -446,7 +441,7 @@ function draw() {
 
     if (easterMessageTimer > 0) {
         ctx.save();
-        ctx.globalAlpha = Math.min(1, easterMessageTimer / 30); // Usulca solup kaybolur
+        ctx.globalAlpha = Math.min(1, easterMessageTimer / 30); 
         ctx.font = "bold 26px Arial";
         ctx.fillStyle = "white";
         ctx.textAlign = "center";
@@ -454,7 +449,7 @@ function draw() {
         ctx.shadowBlur = 8;
         ctx.shadowOffsetX = 2;
         ctx.shadowOffsetY = 2;
-        ctx.fillText(easterMessage, wWidth / 2, wHeight * 0.2); // Üstten %20 boşluk
+        ctx.fillText(easterMessage, wWidth / 2, wHeight * 0.2); 
         ctx.restore();
         easterMessageTimer--;
     }
