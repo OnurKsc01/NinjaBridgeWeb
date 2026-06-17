@@ -133,7 +133,7 @@ try { Object.keys(petData).forEach(key => { let c = document.createElement('canv
 const introductionElement = document.getElementById("introduction"); const perfectElement = document.getElementById("perfect"); const restartButton = document.getElementById("restart"); const scoreElement = document.getElementById("score"); const coinCountElement = document.getElementById("coinCount"); const shopCoinCountElement = document.getElementById("shopCoinCount");
 
 // ------------------------------------
-// 🎯 GELİŞTİRİCİ HİLESİ (SKORA 10 KERE TIKLA)
+// 🎯 GELİŞTİRİCİ HİLESİ
 // ------------------------------------
 let devClickCount = 0;
 scoreElement.addEventListener("click", () => {
@@ -148,7 +148,7 @@ const bgMusic = new Audio('bg.mp3'); bgMusic.loop = true; bgMusic.volume = 0.3;
 const comboSound = new Audio('combo.mp3'); comboSound.volume = 0.8;
 const fallSound = new Audio('dusme.mp3'); fallSound.volume = 0.8;
 
-// 🔥 YENİ: VAMPİR JUMPSCARE SES VE GÖRSELLERİ 🔥
+// 🔥 VAMPİR JUMPSCARE SES VE GÖRSELLERİ 🔥
 let vampireImg = new Image(); vampireImg.src = 'vampir.png';
 const screamSound = new Audio('ciglik.mp3'); screamSound.volume = 1.0;
 
@@ -199,6 +199,7 @@ let phase = "waiting"; let lastTimestamp; let heroX, heroY, sceneOffset;
 let platforms = [], sticks = [], trees = []; let combo = 0; let currentMonkeyLives = 0;
 
 // 🔥 EASTER EGG DEĞİŞKENLERİ 🔥
+let totalPlatformsGenerated = 0; // Toplam üretilen platformları sayar
 let vampirePlatformTarget = 0;
 let vampireEffectTimer = 0;
 let easterMessage = "";
@@ -249,6 +250,36 @@ function getMonkeyStats() { let lvl = ownedPets["maymun"] || 1; return { lives: 
 function processCoinGeneration(earnedPts) { stepCount += earnedPts; let reqSteps = 8; if (currentPet === "kopek" || currentPet === "kurt") { let lvl = ownedPets[currentPet] || 1; reqSteps = Math.max(1, 8 - lvl); } if (stepCount >= reqSteps) { let coinsToAdd = Math.floor(stepCount / reqSteps); playerCoins += coinsToAdd; sessionEarnedCoins += coinsToAdd; updateCoinUI(); stepCount = stepCount % reqSteps; } }
 function isMenuOpen() { return (document.getElementById("shopModal") && document.getElementById("shopModal").style.display === "block") || (document.getElementById("leaderboardModal") && document.getElementById("leaderboardModal").style.display === "block") || (document.getElementById("reviveMenu") && document.getElementById("reviveMenu").style.display === "flex"); }
 
+// 🔥 ÇÖP TOPLAYICI (GARBAGE COLLECTOR) SİSTEMİ 🔥
+function cleanUpOldObjects() {
+    // Ekran genişliği kadar geride kalan her şeyi tespit et
+    let safeX = sceneOffset - (window.innerWidth || 375); 
+    
+    // Ağaçları temizle
+    trees = trees.filter(t => t.x > safeX);
+    // Çubukları temizle
+    sticks = sticks.filter(s => s.x > safeX);
+    
+    // Kaç platformun geride kaldığını bul
+    let pToRemove = 0;
+    for(let i = 0; i < platforms.length; i++) {
+        if(platforms[i].x + platforms[i].w < safeX) {
+            pToRemove++;
+        } else {
+            break;
+        }
+    }
+    
+    // Silinmesi gereken platform ve ona bağlı canavar varsa temizle
+    if(pToRemove > 0) {
+        platforms.splice(0, pToRemove);
+        monsters = monsters.filter(m => {
+            m.platformIndex -= pToRemove;
+            return m.platformIndex >= 0;
+        });
+    }
+}
+
 function resetGame() {
   phase = "waiting"; lastTimestamp = undefined; sceneOffset = 0; score = 0; combo = 0; sessionEarnedCoins = 0; stepCount = 0; adReviveUsedThisRun = false;
   if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } else { currentMonkeyLives = 0; }
@@ -258,7 +289,7 @@ function resetGame() {
   isDuelMode = false; opponentTargetScore = -1; checkDuelStatus(); 
   monsters = []; 
   
-  // 🔥 EASTER EGG SIFIRLAMA (10 - 40 ARASI) 🔥
+  totalPlatformsGenerated = 1; // İlk platform
   vampirePlatformTarget = Math.floor(Math.random() * 31) + 10;
   vampireEffectTimer = 0;
   easterMessageTimer = 0;
@@ -280,7 +311,8 @@ function generatePlatform() {
   const lastPlatform = platforms[platforms.length - 1]; let furthestX = lastPlatform.x + lastPlatform.w; const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap)); const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth)); 
   platforms.push({ x, w });
   
-  if (platforms.length === vampirePlatformTarget) {
+  totalPlatformsGenerated++;
+  if (totalPlatformsGenerated === vampirePlatformTarget) {
       platforms[platforms.length - 1].isVampireTrigger = true;
   }
 
@@ -381,7 +413,18 @@ function animate(timestamp) {
       else { const maxHeroX = sticks[sticks.length - 1].x + sticks[sticks.length - 1].length + heroWidth; if (heroX > maxHeroX) { heroX = maxHeroX; phase = "falling"; fallSound.currentTime = 0; fallSound.play().catch(e=>{}); } }
       break;
     }
-    case "transitioning": { sceneOffset += dt / transitioningSpeed; const [nextPlatform] = thePlatformTheStickHits(); if (sceneOffset > nextPlatform.x + nextPlatform.w - paddingX) { sticks.push({ x: nextPlatform.x + nextPlatform.w, length: 0, rotation: 0 }); phase = "waiting"; } break; }
+    case "transitioning": { 
+        sceneOffset += dt / transitioningSpeed; 
+        const [nextPlatform] = thePlatformTheStickHits(); 
+        if (sceneOffset > nextPlatform.x + nextPlatform.w - paddingX) { 
+            sticks.push({ x: nextPlatform.x + nextPlatform.w, length: 0, rotation: 0 }); 
+            phase = "waiting"; 
+            
+            // 🔥 ÇÖP TOPLAYICIYI DEVREYE SOK 🔥
+            cleanUpOldObjects();
+        } 
+        break; 
+    }
     
     case "dead_monster": {
         if (currentMonkeyLives > 0) { 
