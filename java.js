@@ -186,7 +186,7 @@ document.getElementById("watchEarnBtn").addEventListener("click", () => {
         if (result.done) { 
             const rewards = [35, 50, 65]; const earned = rewards[Math.floor(Math.random() * rewards.length)];
             playerCoins += earned; updateCoinUI();
-            fetch('https://ninja-bridge-api.onrender.com/api/score/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: tgGroupId, earnedCoins: earned, earnedGems: 0 }) }).catch(e => {});
+            fetch('https://ninja-bridge-api.onrender.com/api/score/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: tgGroupId, earnedCoins: sessionEarnedCoins, earnedGems: 0 }) }).then(() => { sessionEarnedCoins = 0; }).catch(e => {});
             if(tg && tg.showAlert) { tg.showAlert(`📺 ${earned} ${texts[currentLang].msgEarned}`); }
         } 
     }).catch(() => { });
@@ -199,7 +199,7 @@ let phase = "waiting"; let lastTimestamp; let heroX, heroY, sceneOffset;
 let platforms = [], sticks = [], trees = []; let combo = 0; let currentMonkeyLives = 0;
 
 // 🔥 EASTER EGG DEĞİŞKENLERİ 🔥
-let totalPlatformsGenerated = 0; // Toplam üretilen platformları sayar
+let totalPlatformsGenerated = 0; 
 let vampirePlatformTarget = 0;
 let vampireEffectTimer = 0;
 let easterMessage = "";
@@ -250,27 +250,18 @@ function getMonkeyStats() { let lvl = ownedPets["maymun"] || 1; return { lives: 
 function processCoinGeneration(earnedPts) { stepCount += earnedPts; let reqSteps = 8; if (currentPet === "kopek" || currentPet === "kurt") { let lvl = ownedPets[currentPet] || 1; reqSteps = Math.max(1, 8 - lvl); } if (stepCount >= reqSteps) { let coinsToAdd = Math.floor(stepCount / reqSteps); playerCoins += coinsToAdd; sessionEarnedCoins += coinsToAdd; updateCoinUI(); stepCount = stepCount % reqSteps; } }
 function isMenuOpen() { return (document.getElementById("shopModal") && document.getElementById("shopModal").style.display === "block") || (document.getElementById("leaderboardModal") && document.getElementById("leaderboardModal").style.display === "block") || (document.getElementById("reviveMenu") && document.getElementById("reviveMenu").style.display === "flex"); }
 
-// 🔥 ÇÖP TOPLAYICI (GARBAGE COLLECTOR) SİSTEMİ 🔥
+// 🔥 ÇÖP TOPLAYICI (GARBAGE COLLECTOR) 🔥
 function cleanUpOldObjects() {
-    // Ekran genişliği kadar geride kalan her şeyi tespit et
     let safeX = sceneOffset - (window.innerWidth || 375); 
-    
-    // Ağaçları temizle
     trees = trees.filter(t => t.x > safeX);
-    // Çubukları temizle
     sticks = sticks.filter(s => s.x > safeX);
     
-    // Kaç platformun geride kaldığını bul
     let pToRemove = 0;
     for(let i = 0; i < platforms.length; i++) {
-        if(platforms[i].x + platforms[i].w < safeX) {
-            pToRemove++;
-        } else {
-            break;
-        }
+        if(platforms[i].x + platforms[i].w < safeX) pToRemove++;
+        else break;
     }
     
-    // Silinmesi gereken platform ve ona bağlı canavar varsa temizle
     if(pToRemove > 0) {
         platforms.splice(0, pToRemove);
         monsters = monsters.filter(m => {
@@ -289,9 +280,10 @@ function resetGame() {
   isDuelMode = false; opponentTargetScore = -1; checkDuelStatus(); 
   monsters = []; 
   
-  totalPlatformsGenerated = 1; // İlk platform
-  vampirePlatformTarget = Math.floor(Math.random() * 31) + 10;
+  totalPlatformsGenerated = 1;
+  vampirePlatformTarget = Math.floor(Math.random() * 31) + 10; // 10-40 arası sinsi hedef
   vampireEffectTimer = 0;
+  easterMessage = "";
   easterMessageTimer = 0;
   nextMessageMilestone = 500;
 
@@ -369,18 +361,10 @@ function animate(timestamp) {
           } 
           else { combo = 0; earnedPts = 1; perfectElement.innerText = ""; }
           
-          let oldScore = score;
-          score += earnedPts;
+          let oldScore = score; score += earnedPts;
 
-          if (oldScore < 4 && score >= 4) {
-              easterMessage = "Yapımcı@onurviski";
-              easterMessageTimer = 180; 
-          }
-          if (score >= nextMessageMilestone) {
-              easterMessage = "Bu zorluklara nasıl gelebildin?";
-              easterMessageTimer = 180;
-              nextMessageMilestone += 500; 
-          }
+          if (oldScore < 4 && score >= 4) { easterMessage = "Yapımcı@onurviski"; easterMessageTimer = 180; }
+          if (score >= nextMessageMilestone) { easterMessage = "Bu zorluklara nasıl gelebildin?"; easterMessageTimer = 180; nextMessageMilestone += 500; }
 
           processCoinGeneration(earnedPts); scoreElement.innerText = score; generatePlatform(); generateTree(); generateTree();
         }
@@ -400,12 +384,12 @@ function animate(timestamp) {
 
       if (phase === "dead_monster") break;
 
+      // 🔥 VAMPİR JUMPSCARE KONTROLÜ 🔥
       let currentPlat = platforms.find(p => heroX >= p.x && heroX <= p.x + p.w);
       if (currentPlat && currentPlat.isVampireTrigger && !currentPlat.vampireTriggered) {
           currentPlat.vampireTriggered = true;
-          vampireEffectTimer = 45; 
-          screamSound.currentTime = 0;
-          screamSound.play().catch(e=>{});
+          vampireEffectTimer = 75; // Uçuş süresi 75 kareye uzatıldı (~1.25 sn)
+          screamSound.currentTime = 0; screamSound.play().catch(e=>{});
       }
 
       heroX += dt / walkingSpeed; const [nextPlatform] = thePlatformTheStickHits();
@@ -414,18 +398,13 @@ function animate(timestamp) {
       break;
     }
     case "transitioning": { 
-        sceneOffset += dt / transitioningSpeed; 
-        const [nextPlatform] = thePlatformTheStickHits(); 
+        sceneOffset += dt / transitioningSpeed; const [nextPlatform] = thePlatformTheStickHits(); 
         if (sceneOffset > nextPlatform.x + nextPlatform.w - paddingX) { 
-            sticks.push({ x: nextPlatform.x + nextPlatform.w, length: 0, rotation: 0 }); 
-            phase = "waiting"; 
-            
-            // 🔥 ÇÖP TOPLAYICIYI DEVREYE SOK 🔥
-            cleanUpOldObjects();
+            sticks.push({ x: nextPlatform.x + nextPlatform.w, length: 0, rotation: 0 }); phase = "waiting"; 
+            cleanUpOldObjects(); // Nesne silici
         } 
         break; 
     }
-    
     case "dead_monster": {
         if (currentMonkeyLives > 0) { 
             currentMonkeyLives--; phase = "waiting"; 
@@ -437,7 +416,6 @@ function animate(timestamp) {
         let reviveMenuEl = document.getElementById("reviveMenu"); if (!adReviveUsedThisRun && reviveMenuEl) { phase = "dead_options"; reviveMenuEl.style.display = "flex"; break; }
         phase = "dead_options"; restartButton.style.display = "block"; saveScoreToAPI(); break;
     }
-
     case "falling": {
       if (sticks[sticks.length - 1].rotation < 180) sticks[sticks.length - 1].rotation += dt / turningSpeed;
       heroY += dt / fallingSpeed; const maxHeroY = platformHeight + 100 + (window.innerHeight || 800) / 2;
@@ -458,8 +436,7 @@ function animate(timestamp) {
 
 function thePlatformTheStickHits() { 
   if (sticks[sticks.length - 1].rotation != 90) throw Error(`Stick is ${sticks[sticks.length - 1].rotation}°`); 
-  const stickFarX = sticks[sticks.length - 1].x + sticks[sticks.length - 1].length; 
-  const platformTheStickHits = platforms.find((platform) => platform.x < stickFarX && stickFarX < platform.x + platform.w); 
+  const stickFarX = sticks[sticks.length - 1].x + sticks[sticks.length - 1].length; const platformTheStickHits = platforms.find((platform) => platform.x < stickFarX && stickFarX < platform.x + platform.w); 
   let pArea = getPerfectAreaSize(platformTheStickHits ? platformTheStickHits.w : 0); 
   if (platformTheStickHits && platformTheStickHits.x + platformTheStickHits.w / 2 - pArea / 2 < stickFarX && stickFarX < platformTheStickHits.x + platformTheStickHits.w / 2 + pArea / 2) return [platformTheStickHits, true]; return [platformTheStickHits, false]; 
 }
@@ -470,30 +447,35 @@ function draw() {
     ctx.translate((wWidth - canvasWidth) / 2 - sceneOffset, (wHeight - canvasHeight) / 2); 
     drawPlatforms(); drawMonsters(); drawPet(); drawHero(); drawSticks(); ctx.restore(); 
 
+    // 🔥 SAĞDAN SOLA GÖKYÜZÜ SAVRULMA KATMANI (EASTER EGG) 🔥
     if (vampireEffectTimer > 0) {
         ctx.save();
-        ctx.globalAlpha = Math.min(1, vampireEffectTimer / 15); 
+        let totalDuration = 75;
+        let progress = (totalDuration - vampireEffectTimer) / totalDuration;
+        
+        // Matematiksel Uçuş Fiziği: Sağdan gir, sola kay, havada dalgalan!
+        let vX = wWidth - (progress * (wWidth + 250)); 
+        let vY = (wHeight * 0.18) + Math.sin(progress * Math.PI * 2) * 45; 
+        
         if (vampireImg.complete && vampireImg.naturalWidth !== 0) {
-            ctx.drawImage(vampireImg, wWidth/2 - 150, wHeight/2 - 150, 300, 300);
+            ctx.drawImage(vampireImg, vX, vY, 110, 110); 
+        } else {
+            // Sinsi Güvenlik Kilidi: Resim yüklenemezse Emoji Uçar!
+            ctx.font = "55px Arial";
+            ctx.fillText("🧛", vX, vY + 45);
         }
-        ctx.fillStyle = "rgba(255, 0, 0, 0.4)"; 
+        
+        // Estetik Kan Efekti Flaşı (Gözü asla yormaz)
+        ctx.fillStyle = "rgba(192, 57, 43, " + (0.18 * Math.sin(progress * Math.PI)) + ")";
         ctx.fillRect(0, 0, wWidth, wHeight);
         ctx.restore();
         vampireEffectTimer--;
     }
 
     if (easterMessageTimer > 0) {
-        ctx.save();
-        ctx.globalAlpha = Math.min(1, easterMessageTimer / 30); 
-        ctx.font = "bold 26px Arial";
-        ctx.fillStyle = "white";
-        ctx.textAlign = "center";
-        ctx.shadowColor = "black";
-        ctx.shadowBlur = 8;
-        ctx.shadowOffsetX = 2;
-        ctx.shadowOffsetY = 2;
-        ctx.fillText(easterMessage, wWidth / 2, wHeight * 0.2); 
-        ctx.restore();
+        ctx.save(); ctx.globalAlpha = Math.min(1, easterMessageTimer / 30); ctx.font = "bold 25px Arial"; ctx.fillStyle = "white"; ctx.textAlign = "center";
+        ctx.shadowColor = "black"; ctx.shadowBlur = 6; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2;
+        ctx.fillText(easterMessage, wWidth / 2, wHeight * 0.22); ctx.restore();
         easterMessageTimer--;
     }
 }
@@ -511,8 +493,7 @@ function drawPlatforms() {
 function drawMonsters() {
     monsters.forEach(m => {
         if (m.x < sceneOffset - 50) return; 
-        ctx.save(); 
-        ctx.translate(m.x, canvasHeight - platformHeight + m.y); 
+        ctx.save(); ctx.translate(m.x, canvasHeight - platformHeight + m.y); 
         if (m.dead) { ctx.globalAlpha = 0.5; ctx.scale(1, 0.2); } 
         if (preRenderedMonsters[m.type] && preRenderedMonsters[m.type].complete && preRenderedMonsters[m.type].naturalWidth !== 0) { 
             ctx.drawImage(preRenderedMonsters[m.type], -16, -32, 32, 32); 
@@ -534,83 +515,11 @@ function drawRoundedRect(x, y, width, height, radius) { ctx.beginPath(); ctx.mov
 function drawSticks() { sticks.forEach((stick) => { ctx.save(); ctx.translate(stick.x, canvasHeight - platformHeight); ctx.rotate((Math.PI / 180) * stick.rotation); ctx.beginPath(); ctx.lineWidth = 2; ctx.moveTo(0, 0); ctx.lineTo(0, -stick.length); ctx.stroke(); ctx.restore(); }); }
 
 function drawBackground() { 
-    let wWidth = window.innerWidth || 375; let wHeight = window.innerHeight || 800; 
-    let theme = getTheme(); 
-    var gradient = ctx.createLinearGradient(0, 0, 0, wHeight); 
-    gradient.addColorStop(0, theme.top); gradient.addColorStop(1, theme.bot); 
-    ctx.fillStyle = gradient; ctx.fillRect(0, 0, wWidth, wHeight); 
-    drawHill(hill1BaseHeight, hill1Amplitude, hill1Stretch, theme.h1); drawHill(hill2BaseHeight, hill2Amplitude, hill2Stretch, theme.h2); 
-    trees.forEach((tree) => drawTree(tree.x, tree.color)); 
+    let wWidth = window.innerWidth || 375; let wHeight = window.innerHeight || 800; let theme = getTheme(); 
+    var gradient = ctx.createLinearGradient(0, 0, 0, wHeight); gradient.addColorStop(0, theme.top); gradient.addColorStop(1, theme.bot); ctx.fillStyle = gradient; ctx.fillRect(0, 0, wWidth, wHeight); 
+    drawHill(hill1BaseHeight, hill1Amplitude, hill1Stretch, theme.h1); drawHill(hill2BaseHeight, hill2Amplitude, hill2Stretch, theme.h2); trees.forEach((tree) => drawTree(tree.x, tree.color)); 
 }
-
 function drawHill(baseHeight, amplitude, stretch, color) { let wWidth = window.innerWidth || 375; let wHeight = window.innerHeight || 800; ctx.beginPath(); ctx.moveTo(0, wHeight); ctx.lineTo(0, getHillY(0, baseHeight, amplitude, stretch)); for (let i = 0; i < wWidth; i++) { ctx.lineTo(i, getHillY(i, baseHeight, amplitude, stretch)); } ctx.lineTo(wWidth, wHeight); ctx.fillStyle = color; ctx.fill(); }
 function drawTree(x, color) { ctx.save(); ctx.translate((-sceneOffset * backgroundSpeedMultiplier + x) * hill1Stretch, getTreeY(x, hill1BaseHeight, hill1Amplitude)); const treeTrunkHeight = 5, treeTrunkWidth = 2, treeCrownHeight = 25, treeCrownWidth = 10; ctx.fillStyle = "#7D833C"; ctx.fillRect(-treeTrunkWidth / 2, -treeTrunkHeight, treeTrunkWidth, treeTrunkHeight); ctx.beginPath(); ctx.moveTo(-treeCrownWidth / 2, -treeTrunkHeight); ctx.lineTo(0, -(treeTrunkHeight + treeCrownHeight)); ctx.lineTo(treeCrownWidth / 2, -treeTrunkHeight); ctx.fillStyle = color; ctx.fill(); ctx.restore(); }
 function getHillY(windowX, baseHeight, amplitude, stretch) { let wHeight = window.innerHeight || 800; return Math.sinus((sceneOffset * backgroundSpeedMultiplier + windowX) * stretch) * amplitude + wHeight - baseHeight; }
 function getTreeY(x, baseHeight, amplitude) { let wHeight = window.innerHeight || 800; return Math.sinus(x) * amplitude + wHeight - baseHeight; }
-
-// ------------------------------------
-// 8. UI VE MARKET İŞLEMLERİ 
-// ------------------------------------
-
-document.getElementById("leaderboardBtn").addEventListener("click", () => { 
-    const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; }
-    document.getElementById("leaderboardModal").style.display = "block"; const list = document.getElementById("scoreList"); list.innerHTML = `<li style='text-align:center;'>${t.loading}</li>`; 
-    fetch(`https://ninja-bridge-api.onrender.com/api/score/global?t=${Date.now()}`).then(res => res.json()).then(data => { 
-        list.innerHTML = ""; if(data.length === 0) { list.innerHTML = `<li>${t.noOne}</li>`; return; } 
-        data.forEach((item, i) => { list.innerHTML += `<li style="padding:4px; border-bottom:1px solid #ddd;"><b>${i + 1}.</b> ${item.name} <span style="float:right;">${item.score}</span></li>`; }); 
-    }).catch(() => list.innerHTML = `<li style='color:red;'>${t.error}</li>`); 
-}); 
-document.getElementById("closeLeaderboard").addEventListener("click", () => { document.getElementById("leaderboardModal").style.display = "none"; });
-
-document.getElementById("shopBtn").addEventListener("click", () => { 
-    if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(texts[currentLang].msgPlaying); return; }
-    document.getElementById("shopModal").style.display = "block"; renderShop(); 
-});
-document.getElementById("closeShop").addEventListener("click", () => { document.getElementById("shopModal").style.display = "none"; });
-
-function renderShop() {
-    const t = texts[currentLang];
-    const list = document.getElementById("shopList");
-    let html = `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; text-align:center;">💎 <b>${t.shopGemExchange}</b></li>`;
-    html += `<li style="padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee;"><span>${t.shopExchangeBtn}</span> <button style="background:#9b59b6; padding: 5px 10px; font-size:12px; margin:0; border:none; color:white; border-radius:5px; cursor:pointer;" onclick="convertGems()">${t.shopGetGem}</button></li>`;
-    html += `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; margin-top:6px; text-align:center;">🥷 <b>${t.shopSkins}</b></li>`;
-    
-    Object.keys(skinData).forEach(key => { 
-        const skin = skinData[key]; let sName = currentLang === "tr" ? skin.nameTr : skin.nameEn; 
-        let sDesc = currentLang === "tr" ? (skin.descTr || "") : (skin.descEn || "");
-        let actionHTML = ""; 
-        
-        if (currentSkin === key) { actionHTML = `<span style=\"font-size:13px;\">${t.equipped}</span>`; } 
-        else if (ownedSkins.includes(key)) { actionHTML = `<button style=\"padding: 5px 10px; font-size:12px; margin:0; border:none; background:#34495e; color:white; border-radius:5px; cursor:pointer;\" onclick=\"equipSkin('${key}')\">${t.equip}</button>`; } 
-        else {
-            if (skin.priceGem > 0) { actionHTML = `<button style=\"padding: 5px 10px; font-size:12px; margin:0; border:none; background:#9b59b6; color:white; border-radius:5px; cursor:pointer;\" onclick=\"buySkin('${key}')\">💎 ${skin.priceGem}</button>`; } 
-            else { actionHTML = `<button style=\"padding: 5px 10px; font-size:12px; margin:0; border:none; background:#2196F3; color:white; border-radius:5px; cursor:pointer;\" onclick=\"buySkin('${key}')\">🪙 ${skin.price}</button>`; }
-        }
-        
-        let colorPreview = skin.gradient ? `background: linear-gradient(${skin.colors[0]}, ${skin.colors[2]}); -webkit-background-clip: text; -webkit-text-fill-color: transparent;` : `color:${skin.body};`;
-        let descHTML = sDesc ? `<br><small style="color:gray; font-size:11px;">${sDesc}</small>` : "";
-        html += `<li style=\"padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee;\"><span style="line-height:1.2;"><span style=\"${colorPreview} text-shadow: 1px 1px 1px black;\">⬤</span> ${sName}${descHTML}</span> ${actionHTML}</li>`; 
-    });
-    
-    html += `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; margin-top:6px; text-align:center;">🐾 <b>${t.shopPets}</b></li>`;
-    Object.keys(petData).forEach(key => { 
-        const pet = petData[key]; let pName = currentLang === "tr" ? pet.nameTr : pet.nameEn; let pDesc = currentLang === "tr" ? pet.descTr : pet.descEn;
-        let isOwned = ownedPets.hasOwnProperty(key); let level = isOwned ? ownedPets[key] : 0; 
-        if (!isOwned) { html += `<li style=\"padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee;\"><span style=\"line-height:1.2;\">${pet.emoji} ${pName} (Sv.1)<br><small style=\"color:gray; font-size:11px;\">${pDesc}</small></span> <button style=\"padding: 5px 10px; font-size:12px; margin:0; border:none; background:#2196F3; color:white; border-radius:5px; cursor:pointer;\" onclick=\"buyPet('${key}', ${pet.price})\">🪙 ${pet.price}</button></li>`; } 
-        else { 
-            let eqBtn = (currentPet === key) ? `<span style=\"font-size:13px; margin-right:5px;\">${t.equipped}</span>` : `<button style=\"padding: 5px 10px; font-size:12px; margin-right:5px; border:none; background:#34495e; color:white; border-radius:5px; cursor:pointer;\" onclick=\"equipPet('${key}')\">${t.equip}</button>`; 
-            let upgBtn = ""; 
-            if (level < 5 && key === "kurt") { let costVal = level * 2; upgBtn = `<button style=\"background:#e67e22; padding: 4px 8px; font-size:11px; border:none; color:white; border-radius:5px; cursor:pointer;\" onclick=\"upgradePet('${key}', ${level+1}, ${costVal})\">⬆️ 💎 ${costVal}</button>`; }
-            else if (level < 4 && key !== "kurt") { let costVal = (level === 1) ? 1 : (level === 2) ? 3 : 5; upgBtn = `<button style=\"background:#e67e22; padding: 4px 8px; font-size:11px; border:none; color:white; border-radius:5px; cursor:pointer;\" onclick=\"upgradePet('${key}', ${level+1}, ${costVal})\">⬆️ 💎 ${costVal}</button>`; } 
-            else { upgBtn = `<span style=\"font-size:11px; color:red; font-weight:bold;\">${t.max}</span>`; } 
-            html += `<li style=\"padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee;\"><span style=\"line-height:1.2;\">${pet.emoji} ${pName} (Sv.${level})<br><small style=\"color:gray; font-size:11px;\">${pDesc}</small></span> <div style=\"display:flex; align-items:center;\">${eqBtn}${upgBtn}</div></li>`; 
-        } 
-    }); list.innerHTML = html;
-}
-
-window.convertGems = function() { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; } if(playerCoins < 1000) { if(tg && tg.showAlert) tg.showAlert(t.msgNoCoin1000); return; } if(tg && tg.showConfirm) { tg.showConfirm(t.askGem, function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/convert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= 1000; playerGems += 1; updateCoinUI(); renderShop(); } }); } }); } }
-window.upgradePet = function(petKey, nextLevel, costVal) { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; } if (playerGems < costVal) { if(tg && tg.showAlert) tg.showAlert(t.msgNoGem); return; } if(tg && tg.showConfirm) { let pName = currentLang==="tr"?petData[petKey].nameTr:petData[petKey].nameEn; tg.showConfirm(t.askPet.replace("{name}", pName).replace("{lvl}", nextLevel), function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/upgradepet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, petName: petKey, coinCost: 0, gemCost: costVal, nextLevel: nextLevel }) }).then(res => res.json()).then(data => { if(data.success) { playerGems -= costVal; ownedPets[petKey] = nextLevel; updateCoinUI(); renderShop(); } }); } }); } }
-window.buySkin = function(skinKey) { const t = texts[currentLang]; const skin = skinData[skinKey]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; } let isGemSkin = skin.priceGem && skin.priceGem > 0; let cost = isGemSkin ? skin.priceGem : skin.price; if (isGemSkin && playerGems < cost) { if(tg && tg.showAlert) tg.showAlert(t.msgNoGem); return; } if (!isGemSkin && playerCoins < cost) { if(tg && tg.showAlert) tg.showAlert(t.msgNoCoin); return; } if(tg && tg.showConfirm) { let sName = currentLang === "tr" ? skin.nameTr : skin.nameEn; let confirmMsg = isGemSkin ? t.askSkinGem.replace("{name}", sName).replace("{gem}", cost) : t.askSkin.replace("{name}", sName).replace("{coin}", cost); tg.showConfirm(confirmMsg, function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/buyskin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey, price: isGemSkin ? 0 : cost, gemPrice: isGemSkin ? cost : 0 }) }).then(res => res.json()).then(data => { if(data.success) { if(isGemSkin) playerGems -= cost; else playerCoins -= cost; ownedSkins.push(skinKey); updateCoinUI(); renderShop(); } }); } }); } }
-window.equipSkin = function(skinKey) { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgNoEquipSkin); return; } fetch('https://ninja-bridge-api.onrender.com/api/score/equipskin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey }) }).then(res => res.json()).then(data => { if(data.success) { currentSkin = skinKey; renderShop(); draw(); } }); }
-window.buyPet = function(petKey, price) { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; } if(playerCoins < price) { if(tg && tg.showAlert) tg.showAlert(t.msgNoCoin); return; } if(tg && tg.showConfirm) { let pName = currentLang==="tr"?petData[petKey].nameTr:petData[petKey].nameEn; tg.showConfirm(t.askAdopt.replace("{name}", pName), function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/buypet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey, price: price }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= price; ownedPets[petKey] = 1; updateCoinUI(); renderShop(); } }); } }); } }
-window.equipPet = function(petKey) { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgNoEquipPet); return; } fetch('https://ninja-bridge-api.onrender.com/api/score/equippet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey }) }).then(res => res.json()).then(data => { if(data.success) { currentPet = petKey; renderShop(); draw(); } }); }
