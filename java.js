@@ -27,7 +27,7 @@ const texts = {
         askGem: "1000 Jetonu 1 Elmasa çevireceksin. Onaylıyor musun?",
         duelP1: "düştü!", duelP2: "Skoru:", duelP3: "Kazanmak için onu geç!",
         monsterDie: "💀 CANAVARA YEM OLDUN!",
-        btnInvite: "💌 Arkadaş Davet Et (+1 💎)", inviteText: "Sıfır kasan efsane Ninja oyununu oyna! Benim rekorumu geçebilir misin?"
+        btnInvite: "💌 Davet Et", inviteText: "Sıfır kasan efsane Ninja oyununu oyna! Benim rekorumu geçebilir misin?"
     },
     en: {
         btnScore: "🏆 Score", btnShop: "🛒 Shop", btnAd: "📺 +Coins",
@@ -50,7 +50,7 @@ const texts = {
         askGem: "Exchange 1000 Coins for 1 Gem. Confirm?",
         duelP1: "fell!", duelP2: "Score:", duelP3: "Beat it to win!",
         monsterDie: "💀 KILLED BY A MONSTER!",
-        btnInvite: "💌 Invite Friend (+1 💎)", inviteText: "Play this zero-lag Ninja game! Can you beat my score?"
+        btnInvite: "💌 Invite (+1 💎)", inviteText: "Play this zero-lag Ninja game! Can you beat my score?"
     }
 };
 
@@ -96,18 +96,27 @@ let currentSkin = "default"; let ownedSkins = ["default"];
 let currentPet = "default"; let ownedPets = {}; 
 let isDuelMode = false; let opponentName = ""; let opponentTargetScore = -1; let duelCheckInterval = null; 
 
-// 🔥 EKRANA DAVET ET BUTONU ÇİZİMİ 🔥
+// 🔥 EKRANA DAVET ET BUTONU ÇİZİMİ (SABİT SOL KÖŞE) 🔥
 let inviteBtn = document.createElement("button");
 inviteBtn.id = "inviteBtnObj";
-inviteBtn.style.position = "absolute"; inviteBtn.style.bottom = "80px"; inviteBtn.style.left = "50%"; inviteBtn.style.transform = "translateX(-50%)"; inviteBtn.style.padding = "10px 20px"; inviteBtn.style.fontSize = "16px"; inviteBtn.style.fontWeight = "bold"; inviteBtn.style.backgroundColor = "#e74c3c"; inviteBtn.style.color = "white"; inviteBtn.style.border = "none"; inviteBtn.style.borderRadius = "25px"; inviteBtn.style.cursor = "pointer"; inviteBtn.style.boxShadow = "0 4px 6px rgba(0,0,0,0.3)"; inviteBtn.style.zIndex = "10";
+inviteBtn.style.position = "absolute"; 
+inviteBtn.style.top = "215px"; // Dil butonunun altı
+inviteBtn.style.left = "20px"; // Sol butonlarla aynı hizada
+inviteBtn.style.padding = "8px 12px"; 
+inviteBtn.style.fontSize = "13px"; 
+inviteBtn.style.fontWeight = "bold"; 
+inviteBtn.style.backgroundColor = "#e74c3c"; 
+inviteBtn.style.color = "white"; 
+inviteBtn.style.border = "none"; 
+inviteBtn.style.borderRadius = "5px"; 
+inviteBtn.style.cursor = "pointer"; 
+inviteBtn.style.boxShadow = "0 2px 4px rgba(0,0,0,0.2)"; 
+inviteBtn.style.zIndex = "100";
 document.body.appendChild(inviteBtn);
 
 inviteBtn.addEventListener("click", () => {
     if (phase !== "waiting") return;
-    
-    // Botunun adını ekledik. Eğer BotFather'dan Web App oluştururken kısa ad (short name) olarak "oyun", "play", "app" gibi bir şey belirlediysen "oyun" yazan kısmı onunla değiştir.
-    let botUrl = `https://t.me/ninjabridge_bot/play?startapp=ref_${tgUserId}`;
-    
+    let botUrl = `https://t.me/ninjabridge_bot/oyun?startapp=ref_${tgUserId}`;
     let shareText = texts[currentLang].inviteText;
     let shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botUrl)}&text=${encodeURIComponent(shareText)}`;
     if (tg && tg.openTelegramLink) { tg.openTelegramLink(shareUrl); } else { window.open(shareUrl, "_blank"); }
@@ -183,7 +192,6 @@ window.addEventListener('load', () => {
     updateUITexts(); initAdsGram(); loadPlayerData(); checkDuelStatus(); processReferralIfAny(); resetGame();
 });
 
-// 🔥 UYGULAMA AÇILDIĞINDA REFERANS VAR MI DİYE KONTROL EDEN KOD 🔥
 function processReferralIfAny() {
     if (startParam && startParam.startsWith("ref_")) {
         let referrerId = parseInt(startParam.replace("ref_", ""));
@@ -231,7 +239,7 @@ function cleanUpOldObjects() {
 function resetGame() {
   phase = "waiting"; lastTimestamp = undefined; sceneOffset = 0; score = 0; combo = 0; sessionEarnedCoins = 0; stepCount = 0; adReviveUsedThisRun = false;
   if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } else { currentMonkeyLives = 0; }
-  introductionElement.style.opacity = 1; perfectElement.style.opacity = 0; restartButton.style.display = "none"; inviteBtn.style.display = "block";
+  introductionElement.style.opacity = 1; perfectElement.style.opacity = 0; restartButton.style.display = "none";
   if(document.getElementById("reviveMenu")) document.getElementById("reviveMenu").style.display = "none";
   const banner = document.getElementById("duelDeathBanner"); if (banner) { banner.style.display = "none"; banner.style.opacity = "0"; }
   isDuelMode = false; opponentTargetScore = -1; checkDuelStatus(); 
@@ -265,8 +273,8 @@ function generatePlatform() {
   }
 }
 
-window.addEventListener("mousedown", function (event) { if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { inviteBtn.style.display = "none"; lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); } });
-window.addEventListener("touchstart", function (event) { if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { inviteBtn.style.display = "none"; lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); } });
+window.addEventListener("mousedown", function (event) { if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); } });
+window.addEventListener("touchstart", function (event) { if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); } });
 window.addEventListener("mouseup", function () { if (phase == "stretching") phase = "turning"; });
 window.addEventListener("touchend", function () { if (phase == "stretching") phase = "turning"; });
 window.addEventListener("resize", function () { canvas.width = window.innerWidth; canvas.height = window.innerHeight; draw(); });
@@ -321,9 +329,9 @@ function animate(timestamp) {
       if (nextPlatform) { const maxHeroX = nextPlatform.x + nextPlatform.w - heroDistanceFromEdge; if (heroX > maxHeroX) { heroX = maxHeroX; phase = "transitioning"; } } else { const maxHeroX = sticks[sticks.length - 1].x + sticks[sticks.length - 1].length + heroWidth; if (heroX > maxHeroX) { heroX = maxHeroX; phase = "falling"; fallSound.currentTime = 0; fallSound.play().catch(e=>{}); } }
       break;
     }
-    case "transitioning": { sceneOffset += dt / transitioningSpeed; const [nextPlatform] = thePlatformTheStickHits(); if (sceneOffset > nextPlatform.x + nextPlatform.w - paddingX) { sticks.push({ x: nextPlatform.x + nextPlatform.w, length: 0, rotation: 0 }); phase = "waiting"; cleanUpOldObjects(); inviteBtn.style.display = "block"; } break; }
+    case "transitioning": { sceneOffset += dt / transitioningSpeed; const [nextPlatform] = thePlatformTheStickHits(); if (sceneOffset > nextPlatform.x + nextPlatform.w - paddingX) { sticks.push({ x: nextPlatform.x + nextPlatform.w, length: 0, rotation: 0 }); phase = "waiting"; cleanUpOldObjects(); } break; }
     case "dead_monster": {
-        if (currentMonkeyLives > 0) { currentMonkeyLives--; phase = "waiting"; inviteBtn.style.display = "block"; perfectElement.innerText = texts[currentLang].monkey; perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1; setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); let m = monsters.find(mo => Math.abs(heroX - mo.x) < 30); if (m) m.dead = true; break; }
+        if (currentMonkeyLives > 0) { currentMonkeyLives--; phase = "waiting"; perfectElement.innerText = texts[currentLang].monkey; perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1; setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); let m = monsters.find(mo => Math.abs(heroX - mo.x) < 30); if (m) m.dead = true; break; }
         perfectElement.innerText = texts[currentLang].monsterDie; perfectElement.style.color = "#e74c3c"; perfectElement.style.opacity = 1; 
         if (isDuelMode) { phase = "dead_options"; restartButton.style.display = "block"; saveScoreToAPI(); break; }
         let reviveMenuEl = document.getElementById("reviveMenu"); if (!adReviveUsedThisRun && reviveMenuEl) { phase = "dead_options"; reviveMenuEl.style.display = "flex"; break; }
@@ -332,7 +340,7 @@ function animate(timestamp) {
     case "falling": {
       if (sticks[sticks.length - 1].rotation < 180) sticks[sticks.length - 1].rotation += dt / turningSpeed; heroY += dt / fallingSpeed; const maxHeroY = platformHeight + 100 + (window.innerHeight || 800) / 2;
       if (heroY > maxHeroY) {
-        if (currentMonkeyLives > 0) { currentMonkeyLives--; phase = "waiting"; inviteBtn.style.display = "block"; heroY = 0; heroX = sticks[sticks.length - 1].x - heroDistanceFromEdge; sticks[sticks.length - 1].length = 0; sticks[sticks.length - 1].rotation = 0; perfectElement.innerText = texts[currentLang].monkey; perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1; draw(); setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); break; }
+        if (currentMonkeyLives > 0) { currentMonkeyLives--; phase = "waiting"; heroY = 0; heroX = sticks[sticks.length - 1].x - heroDistanceFromEdge; sticks[sticks.length - 1].length = 0; sticks[sticks.length - 1].rotation = 0; perfectElement.innerText = texts[currentLang].monkey; perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1; draw(); setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); break; }
         if (isDuelMode) { phase = "dead_options"; perfectElement.innerText = texts[currentLang].duelEnded; perfectElement.style.color = "#e74c3c"; perfectElement.style.opacity = 1; restartButton.style.display = "block"; saveScoreToAPI(); break; }
         let reviveMenuEl = document.getElementById("reviveMenu"); if (!adReviveUsedThisRun && reviveMenuEl) { phase = "dead_options"; reviveMenuEl.style.display = "flex"; break; }
         phase = "dead_options"; restartButton.style.display = "block"; saveScoreToAPI(); break;
