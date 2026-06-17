@@ -104,8 +104,10 @@ document.body.appendChild(inviteBtn);
 
 inviteBtn.addEventListener("click", () => {
     if (phase !== "waiting") return;
-    // DİKKAT: Buradaki linki kendi botunun linkiyle değiştirmelisin! (Örn: t.me/NinjaBridgeBot/oyun)
-    let botUrl = `https://t.me/SENIN_BOTUNUN_ADI_BURAYA_GELECEK/APP_ADI?startapp=ref_${tgUserId}`;
+    
+    // Botunun adını ekledik. Eğer BotFather'dan Web App oluştururken kısa ad (short name) olarak "oyun", "play", "app" gibi bir şey belirlediysen "oyun" yazan kısmı onunla değiştir.
+    let botUrl = `https://t.me/ninjabridge_bot/play?startapp=ref_${tgUserId}`;
+    
     let shareText = texts[currentLang].inviteText;
     let shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botUrl)}&text=${encodeURIComponent(shareText)}`;
     if (tg && tg.openTelegramLink) { tg.openTelegramLink(shareUrl); } else { window.open(shareUrl, "_blank"); }
