@@ -149,7 +149,7 @@ const comboSound = new Audio('combo.mp3'); comboSound.volume = 0.8;
 const fallSound = new Audio('dusme.mp3'); fallSound.volume = 0.8;
 
 // 🔥 VAMPİR JUMPSCARE SES VE GÖRSELLERİ 🔥
-let vampireImg = new Image(); vampireImg.src = 'vampir.png';
+let vampireImg = new Image(); vampireImg.src = 'vampir.jpg'; // BURASI JPG OLARAK DEĞİŞTİRİLDİ
 const screamSound = new Audio('ciglik.mp3'); screamSound.volume = 1.0;
 
 let soundsUnlocked = false;
@@ -186,7 +186,7 @@ document.getElementById("watchEarnBtn").addEventListener("click", () => {
         if (result.done) { 
             const rewards = [35, 50, 65]; const earned = rewards[Math.floor(Math.random() * rewards.length)];
             playerCoins += earned; updateCoinUI();
-            fetch('https://ninja-bridge-api.onrender.com/api/score/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: tgGroupId, earnedCoins: sessionEarnedCoins, earnedGems: 0 }) }).then(() => { sessionEarnedCoins = 0; }).catch(e => {});
+            fetch('https://ninja-bridge-api.onrender.com/api/score/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: tgGroupId, earnedCoins: earned, earnedGems: 0 }) }).catch(e => {});
             if(tg && tg.showAlert) { tg.showAlert(`📺 ${earned} ${texts[currentLang].msgEarned}`); }
         } 
     }).catch(() => { });
@@ -281,7 +281,7 @@ function resetGame() {
   monsters = []; 
   
   totalPlatformsGenerated = 1;
-  vampirePlatformTarget = Math.floor(Math.random() * 31) + 10; // 10-40 arası sinsi hedef
+  vampirePlatformTarget = Math.floor(Math.random() * 31) + 10; 
   vampireEffectTimer = 0;
   easterMessage = "";
   easterMessageTimer = 0;
@@ -384,11 +384,10 @@ function animate(timestamp) {
 
       if (phase === "dead_monster") break;
 
-      // 🔥 VAMPİR JUMPSCARE KONTROLÜ 🔥
       let currentPlat = platforms.find(p => heroX >= p.x && heroX <= p.x + p.w);
       if (currentPlat && currentPlat.isVampireTrigger && !currentPlat.vampireTriggered) {
           currentPlat.vampireTriggered = true;
-          vampireEffectTimer = 75; // Uçuş süresi 75 kareye uzatıldı (~1.25 sn)
+          vampireEffectTimer = 75; 
           screamSound.currentTime = 0; screamSound.play().catch(e=>{});
       }
 
@@ -401,7 +400,7 @@ function animate(timestamp) {
         sceneOffset += dt / transitioningSpeed; const [nextPlatform] = thePlatformTheStickHits(); 
         if (sceneOffset > nextPlatform.x + nextPlatform.w - paddingX) { 
             sticks.push({ x: nextPlatform.x + nextPlatform.w, length: 0, rotation: 0 }); phase = "waiting"; 
-            cleanUpOldObjects(); // Nesne silici
+            cleanUpOldObjects(); 
         } 
         break; 
     }
@@ -453,19 +452,16 @@ function draw() {
         let totalDuration = 75;
         let progress = (totalDuration - vampireEffectTimer) / totalDuration;
         
-        // Matematiksel Uçuş Fiziği: Sağdan gir, sola kay, havada dalgalan!
         let vX = wWidth - (progress * (wWidth + 250)); 
         let vY = (wHeight * 0.18) + Math.sin(progress * Math.PI * 2) * 45; 
         
         if (vampireImg.complete && vampireImg.naturalWidth !== 0) {
             ctx.drawImage(vampireImg, vX, vY, 110, 110); 
         } else {
-            // Sinsi Güvenlik Kilidi: Resim yüklenemezse Emoji Uçar!
             ctx.font = "55px Arial";
             ctx.fillText("🧛", vX, vY + 45);
         }
         
-        // Estetik Kan Efekti Flaşı (Gözü asla yormaz)
         ctx.fillStyle = "rgba(192, 57, 43, " + (0.18 * Math.sin(progress * Math.PI)) + ")";
         ctx.fillRect(0, 0, wWidth, wHeight);
         ctx.restore();
@@ -523,3 +519,70 @@ function drawHill(baseHeight, amplitude, stretch, color) { let wWidth = window.i
 function drawTree(x, color) { ctx.save(); ctx.translate((-sceneOffset * backgroundSpeedMultiplier + x) * hill1Stretch, getTreeY(x, hill1BaseHeight, hill1Amplitude)); const treeTrunkHeight = 5, treeTrunkWidth = 2, treeCrownHeight = 25, treeCrownWidth = 10; ctx.fillStyle = "#7D833C"; ctx.fillRect(-treeTrunkWidth / 2, -treeTrunkHeight, treeTrunkWidth, treeTrunkHeight); ctx.beginPath(); ctx.moveTo(-treeCrownWidth / 2, -treeTrunkHeight); ctx.lineTo(0, -(treeTrunkHeight + treeCrownHeight)); ctx.lineTo(treeCrownWidth / 2, -treeTrunkHeight); ctx.fillStyle = color; ctx.fill(); ctx.restore(); }
 function getHillY(windowX, baseHeight, amplitude, stretch) { let wHeight = window.innerHeight || 800; return Math.sinus((sceneOffset * backgroundSpeedMultiplier + windowX) * stretch) * amplitude + wHeight - baseHeight; }
 function getTreeY(x, baseHeight, amplitude) { let wHeight = window.innerHeight || 800; return Math.sinus(x) * amplitude + wHeight - baseHeight; }
+
+// ------------------------------------
+// 8. UI VE MARKET İŞLEMLERİ 
+// ------------------------------------
+
+document.getElementById("leaderboardBtn").addEventListener("click", () => { 
+    const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; }
+    document.getElementById("leaderboardModal").style.display = "block"; const list = document.getElementById("scoreList"); list.innerHTML = `<li style='text-align:center;'>${t.loading}</li>`; 
+    fetch(`https://ninja-bridge-api.onrender.com/api/score/global?t=${Date.now()}`).then(res => res.json()).then(data => { 
+        list.innerHTML = ""; if(data.length === 0) { list.innerHTML = `<li>${t.noOne}</li>`; return; } 
+        data.forEach((item, i) => { list.innerHTML += `<li style="padding:4px; border-bottom:1px solid #ddd;"><b>${i + 1}.</b> ${item.name} <span style="float:right;">${item.score}</span></li>`; }); 
+    }).catch(() => list.innerHTML = `<li style='color:red;'>${t.error}</li>`); 
+}); 
+document.getElementById("closeLeaderboard").addEventListener("click", () => { document.getElementById("leaderboardModal").style.display = "none"; });
+
+document.getElementById("shopBtn").addEventListener("click", () => { 
+    if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(texts[currentLang].msgPlaying); return; }
+    document.getElementById("shopModal").style.display = "block"; renderShop(); 
+});
+document.getElementById("closeShop").addEventListener("click", () => { document.getElementById("shopModal").style.display = "none"; });
+
+function renderShop() {
+    const t = texts[currentLang];
+    const list = document.getElementById("shopList");
+    let html = `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; text-align:center;">💎 <b>${t.shopGemExchange}</b></li>`;
+    html += `<li style="padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee;"><span>${t.shopExchangeBtn}</span> <button style="background:#9b59b6; padding: 5px 10px; font-size:12px; margin:0; border:none; color:white; border-radius:5px; cursor:pointer;" onclick="convertGems()">${t.shopGetGem}</button></li>`;
+    html += `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; margin-top:6px; text-align:center;">🥷 <b>${t.shopSkins}</b></li>`;
+    
+    Object.keys(skinData).forEach(key => { 
+        const skin = skinData[key]; let sName = currentLang === "tr" ? skin.nameTr : skin.nameEn; 
+        let sDesc = currentLang === "tr" ? (skin.descTr || "") : (skin.descEn || "");
+        let actionHTML = ""; 
+        
+        if (currentSkin === key) { actionHTML = `<span style=\"font-size:13px;\">${t.equipped}</span>`; } 
+        else if (ownedSkins.includes(key)) { actionHTML = `<button style=\"padding: 5px 10px; font-size:12px; margin:0; border:none; background:#34495e; color:white; border-radius:5px; cursor:pointer;\" onclick=\"equipSkin('${key}')\">${t.equip}</button>`; } 
+        else {
+            if (skin.priceGem > 0) { actionHTML = `<button style=\"padding: 5px 10px; font-size:12px; margin:0; border:none; background:#9b59b6; color:white; border-radius:5px; cursor:pointer;\" onclick=\"buySkin('${key}')\">💎 ${skin.priceGem}</button>`; } 
+            else { actionHTML = `<button style=\"padding: 5px 10px; font-size:12px; margin:0; border:none; background:#2196F3; color:white; border-radius:5px; cursor:pointer;\" onclick=\"buySkin('${key}')\">🪙 ${skin.price}</button>`; }
+        }
+        
+        let colorPreview = skin.gradient ? `background: linear-gradient(${skin.colors[0]}, ${skin.colors[2]}); -webkit-background-clip: text; -webkit-text-fill-color: transparent;` : `color:${skin.body};`;
+        let descHTML = sDesc ? `<br><small style="color:gray; font-size:11px;">${sDesc}</small>` : "";
+        html += `<li style=\"padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee;\"><span style="line-height:1.2;"><span style=\"${colorPreview} text-shadow: 1px 1px 1px black;\">⬤</span> ${sName}${descHTML}</span> ${actionHTML}</li>`; 
+    });
+    
+    html += `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; margin-top:6px; text-align:center;">🐾 <b>${t.shopPets}</b></li>`;
+    Object.keys(petData).forEach(key => { 
+        const pet = petData[key]; let pName = currentLang === "tr" ? pet.nameTr : pet.nameEn; let pDesc = currentLang === "tr" ? pet.descTr : pet.descEn;
+        let isOwned = ownedPets.hasOwnProperty(key); let level = isOwned ? ownedPets[key] : 0; 
+        if (!isOwned) { html += `<li style=\"padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee;\"><span style=\"line-height:1.2;\">${pet.emoji} ${pName} (Sv.1)<br><small style=\"color:gray; font-size:11px;\">${pDesc}</small></span> <button style=\"padding: 5px 10px; font-size:12px; margin:0; border:none; background:#2196F3; color:white; border-radius:5px; cursor:pointer;\" onclick=\"buyPet('${key}', ${pet.price})\">🪙 ${pet.price}</button></li>`; } 
+        else { 
+            let eqBtn = (currentPet === key) ? `<span style=\"font-size:13px; margin-right:5px;\">${t.equipped}</span>` : `<button style=\"padding: 5px 10px; font-size:12px; margin-right:5px; border:none; background:#34495e; color:white; border-radius:5px; cursor:pointer;\" onclick=\"equipPet('${key}')\">${t.equip}</button>`; 
+            let upgBtn = ""; 
+            if (level < 5 && key === "kurt") { let costVal = level * 2; upgBtn = `<button style=\"background:#e67e22; padding: 4px 8px; font-size:11px; border:none; color:white; border-radius:5px; cursor:pointer;\" onclick=\"upgradePet('${key}', ${level+1}, ${costVal})\">⬆️ 💎 ${costVal}</button>`; }
+            else if (level < 4 && key !== "kurt") { let costVal = (level === 1) ? 1 : (level === 2) ? 3 : 5; upgBtn = `<button style=\"background:#e67e22; padding: 4px 8px; font-size:11px; border:none; color:white; border-radius:5px; cursor:pointer;\" onclick=\"upgradePet('${key}', ${level+1}, ${costVal})\">⬆️ 💎 ${costVal}</button>`; } 
+            else { upgBtn = `<span style=\"font-size:11px; color:red; font-weight:bold;\">${t.max}</span>`; } 
+            html += `<li style=\"padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee;\"><span style=\"line-height:1.2;\">${pet.emoji} ${pName} (Sv.${level})<br><small style=\"color:gray; font-size:11px;\">${pDesc}</small></span> <div style=\"display:flex; align-items:center;\">${eqBtn}${upgBtn}</div></li>`; 
+        } 
+    }); list.innerHTML = html;
+}
+
+window.convertGems = function() { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; } if(playerCoins < 1000) { if(tg && tg.showAlert) tg.showAlert(t.msgNoCoin1000); return; } if(tg && tg.showConfirm) { tg.showConfirm(t.askGem, function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/convert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= 1000; playerGems += 1; updateCoinUI(); renderShop(); } }); } }); } }
+window.upgradePet = function(petKey, nextLevel, costVal) { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; } if (playerGems < costVal) { if(tg && tg.showAlert) tg.showAlert(t.msgNoGem); return; } if(tg && tg.showConfirm) { let pName = currentLang==="tr"?petData[petKey].nameTr:petData[petKey].nameEn; tg.showConfirm(t.askPet.replace("{name}", pName).replace("{lvl}", nextLevel), function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/upgradepet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, petName: petKey, coinCost: 0, gemCost: costVal, nextLevel: nextLevel }) }).then(res => res.json()).then(data => { if(data.success) { playerGems -= costVal; ownedPets[petKey] = nextLevel; updateCoinUI(); renderShop(); } }); } }); } }
+window.buySkin = function(skinKey) { const t = texts[currentLang]; const skin = skinData[skinKey]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; } let isGemSkin = skin.priceGem && skin.priceGem > 0; let cost = isGemSkin ? skin.priceGem : skin.price; if (isGemSkin && playerGems < cost) { if(tg && tg.showAlert) tg.showAlert(t.msgNoGem); return; } if (!isGemSkin && playerCoins < cost) { if(tg && tg.showAlert) tg.showAlert(t.msgNoCoin); return; } if(tg && tg.showConfirm) { let sName = currentLang === "tr" ? skin.nameTr : skin.nameEn; let confirmMsg = isGemSkin ? t.askSkinGem.replace("{name}", sName).replace("{gem}", cost) : t.askSkin.replace("{name}", sName).replace("{coin}", cost); tg.showConfirm(confirmMsg, function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/buyskin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey, price: isGemSkin ? 0 : cost, gemPrice: isGemSkin ? cost : 0 }) }).then(res => res.json()).then(data => { if(data.success) { if(isGemSkin) playerGems -= cost; else playerCoins -= cost; ownedSkins.push(skinKey); updateCoinUI(); renderShop(); } }); } }); } }
+window.equipSkin = function(skinKey) { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgNoEquipSkin); return; } fetch('https://ninja-bridge-api.onrender.com/api/score/equipskin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey }) }).then(res => res.json()).then(data => { if(data.success) { currentSkin = skinKey; renderShop(); draw(); } }); }
+window.buyPet = function(petKey, price) { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; } if(playerCoins < price) { if(tg && tg.showAlert) tg.showAlert(t.msgNoCoin); return; } if(tg && tg.showConfirm) { let pName = currentLang==="tr"?petData[petKey].nameTr:petData[petKey].nameEn; tg.showConfirm(t.askAdopt.replace("{name}", pName), function(agreed) { if(agreed) { fetch('https://ninja-bridge-api.onrender.com/api/score/buypet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey, price: price }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= price; ownedPets[petKey] = 1; updateCoinUI(); renderShop(); } }); } }); } }
+window.equipPet = function(petKey) { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgNoEquipPet); return; } fetch('https://ninja-bridge-api.onrender.com/api/score/equippet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey }) }).then(res => res.json()).then(data => { if(data.success) { currentPet = petKey; renderShop(); draw(); } }); }
