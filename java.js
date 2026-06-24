@@ -255,22 +255,71 @@ function resetGame() {
 function generateTree() { const minimumGap = 30, maximumGap = 150; const lastTree = trees[trees.length - 1]; let furthestX = lastTree ? lastTree.x : 0; const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap)); const themeColors = getTheme().tColors; trees.push({ x, color: themeColors[Math.floor(Math.random() * 3)] }); }
 
 function generatePlatform() {
-  let minimumGap, maximumGap, minimumWidth, maximumWidth;
-  if (score >= 5000) { minimumGap = 120; maximumGap = 250; minimumWidth = 10; maximumWidth = 25; } else if (score >= 4000) { minimumGap = 100; maximumGap = 230; minimumWidth = 15; maximumWidth = 35; } else if (score >= 3000) { minimumGap = 90; maximumGap = 210; minimumWidth = 20; maximumWidth = 45; } else if (score >= 2000) { minimumGap = 80; maximumGap = 190; minimumWidth = 25; maximumWidth = 55; } else if (score >= 1000) { minimumGap = 70; maximumGap = 170; minimumWidth = 30; maximumWidth = 65; } else if (score >= 750) { minimumGap = 60; maximumGap = 150; minimumWidth = 35; maximumWidth = 75; } else if (score >= 500) { minimumGap = 50; maximumGap = 130; minimumWidth = 40; maximumWidth = 85; } else if (score >= 250) { minimumGap = 45; maximumGap = 110; minimumWidth = 45; maximumWidth = 95; } else { minimumGap = 40; maximumGap = 90; minimumWidth = 50; maximumWidth = 100; } 
-  let maxScreenGap = window.innerWidth - 130; if (maximumGap > maxScreenGap) { maximumGap = Math.max(minimumGap + 10, maxScreenGap); }
-  const lastPlatform = platforms[platforms.length - 1]; let furthestX = lastPlatform.x + lastPlatform.w; const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap)); const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth)); 
-  platforms.push({ x, w });
-  
-  totalPlatformsGenerated++;
-  if (totalPlatformsGenerated === vampirePlatformTarget) { platforms[platforms.length - 1].isVampireTrigger = true; }
+    let minimumGap, maximumGap, minimumWidth, maximumWidth, spawnChance;
 
-  if (score >= 1000 && platforms.length > 2) {
-      let spawnChance = score >= 2000 ? 0.35 : 0.30; 
-      if (Math.random() < spawnChance) {
-          let isWorld3 = score >= 2000; let mList = isWorld3 ? monsterData[3] : monsterData[2]; let mType = mList[Math.floor(Math.random() * mList.length)];
-          if (!isWorld3) { let gapStartX = lastPlatform.x + lastPlatform.w; let gapWidth = x - gapStartX; monsters.push({ world: 2, platformIndex: platforms.length - 1, x: gapStartX + gapWidth / 2, y: Math.random() > 0.5 ? -150 : 100, dir: Math.random() > 0.5 ? 1 : -1, speed: 2 + Math.random() * 1.5, type: mType, dead: false }); } else { monsters.push({ world: 3, platformIndex: platforms.length - 1, x: x + w / 2, y: 0, dir: Math.random() > 0.5 ? 1 : -1, speed: 0.8 + Math.random() * 0.5, type: mType, dead: false }); }
-      }
-  }
+    // --- ZORLUK KADEMELERİ (11 ADIM) ---
+    if (score >= 6000) {
+        minimumGap = 150; maximumGap = 320; minimumWidth = 5; maximumWidth = 15; spawnChance = 0.65;
+    } else if (score >= 5000) {
+        minimumGap = 140; maximumGap = 300; minimumWidth = 10; maximumWidth = 20; spawnChance = 0.60;
+    } else if (score >= 4500) {
+        minimumGap = 130; maximumGap = 280; minimumWidth = 10; maximumWidth = 25; spawnChance = 0.55;
+    } else if (score >= 4000) {
+        minimumGap = 120; maximumGap = 260; minimumWidth = 15; maximumWidth = 30; spawnChance = 0.50;
+    } else if (score >= 3500) {
+        minimumGap = 110; maximumGap = 240; minimumWidth = 15; maximumWidth = 35; spawnChance = 0.45;
+    } else if (score >= 3000) {
+        minimumGap = 100; maximumGap = 220; minimumWidth = 20; maximumWidth = 45; spawnChance = 0.40;
+    } else if (score >= 2500) {
+        minimumGap = 90; maximumGap = 200; minimumWidth = 25; maximumWidth = 55; spawnChance = 0.35;
+    } else if (score >= 2000) {
+        minimumGap = 80; maximumGap = 180; minimumWidth = 30; maximumWidth = 65; spawnChance = 0.30;
+    } else if (score >= 1500) {
+        minimumGap = 70; maximumGap = 160; minimumWidth = 35; maximumWidth = 75; spawnChance = 0.25;
+    } else if (score >= 1000) {
+        minimumGap = 60; maximumGap = 140; minimumWidth = 40; maximumWidth = 80; spawnChance = 0.20;
+    } else if (score >= 500) {
+        minimumGap = 50; maximumGap = 120; minimumWidth = 45; maximumWidth = 90; spawnChance = 0.15;
+    } else {
+        // BAŞLANGIÇ (0 - 499 Puan Arası) - Canavar Yok
+        minimumGap = 40; maximumGap = 100; minimumWidth = 50; maximumWidth = 100; spawnChance = 0.0;
+    }
+
+    // Telefon/Ekran boyutuna göre aralığın saçmalamasını engelleyen kilit
+    let maxScreenGap = window.innerWidth - 130;
+    if (maximumGap > maxScreenGap) { maximumGap = Math.max(minimumGap + 10, maxScreenGap); }
+    
+    const lastPlatform = platforms[platforms.length - 1];
+    let furthestX = lastPlatform.x + lastPlatform.w;
+    
+    // Yeni platformun X konumu ve Genişliği (W)
+    const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap));
+    const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth));
+    platforms.push({ x, w });
+    
+    totalPlatformsGenerated++;
+    if (totalPlatformsGenerated === vampirePlatformTarget) { 
+        platforms[platforms.length - 1].isVampireTrigger = true; 
+    }
+
+    // --- CANAVAR OLUŞTURMA SİSTEMİ ---
+    if (spawnChance > 0 && platforms.length > 2) {
+        if (Math.random() < spawnChance) {
+            let isWorld3 = score >= 2000;
+            let mList = isWorld3 ? monsterData[3] : monsterData[2];
+            let mType = mList[Math.floor(Math.random() * mList.length)];
+            
+            if (!isWorld3) {
+                // Çöl Canavarları (Boşluktan fırlar)
+                let gapStartX = lastPlatform.x + lastPlatform.w;
+                let gapWidth = x - gapStartX;
+                monsters.push({ world: 2, platformIndex: platforms.length - 1, x: gapStartX + gapWidth / 2, y: Math.random() > 0.5 ? -150 : 100, dir: Math.random() > 0.5 ? 1 : -1, speed: 2 + Math.random() * 1.5, type: mType, dead: false });
+            } else {
+                // Buz Canavarları (Platformda gezer)
+                monsters.push({ world: 3, platformIndex: platforms.length - 1, x: x + w / 2, y: 0, dir: Math.random() > 0.5 ? 1 : -1, speed: 0.8 + Math.random() * 0.5, type: mType, dead: false });
+            }
+        }
+    }
 }
 
 window.addEventListener("mousedown", function (event) { if (event.target.tagName === 'CANVAS' && !isMenuOpen() && phase == "waiting") { lastTimestamp = undefined; introductionElement.style.opacity = 0; phase = "stretching"; unlockSounds(); } });
@@ -307,8 +356,34 @@ function animate(timestamp) {
           
           let oldScore = score; score += earnedPts;
 
-          if (oldScore < 4 && score >= 4) { easterMessage = "Yapımcı@onurviski"; easterMessageTimer = 180; }
-          if (score >= nextMessageMilestone) { easterMessage = "Bu zorluklara nasıl gelebildin?"; easterMessageTimer = 180; nextMessageMilestone += 500; }
+          if (oldScore < 4 && score >= 4) { easterMessage = "Yapımcı: @onurviski"; easterMessageTimer = 180; }
+          if (oldScore < 10 && score >= 10) { easterMessage = "Mercan Hanıma Teşekkürler"; easterMessageTimer = 180; }
+         if (score >= nextMessageMilestone) {
+              // Her 500'de bir sıradaki mesajı seçmesi için matematiksel indeks hesaplıyoruz
+              let mesajIndeksi = (nextMessageMilestone / 500) - 1;
+              
+              // İstediğin kadar mesaj ekleyebilirsin, sırayla çıkacaklar!
+              const ozelMesajlar = [
+                  "Bu zorluklara nasıl gelebildin?",      // 500 Puan
+                  "Parmakların yorulmadı mı?",            // 1000 Puan
+                  "Gerçek bir Ninja Ustası!",             // 1500 Puan
+                  "Makine misin mübarek!",                // 2000 Puan
+                  "Gözlerime inanamıyorum!",              // 2500 Puan
+                  "Yok artık, hile mi açtın? 😅",          // 3000 Puan
+                  "Oyunun sonu yok, pes et bence!",       // 3500 Puan
+                  "Sen bir efsanesin!"                    // 4000 Puan
+              ];
+
+              // Eğer oyuncu listendeki tüm mesajları bitirirse (Örn: 4500 ve üstü) bu çıkacak:
+              if (mesajIndeksi >= ozelMesajlar.length) {
+                  easterMessage = "Limitleri aştın, saygı duyuyorum!";
+              } else {
+                  easterMessage = ozelMesajlar[mesajIndeksi];
+              }
+
+              easterMessageTimer = 180;
+              nextMessageMilestone += 500;
+          }
 
           processCoinGeneration(earnedPts); scoreElement.innerText = score; generatePlatform(); generateTree(); generateTree();
         }
