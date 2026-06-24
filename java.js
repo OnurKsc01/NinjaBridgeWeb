@@ -127,7 +127,7 @@ const worldThemes = {
     2: { top: "#FDEB71", bot: "#F8D800", h1: "#E67E22", h2: "#D35400", tColors: ["#A04000", "#BA4A00", "#CA6F1E"] }, 
     3: { top: "#E0C3FC", bot: "#8EC5FC", h1: "#BDC3C7", h2: "#ECF0F1", tColors: ["#FFFFFF", "#F2F3F4", "#E5E8E8"] }  
 };
-function getTheme() { if (score >= 2000) return worldThemes[3]; if (score >= 1000) return worldThemes[2]; return worldThemes[1]; }
+function getTheme() { if (score >= 3000) return worldThemes[3]; if (score >= 1000) return worldThemes[2]; return worldThemes[1]; }
 
 let monsters = []; const monsterData = { 2: ["scorpion", "snake", "mummy"], 3: ["ice_golem", "yeti", "ghost"] };
 const preRenderedMonsters = {}; Object.values(monsterData).flat().forEach(m => { let img = new Image(); img.src = m + '.png'; preRenderedMonsters[m] = img; });
@@ -305,7 +305,7 @@ function generatePlatform() {
     // --- CANAVAR OLUŞTURMA SİSTEMİ ---
     if (spawnChance > 0 && platforms.length > 2) {
         if (Math.random() < spawnChance) {
-            let isWorld3 = score >= 2000;
+            let isWorld3 = score >= 3000;
             let mList = isWorld3 ? monsterData[3] : monsterData[2];
             let mType = mList[Math.floor(Math.random() * mList.length)];
             
