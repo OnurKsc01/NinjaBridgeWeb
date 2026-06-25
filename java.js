@@ -678,10 +678,19 @@ document.body.insertAdjacentHTML('beforeend', dailyModalHTML);
 // 🔥 FONKSİYONLAR 🔥
 // ==========================================
 
-window.showVipMenu = function() { document.getElementById("vipInfoModal").style.display = "flex"; };
-window.closeVipMenu = function() { document.getElementById("vipInfoModal").style.display = "none"; };
+window.showVipMenu = function() { 
+    // Market menüsünü gizle ki çakışma olmasın
+    document.getElementById("shopModal").style.display = "none"; 
+    document.getElementById("vipInfoModal").style.display = "flex"; 
+};
 
-// Premium Kasa Sistemi (Detaylı Hata Yakalayıcı Eklendi)
+window.closeVipMenu = function() { 
+    document.getElementById("vipInfoModal").style.display = "none"; 
+    // Marketi geri aç
+    document.getElementById("shopModal").style.display = "block"; 
+};
+
+// Premium Kasa Sistemi 
 window.openPremiumBox = function() {
     if (phase !== "waiting") return;
     if (playerGems < 30) {
@@ -698,7 +707,8 @@ window.openPremiumBox = function() {
                     body: JSON.stringify({ userId: tgUserId })
                 })
                 .then(res => {
-                    if (!res.ok) throw new Error("Sunucu Hatası: " + res.status);
+                    // Hatanın asıl sebebini ekrana basıyoruz
+                    if (!res.ok) throw new Error("Lütfen oyunu 1 kere oynayıp bilerek yanın (Veritabanı güncellemesi için).");
                     return res.json();
                 })
                 .then(data => {
@@ -711,13 +721,12 @@ window.openPremiumBox = function() {
                         if (tg && tg.showAlert) tg.showAlert(`❌ ${data.message}`);
                     }
                 }).catch(err => {
-                    if (tg && tg.showAlert) tg.showAlert("KASA HATASI: C# Sunucusuna bağlanılamadı. Hata: " + err.message);
+                    if (tg && tg.showAlert) tg.showAlert("KASA HATASI: " + err.message);
                 });
             }
         });
     }
 };
-
 // Telegram Stars Faturası
 window.buyVIP = function() {
     const btn = document.getElementById("buyVipBtn");
