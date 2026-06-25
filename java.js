@@ -260,6 +260,7 @@ window.addEventListener('load', () => {
     if (tg && tg.ready) tg.ready(); if (tg && tg.expand) tg.expand();
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
     updateUITexts(); initAdsGram(); loadPlayerData(); checkDuelStatus(); processReferralIfAny(); resetGame();
+    
     checkDailyReward(); 
 });
 });
@@ -614,7 +615,10 @@ document.getElementById("closeShop").addEventListener("click", () => { document.
 function renderShop() {
     const t = texts[currentLang]; const list = document.getElementById("shopList");
     let html = `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; text-align:center;">💎 <b>${t.shopGemExchange}</b></li>`;
-    html += `<li style="background:linear-gradient(45deg, #8e44ad, #3498db); justify-content:center; padding:10px; font-size:14px; text-align:center; border-radius:8px; cursor:pointer; color:white; font-weight:bold; margin-bottom:10px; box-shadow:0 4px 6px rgba(0,0,0,0.3);" onclick="buyVIP()">👑 VIP Pass Al (25 ⭐️)</li>`;
+// 1. VIP Pass Menüsünü Açan Buton
+    html += `<li style="background:linear-gradient(45deg, #8e44ad, #3498db); justify-content:center; padding:10px; font-size:14px; text-align:center; border-radius:8px; cursor:pointer; color:white; font-weight:bold; margin-bottom:10px; box-shadow:0 4px 6px rgba(0,0,0,0.3);" onclick="showVipMenu()">👑 VIP Pass Ayrıcalıkları</li>`;
+    
+    // 2. Premium Kasa Butonu
     html += `<li style="background:linear-gradient(45deg, #f1c40f, #e67e22); justify-content:center; padding:10px; font-size:14px; text-align:center; border-radius:8px; cursor:pointer; color:white; font-weight:bold; margin-bottom:10px; box-shadow:0 4px 6px rgba(0,0,0,0.3);" onclick="openPremiumBox()">🎁 Premium Kasa Aç (30 💎)</li>`;
     html += `<li style="padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee;"><span>${t.shopExchangeBtn}</span> <button style="background:#9b59b6; padding: 5px 10px; font-size:12px; margin:0; border:none; color:white; border-radius:5px; cursor:pointer;" onclick="convertGems()">${t.shopGetGem}</button></li>`;
     html += `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; margin-top:6px; text-align:center;">🥷 <b>${t.shopSkins}</b></li>`;
@@ -636,87 +640,164 @@ window.buySkin = function(skinKey) { const t = texts[currentLang]; const skin = 
 window.equipSkin = function(skinKey) { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgNoEquipSkin); return; } fetch('https://ninjabridgeapi.duckdns.org/api/score/equipskin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey }) }).then(res => res.json()).then(data => { if(data.success) { currentSkin = skinKey; renderShop(); draw(); } }); }
 window.buyPet = function(petKey, price) { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; } if(playerCoins < price) { if(tg && tg.showAlert) tg.showAlert(t.msgNoCoin); return; } if(tg && tg.showConfirm) { let pName = currentLang==="tr"?petData[petKey].nameTr:petData[petKey].nameEn; tg.showConfirm(t.askAdopt.replace("{name}", pName), function(agreed) { if(agreed) { fetch('https://ninjabridgeapi.duckdns.org/api/score/buypet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey, price: price }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= price; ownedPets[petKey] = 1; updateCoinUI(); renderShop(); } }); } }); } }
 window.equipPet = function(petKey) { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgNoEquipPet); return; } fetch('https://ninjabridgeapi.duckdns.org/api/score/equippet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey }) }).then(res => res.json()).then(data => { if(data.success) { currentPet = petKey; renderShop(); draw(); } }); }
-// 🔥 GÜNCELLENMİŞ TELEGRAM STARS İLE VIP SATIN ALMA 🔥
-window.buyVIP = function() {
-    const t = texts[currentLang];
-    if (phase !== "waiting") return;
-    
-    document.getElementById("shopBtn").innerText = "⏳ Bağlanıyor...";
-    
-    fetch('https://ninjabridgeapi.duckdns.org/api/score/create-vip-invoice', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: tgUserId })
-    })
-    .then(res => {
-        if (!res.ok) throw new Error("Sunucu 500 Hatası! (VDS güncellenmemiş veya token eksik)");
-        return res.json();
-    })
-    .then(data => {
-        document.getElementById("shopBtn").innerText = t.btnShop;
-        
-        if (data.success && data.invoiceUrl) {
-            tg.openInvoice(data.invoiceUrl, function(status) {
-                if (status === 'paid') {
-                    fetch('https://ninjabridgeapi.duckdns.org/api/score/grant-vip', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ userId: tgUserId })
-                    }).then(() => {
-                        if(tg && tg.showAlert) tg.showAlert("Tebrikler! 👑 VIP oldun! %15 Jackpot şansın ve rozetin aktif.");
-                    });
-                } else if (status === 'failed') {
-                    if(tg && tg.showAlert) tg.showAlert("Ödeme iptal edildi veya başarısız oldu.");
-                }
-            });
-        } else {
-            if(tg && tg.showAlert) tg.showAlert("Fatura oluşturulamadı: " + (data.message || "Bilinmeyen Hata"));
-        }
-    }).catch(e => {
-        document.getElementById("shopBtn").innerText = t.btnShop;
-        if(tg && tg.showAlert) tg.showAlert("Kritik Hata: " + e.message);
-    });
-};
+
+// ==========================================
+// 🔥 EKRANLARI VE MODALLARI HTML'E EKLE 🔥
+// ==========================================
+
+// 1. VIP Ayrıcalıklar Menüsü
+const vipModalHTML = `
+<div id="vipInfoModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:10000; justify-content:center; align-items:center; flex-direction:column;">
+    <div style="background:#2c3e50; border:2px solid #9b59b6; border-radius:15px; width:90%; max-width:350px; padding:20px; text-align:center; color:white; box-shadow:0 0 20px #9b59b6;">
+        <h2 style="color:#f39c12; margin-top:0; font-size:22px;">👑 VIP PASS</h2>
+        <ul style="text-align:left; font-size:14px; color:#ecf0f1; padding-left:20px; line-height:1.6; margin-bottom:20px;">
+            <li>🗓️ <b>30 Günlük Seri:</b> Her gün yüksek miktarda jeton ve elmas ödülü (Boş gün yok!)</li>
+            <li>🎰 <b>Şans Artışı:</b> Premium kasalarda Jackpot (100 Elmas) şansı %15'e çıkar!</li>
+            <li>🏆 <b>Özel Rozet:</b> Liderlik tablolarında isminin yanında 👑 VIP rozeti görünür.</li>
+        </ul>
+        <button id="buyVipBtn" style="background:#27ae60; color:white; border:none; padding:10px 20px; font-size:16px; font-weight:bold; border-radius:8px; cursor:pointer; width:100%; margin-bottom:10px;" onclick="buyVIP()">💳 SATIN AL (25 ⭐️)</button>
+        <button style="background:#e74c3c; color:white; border:none; padding:8px 15px; font-size:14px; font-weight:bold; border-radius:8px; cursor:pointer; width:100%;" onclick="closeVipMenu()">Kapat</button>
+    </div>
+</div>`;
+document.body.insertAdjacentHTML('beforeend', vipModalHTML);
+
+// 2. 30 Günlük Takvim Menüsü
+const dailyModalHTML = `
+<div id="dailyRewardModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; justify-content:center; align-items:center; flex-direction:column;">
+    <div style="background:#2c3e50; border:2px solid #f1c40f; border-radius:15px; width:90%; max-width:350px; padding:20px; text-align:center; color:white; box-shadow:0 0 20px #f1c40f;">
+        <h2 style="color:#f1c40f; margin-top:0; font-size:20px;">📅 GÜNLÜK ÖDÜLLER</h2>
+        <p style="font-size:11px; color:#bdc3c7; margin-bottom:10px;">VIP'ler her gün, Normal oyuncular belirli günlerde ödül alır.</p>
+        <div id="calendarGrid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:5px; margin-bottom:15px; max-height:40vh; overflow-y:auto; padding:5px;"></div>
+        <button id="claimDailyBtn" style="background:#27ae60; color:white; border:none; padding:10px 20px; font-size:16px; font-weight:bold; border-radius:8px; cursor:pointer; width:100%; margin-bottom:10px;" onclick="claimDailyReward()">🎁 ÖDÜLÜ AL</button>
+        <button style="background:#e74c3c; color:white; border:none; padding:8px 15px; font-size:14px; font-weight:bold; border-radius:8px; cursor:pointer; width:100%;" onclick="document.getElementById('dailyRewardModal').style.display='none'">Kapat</button>
+    </div>
+</div>`;
+document.body.insertAdjacentHTML('beforeend', dailyModalHTML);
+
+// ==========================================
+// 🔥 FONKSİYONLAR 🔥
+// ==========================================
+
+window.showVipMenu = function() { document.getElementById("vipInfoModal").style.display = "flex"; };
+window.closeVipMenu = function() { document.getElementById("vipInfoModal").style.display = "none"; };
+
+// Premium Kasa Sistemi (Detaylı Hata Yakalayıcı Eklendi)
 window.openPremiumBox = function() {
-    const t = texts[currentLang];
-    if (phase !== "waiting") {
-        if(tg && tg.showAlert) tg.showAlert(t.msgPlaying);
-        return;
-    }
+    if (phase !== "waiting") return;
     if (playerGems < 30) {
-        if(tg && tg.showAlert) tg.showAlert(t.msgNoGem || "Yetersiz Elmas!");
+        if(tg && tg.showAlert) tg.showAlert("Yetersiz Elmas! Kasa için 30 💎 gerekiyor.");
         return;
     }
     
     if (tg && tg.showConfirm) {
-        tg.showConfirm("30 Elmas karşılığında Premium Kasa açmak istiyor musun?", function(agreed) {
+        tg.showConfirm("30 Elmas ile kasayı açıyorsun. Onaylıyor musun?", function(agreed) {
             if (agreed) {
-                // Ekrana geçici bir "Açılıyor..." bildirimi bas
-                document.getElementById("shopBtn").innerText = "🎁 Açılıyor...";
-                
                 fetch('https://ninjabridgeapi.duckdns.org/api/score/openbox', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ userId: tgUserId })
-                }).then(res => res.json()).then(data => {
-                    document.getElementById("shopBtn").innerText = t.btnShop; // Butonu düzelt
-                    
+                })
+                .then(res => {
+                    if (!res.ok) throw new Error("Sunucu Hatası: " + res.status);
+                    return res.json();
+                })
+                .then(data => {
                     if (data.success) {
-                        playerGems -= 30; // Kasayı aldık
-                        playerGems += data.rewardGems; // İçinden çıkanı ekledik
-                        updateCoinUI();
-                        renderShop();
-                        
+                        playerGems -= 30; 
+                        playerGems += data.rewardGems; 
+                        updateCoinUI(); renderShop();
                         if (tg && tg.showAlert) tg.showAlert(`🎁 ${data.message}`);
                     } else {
                         if (tg && tg.showAlert) tg.showAlert(`❌ ${data.message}`);
                     }
-                }).catch(() => {
-                    document.getElementById("shopBtn").innerText = t.btnShop;
-                    if (tg && tg.showAlert) tg.showAlert("Hata oluştu.");
+                }).catch(err => {
+                    if (tg && tg.showAlert) tg.showAlert("KASA HATASI: C# Sunucusuna bağlanılamadı. Hata: " + err.message);
                 });
             }
         });
     }
 };
+
+// Telegram Stars Faturası
+window.buyVIP = function() {
+    const btn = document.getElementById("buyVipBtn");
+    btn.innerText = "⏳ Fatura İsteniyor...";
+    btn.disabled = true;
+    
+    fetch('https://ninjabridgeapi.duckdns.org/api/score/create-vip-invoice', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId })
+    }).then(res => res.json()).then(data => {
+        btn.innerText = "💳 SATIN AL (25 ⭐️)"; btn.disabled = false;
+        if (data.success && data.invoiceUrl) {
+            tg.openInvoice(data.invoiceUrl, function(status) {
+                if (status === 'paid') {
+                    fetch('https://ninjabridgeapi.duckdns.org/api/score/grant-vip', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId })
+                    }).then(() => {
+                        closeVipMenu();
+                        if(tg && tg.showAlert) tg.showAlert("Tebrikler! 👑 VIP Aktif!");
+                    });
+                }
+            });
+        } else {
+            if(tg && tg.showAlert) tg.showAlert("Fatura Hatası: " + (data.message || "Bilinmiyor"));
+        }
+    }).catch(e => {
+        btn.innerText = "💳 SATIN AL (25 ⭐️)"; btn.disabled = false;
+        if(tg && tg.showAlert) tg.showAlert("Bağlantı Hatası: " + e.message);
+    });
+};
+
+// Günlük Takvim Sistemi
+window.checkDailyReward = function() {
+    fetch(`https://ninjabridgeapi.duckdns.org/api/score/daily-status/${tgUserId}`)
+    .then(res => res.json())
+    .then(data => {
+        if(data.success && !data.claimedToday) {
+            renderDailyCalendar(data.currentDay, data.isPremium);
+            document.getElementById('dailyRewardModal').style.display = 'flex';
+        }
+    }).catch(e => console.log("Takvim Hatası:", e));
+};
+
+window.renderDailyCalendar = function(currentDay, isPremium) {
+    const grid = document.getElementById("calendarGrid"); grid.innerHTML = "";
+    const normalDays = [1, 3, 5, 7, 10, 13, 15, 18, 20, 23, 25, 28, 30];
+
+    for(let i = 1; i <= 30; i++) {
+        let isPast = i < currentDay; let isToday = i === currentDay;
+        let bgColor = isToday ? "#f39c12" : (isPast ? "#27ae60" : "#34495e");
+        let icon = "❌";
+        
+        if (isPremium) {
+            icon = (i % 5 === 0) ? "💎" : "🪙"; if(i === 30) icon = "👑";
+        } else {
+            if (normalDays.includes(i)) icon = (i === 15 || i === 30) ? "💎" : "🪙";
+        }
+        if (isPast) icon = "✅";
+        
+        grid.innerHTML += `<div style="background:${bgColor}; border-radius:5px; padding:5px; font-weight:bold; border: 1px solid #7f8c8d; text-align:center;"><div style="font-size:10px; color:#ecf0f1;">G.${i}</div><div style="font-size:14px;">${icon}</div></div>`;
+    }
+};
+
+window.claimDailyReward = function() {
+    const btn = document.getElementById("claimDailyBtn");
+    btn.innerText = "⏳ Bekle..."; btn.disabled = true;
+
+    fetch('https://ninjabridgeapi.duckdns.org/api/score/claim-daily', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId })
+    }).then(res => res.json()).then(data => {
+        if(data.success) {
+            if(data.rewardCoins > 0 || data.rewardGems > 0) {
+                playerCoins += data.rewardCoins; playerGems += data.rewardGems; updateCoinUI();
+            }
+            if(tg && tg.showAlert) tg.showAlert(data.message);
+            document.getElementById('dailyRewardModal').style.display = 'none';
+        }
+    }).catch(e => {
+        btn.innerText = "🎁 ÖDÜLÜ AL"; btn.disabled = false;
+        if(tg && tg.showAlert) tg.showAlert("Hata: " + e.message);
+    });
+};
+
 
