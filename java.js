@@ -263,7 +263,7 @@ window.addEventListener('load', () => {
     
     checkDailyReward(); 
 });
-});
+
 
 function processReferralIfAny() {
     if (startParam && startParam.startsWith("ref_")) {
@@ -642,51 +642,16 @@ window.buyPet = function(petKey, price) { const t = texts[currentLang]; if (phas
 window.equipPet = function(petKey) { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgNoEquipPet); return; } fetch('https://ninjabridgeapi.duckdns.org/api/score/equippet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey }) }).then(res => res.json()).then(data => { if(data.success) { currentPet = petKey; renderShop(); draw(); } }); }
 
 // ==========================================
-// 🔥 EKRANLARI VE MODALLARI HTML'E EKLE 🔥
-// ==========================================
-
-// 1. VIP Ayrıcalıklar Menüsü
-const vipModalHTML = `
-<div id="vipInfoModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:10000; justify-content:center; align-items:center; flex-direction:column;">
-    <div style="background:#2c3e50; border:2px solid #9b59b6; border-radius:15px; width:90%; max-width:350px; padding:20px; text-align:center; color:white; box-shadow:0 0 20px #9b59b6;">
-        <h2 style="color:#f39c12; margin-top:0; font-size:22px;">👑 VIP PASS</h2>
-        <ul style="text-align:left; font-size:14px; color:#ecf0f1; padding-left:20px; line-height:1.6; margin-bottom:20px;">
-            <li>🗓️ <b>30 Günlük Seri:</b> Her gün yüksek miktarda jeton ve elmas ödülü (Boş gün yok!)</li>
-            <li>🎰 <b>Şans Artışı:</b> Premium kasalarda Jackpot (100 Elmas) şansı %15'e çıkar!</li>
-            <li>🏆 <b>Özel Rozet:</b> Liderlik tablolarında isminin yanında 👑 VIP rozeti görünür.</li>
-        </ul>
-        <button id="buyVipBtn" style="background:#27ae60; color:white; border:none; padding:10px 20px; font-size:16px; font-weight:bold; border-radius:8px; cursor:pointer; width:100%; margin-bottom:10px;" onclick="buyVIP()">💳 SATIN AL (25 ⭐️)</button>
-        <button style="background:#e74c3c; color:white; border:none; padding:8px 15px; font-size:14px; font-weight:bold; border-radius:8px; cursor:pointer; width:100%;" onclick="closeVipMenu()">Kapat</button>
-    </div>
-</div>`;
-document.body.insertAdjacentHTML('beforeend', vipModalHTML);
-
-// 2. 30 Günlük Takvim Menüsü
-const dailyModalHTML = `
-<div id="dailyRewardModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; justify-content:center; align-items:center; flex-direction:column;">
-    <div style="background:#2c3e50; border:2px solid #f1c40f; border-radius:15px; width:90%; max-width:350px; padding:20px; text-align:center; color:white; box-shadow:0 0 20px #f1c40f;">
-        <h2 style="color:#f1c40f; margin-top:0; font-size:20px;">📅 GÜNLÜK ÖDÜLLER</h2>
-        <p style="font-size:11px; color:#bdc3c7; margin-bottom:10px;">VIP'ler her gün, Normal oyuncular belirli günlerde ödül alır.</p>
-        <div id="calendarGrid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:5px; margin-bottom:15px; max-height:40vh; overflow-y:auto; padding:5px;"></div>
-        <button id="claimDailyBtn" style="background:#27ae60; color:white; border:none; padding:10px 20px; font-size:16px; font-weight:bold; border-radius:8px; cursor:pointer; width:100%; margin-bottom:10px;" onclick="claimDailyReward()">🎁 ÖDÜLÜ AL</button>
-        <button style="background:#e74c3c; color:white; border:none; padding:8px 15px; font-size:14px; font-weight:bold; border-radius:8px; cursor:pointer; width:100%;" onclick="document.getElementById('dailyRewardModal').style.display='none'">Kapat</button>
-    </div>
-</div>`;
-document.body.insertAdjacentHTML('beforeend', dailyModalHTML);
-
-// ==========================================
 // 🔥 FONKSİYONLAR 🔥
 // ==========================================
 
 window.showVipMenu = function() { 
-    // Market menüsünü gizle ki çakışma olmasın
     document.getElementById("shopModal").style.display = "none"; 
     document.getElementById("vipInfoModal").style.display = "flex"; 
 };
 
 window.closeVipMenu = function() { 
     document.getElementById("vipInfoModal").style.display = "none"; 
-    // Marketi geri aç
     document.getElementById("shopModal").style.display = "block"; 
 };
 
@@ -727,6 +692,7 @@ window.openPremiumBox = function() {
         });
     }
 };
+
 // Telegram Stars Faturası
 window.buyVIP = function() {
     const btn = document.getElementById("buyVipBtn");
@@ -808,5 +774,3 @@ window.claimDailyReward = function() {
         if(tg && tg.showAlert) tg.showAlert("Hata: " + e.message);
     });
 };
-
-
