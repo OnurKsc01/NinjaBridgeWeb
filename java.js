@@ -604,6 +604,7 @@ document.getElementById("closeShop").addEventListener("click", () => { document.
 function renderShop() {
     const t = texts[currentLang]; const list = document.getElementById("shopList");
     let html = `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; text-align:center;">💎 <b>${t.shopGemExchange}</b></li>`;
+    html += `<li style="background:linear-gradient(45deg, #8e44ad, #3498db); justify-content:center; padding:10px; font-size:14px; text-align:center; border-radius:8px; cursor:pointer; color:white; font-weight:bold; margin-bottom:10px; box-shadow:0 4px 6px rgba(0,0,0,0.3);" onclick="buyVIP()">👑 VIP Pass Al (25 ⭐️)</li>`;
     html += `<li style="background:linear-gradient(45deg, #f1c40f, #e67e22); justify-content:center; padding:10px; font-size:14px; text-align:center; border-radius:8px; cursor:pointer; color:white; font-weight:bold; margin-bottom:10px; box-shadow:0 4px 6px rgba(0,0,0,0.3);" onclick="openPremiumBox()">🎁 Premium Kasa Aç (30 💎)</li>`;
     html += `<li style="padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee;"><span>${t.shopExchangeBtn}</span> <button style="background:#9b59b6; padding: 5px 10px; font-size:12px; margin:0; border:none; color:white; border-radius:5px; cursor:pointer;" onclick="convertGems()">${t.shopGetGem}</button></li>`;
     html += `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; margin-top:6px; text-align:center;">🥷 <b>${t.shopSkins}</b></li>`;
@@ -625,7 +626,46 @@ window.buySkin = function(skinKey) { const t = texts[currentLang]; const skin = 
 window.equipSkin = function(skinKey) { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgNoEquipSkin); return; } fetch('https://ninjabridgeapi.duckdns.org/api/score/equipskin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: skinKey }) }).then(res => res.json()).then(data => { if(data.success) { currentSkin = skinKey; renderShop(); draw(); } }); }
 window.buyPet = function(petKey, price) { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; } if(playerCoins < price) { if(tg && tg.showAlert) tg.showAlert(t.msgNoCoin); return; } if(tg && tg.showConfirm) { let pName = currentLang==="tr"?petData[petKey].nameTr:petData[petKey].nameEn; tg.showConfirm(t.askAdopt.replace("{name}", pName), function(agreed) { if(agreed) { fetch('https://ninjabridgeapi.duckdns.org/api/score/buypet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey, price: price }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= price; ownedPets[petKey] = 1; updateCoinUI(); renderShop(); } }); } }); } }
 window.equipPet = function(petKey) { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgNoEquipPet); return; } fetch('https://ninjabridgeapi.duckdns.org/api/score/equippet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, skinName: petKey }) }).then(res => res.json()).then(data => { if(data.success) { currentPet = petKey; renderShop(); draw(); } }); }
-// 🔥 PREMIUM KASA (GACHA) SİSTEMİ 🔥
+// 🔥 TELEGRAM STARS İLE VIP SATIN ALMA 🔥
+window.buyVIP = function() {
+    const t = texts[currentLang];
+    if (phase !== "waiting") return;
+    
+    document.getElementById("shopBtn").innerText = "⏳ Bağlanıyor...";
+    
+    // 1. Sunucudan Telegram Yıldız Faturası (Invoice) İste
+    fetch('https://ninjabridgeapi.duckdns.org/api/score/create-vip-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: tgUserId })
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("shopBtn").innerText = t.btnShop;
+        
+        if (data.success && data.invoiceUrl) {
+            // 2. Telegram'ın yerleşik ödeme ekranını aşağıdan kaydırarak aç
+            tg.openInvoice(data.invoiceUrl, function(status) {
+                if (status === 'paid') {
+                    // 3. Ödeme başarılıysa VIP rolünü hesaba tanımla
+                    fetch('https://ninjabridgeapi.duckdns.org/api/score/grant-vip', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId: tgUserId })
+                    }).then(() => {
+                        if(tg && tg.showAlert) tg.showAlert("Tebrikler! 👑 VIP oldun! %15 Jackpot şansın ve rozetin aktif.");
+                    });
+                } else if (status === 'failed') {
+                    if(tg && tg.showAlert) tg.showAlert("Ödeme başarısız oldu.");
+                }
+            });
+        } else {
+            if(tg && tg.showAlert) tg.showAlert("Fatura oluşturulamadı.");
+        }
+    }).catch(e => {
+        document.getElementById("shopBtn").innerText = t.btnShop;
+    });
+};
 window.openPremiumBox = function() {
     const t = texts[currentLang];
     if (phase !== "waiting") {
