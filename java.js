@@ -89,7 +89,7 @@ function updateUITexts() {
 document.getElementById("langBtn").addEventListener("click", () => { currentLang = currentLang === "tr" ? "en" : "tr"; localStorage.setItem("ninjaLang", currentLang); updateUITexts(); });
 
 // ------------------------------------
-// MENÜ VE PROMOSYON KODU SİSTEMİ BAĞLANTILARI
+// MENÜ VE PROMOSYON KODU SİSTEMİ
 // ------------------------------------
 document.getElementById("mainMenuBtn").addEventListener("click", () => {
     if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(texts[currentLang].msgPlaying); return; }
@@ -106,17 +106,13 @@ document.getElementById("closePromoModal").addEventListener("click", () => {
     document.getElementById("promoModal").style.display = "none";
 });
 
-// Promosyon Kodu Doğrulama ve Reklam İzleme
 document.getElementById("submitPromoBtn").addEventListener("click", () => {
     let codeInput = document.getElementById("promoInput").value.trim().toUpperCase();
     if (codeInput === "") { if(tg && tg.showAlert) tg.showAlert(texts[currentLang].msgEmptyCode); return; }
-    
     if (!adController) { if(tg && tg.showAlert) tg.showAlert(texts[currentLang].msgAdFail); return; }
     
-    // Reklamı Göster
     adController.show().then((result) => { 
         if (result.done) { 
-            // Reklam bitti, VDS'ye kodu sor
             fetch('https://ninjabridgeapi.duckdns.org/api/score/promocode', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -126,7 +122,7 @@ document.getElementById("submitPromoBtn").addEventListener("click", () => {
                     if(tg && tg.showAlert) tg.showAlert(`🎁 Tebrikler! ${data.message}`);
                     document.getElementById("promoModal").style.display = "none";
                     document.getElementById("promoInput").value = "";
-                    loadPlayerData(); // Bakiyeyi yenile
+                    loadPlayerData();
                 } else {
                     if(tg && tg.showAlert) tg.showAlert(`❌ ${data.message}`);
                 }
@@ -143,9 +139,8 @@ function isMenuOpen() {
            (document.getElementById("reviveMenu") && document.getElementById("reviveMenu").style.display === "flex"); 
 }
 
-
 // ------------------------------------
-// 2. TELEGRAM & OYUNCU VERİLERİ (DAVET SİSTEMİ EKLENDİ)
+// 2. TELEGRAM & OYUNCU VERİLERİ 
 // ------------------------------------
 let tg = window.Telegram?.WebApp;
 let user = tg?.initDataUnsafe?.user;
@@ -247,6 +242,9 @@ let phase = "waiting"; let lastTimestamp; let heroX, heroY, sceneOffset;
 let platforms = [], sticks = [], trees = []; let combo = 0; let currentMonkeyLives = 0;
 let totalPlatformsGenerated = 0; let vampirePlatformTarget = 0; let vampireEffectTimer = 0; let easterMessage = ""; let easterMessageTimer = 0; let nextMessageMilestone = 500;
 
+// 🔥 GİZEMLİ SANDIK DEĞİŞKENLERİ
+let chestMessage = ""; let chestMessageTimer = 0; let chestMessageX = 0; let chestMessageY = 0; let chestMessageColor = "";
+
 const canvasWidth = 375, canvasHeight = 375, platformHeight = 100; const heroDistanceFromEdge = 10, paddingX = 100;
 const backgroundSpeedMultiplier = 0.2; const hill1BaseHeight = 100, hill1Amplitude = 10, hill1Stretch = 1; const hill2BaseHeight = 70, hill2Amplitude = 20, hill2Stretch = 0.5;
 const stretchingSpeed = 4, turningSpeed = 4, walkingSpeed = 4, transitioningSpeed = 2, fallingSpeed = 2; const heroWidth = 17, heroHeight = 30; 
@@ -262,11 +260,7 @@ function processReferralIfAny() {
     if (startParam && startParam.startsWith("ref_")) {
         let referrerId = parseInt(startParam.replace("ref_", ""));
         if (!isNaN(referrerId) && referrerId !== tgUserId) {
-            fetch('https://ninjabridgeapi.duckdns.org/api/score/referral', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: tgUserId, referrerId: referrerId })
-            }).catch(e => console.error(e));
+            fetch('https://ninjabridgeapi.duckdns.org/api/score/referral', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, referrerId: referrerId }) }).catch(e => console.error(e));
         }
     }
 }
@@ -303,6 +297,7 @@ function cleanUpOldObjects() {
 
 function resetGame() {
   phase = "waiting"; lastTimestamp = undefined; sceneOffset = 0; score = 0; combo = 0; sessionEarnedCoins = 0; stepCount = 0; adReviveUsedThisRun = false;
+  chestMessageTimer = 0; // Sandık yazısını sıfırla
   if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } else { currentMonkeyLives = 0; }
   introductionElement.style.opacity = 1; perfectElement.style.opacity = 0; restartButton.style.display = "none";
   if(document.getElementById("reviveMenu")) document.getElementById("reviveMenu").style.display = "none";
@@ -310,7 +305,7 @@ function resetGame() {
   isDuelMode = false; opponentTargetScore = -1; checkDuelStatus(); 
   monsters = []; totalPlatformsGenerated = 1; vampirePlatformTarget = Math.floor(Math.random() * 31) + 10; vampireEffectTimer = 0; easterMessage = ""; easterMessageTimer = 0; nextMessageMilestone = 500;
 
-  scoreElement.innerText = score; platforms = [{ x: 50, w: 50 }];
+  scoreElement.innerText = score; platforms = [{ x: 50, w: 50, hasChest: false, chestOpened: false }];
   generatePlatform(); generatePlatform(); generatePlatform(); generatePlatform();
   sticks = [{ x: platforms[0].x + platforms[0].w, length: 0, rotation: 0 }];
   trees = []; for(let i=0; i<10; i++) generateTree();
@@ -343,14 +338,17 @@ function generatePlatform() {
     
     const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap));
     const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth));
-    platforms.push({ x, w });
+    
+    // 🔥 SANDIK OLUŞTURMA ALGORİTMASI: 100 puandan sonra %15 şansla çıkar.
+    let isChestSpawn = score >= 100 && Math.random() < 0.15;
+    platforms.push({ x, w, hasChest: isChestSpawn, chestOpened: false });
     
     totalPlatformsGenerated++;
     if (totalPlatformsGenerated === vampirePlatformTarget) { 
         platforms[platforms.length - 1].isVampireTrigger = true; 
     }
 
-    if (spawnChance > 0 && platforms.length > 2) {
+    if (spawnChance > 0 && platforms.length > 2 && !isChestSpawn) { // Sandık olan yere canavar koymayalım
         if (Math.random() < spawnChance) {
             let isWorld3 = score >= 3000;
             let mList = isWorld3 ? monsterData[3] : monsterData[2];
@@ -440,6 +438,39 @@ function animate(timestamp) {
       let currentPlat = platforms.find(p => heroX >= p.x && heroX <= p.x + p.w);
       if (currentPlat && currentPlat.isVampireTrigger && !currentPlat.vampireTriggered) { currentPlat.vampireTriggered = true; vampireEffectTimer = 75; screamSound.currentTime = 0; screamSound.play().catch(e=>{}); }
 
+      // 🔥 SANDIK AÇMA ALGORİTMASI
+      if (currentPlat && currentPlat.hasChest && !currentPlat.chestOpened) {
+          if (heroX > currentPlat.x + currentPlat.w / 2 - 10) { // Ninja sandığa dokundu
+              currentPlat.chestOpened = true;
+              let r = Math.random();
+              
+              if (r < 0.05) { // %5 İhtimal (Jackpot)
+                  playerGems += 1;
+                  chestMessage = "+1 💎";
+                  chestMessageColor = "#00ffff"; // Parlak Turkuaz
+              } 
+              else if (r < 0.20) { // %15 İhtimal (Orta)
+                  playerCoins += 150;
+                  sessionEarnedCoins += 150;
+                  chestMessage = "+150 🪙";
+                  chestMessageColor = "#f1c40f"; // Sarı
+              } 
+              else { // %80 İhtimal (Normal)
+                  playerCoins += 50;
+                  sessionEarnedCoins += 50;
+                  chestMessage = "+50 🪙";
+                  chestMessageColor = "#f1c40f";
+              }
+              
+              updateCoinUI();
+              chestMessageTimer = 90;
+              chestMessageX = currentPlat.x + currentPlat.w / 2;
+              chestMessageY = canvasHeight - platformHeight - 30;
+              comboSound.currentTime = 0;
+              comboSound.play().catch(e=>{});
+          }
+      }
+
       heroX += dt / walkingSpeed; const [nextPlatform] = thePlatformTheStickHits();
       if (nextPlatform) { const maxHeroX = nextPlatform.x + nextPlatform.w - heroDistanceFromEdge; if (heroX > maxHeroX) { heroX = maxHeroX; phase = "transitioning"; } } else { const maxHeroX = sticks[sticks.length - 1].x + sticks[sticks.length - 1].length + heroWidth; if (heroX > maxHeroX) { heroX = maxHeroX; phase = "falling"; fallSound.currentTime = 0; fallSound.play().catch(e=>{}); } }
       break;
@@ -475,7 +506,25 @@ function thePlatformTheStickHits() {
 function draw() { 
     let wWidth = window.innerWidth || 375; let wHeight = window.innerHeight || 800;
     ctx.save(); ctx.clearRect(0, 0, wWidth, wHeight); drawBackground(); ctx.translate((wWidth - canvasWidth) / 2 - sceneOffset, (wHeight - canvasHeight) / 2); 
-    drawPlatforms(); drawMonsters(); drawPet(); drawHero(); drawSticks(); ctx.restore(); 
+    drawPlatforms(); drawMonsters(); drawPet(); drawHero(); drawSticks(); 
+
+    // 🔥 SANDIK AÇILMA ANİMASYONU (Çeviri Merkezine Göre Ayarlandı)
+    if (chestMessageTimer > 0) {
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, chestMessageTimer / 30);
+        ctx.font = "bold 22px Arial";
+        ctx.fillStyle = chestMessageColor;
+        ctx.textAlign = "center";
+        ctx.shadowColor = "black";
+        ctx.shadowBlur = 4;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 2;
+        ctx.fillText(chestMessage, chestMessageX, chestMessageY - (90 - chestMessageTimer) * 0.5); // Yazı yavaşça yukarı süzülür
+        ctx.restore();
+        chestMessageTimer--;
+    }
+
+    ctx.restore(); 
 
     if (vampireEffectTimer > 0) {
         ctx.save(); let totalDuration = 75; let progress = (totalDuration - vampireEffectTimer) / totalDuration;
@@ -494,9 +543,26 @@ restartButton.addEventListener("click", function (event) { event.preventDefault(
 
 function drawPlatforms() { 
   let wHeight = window.innerHeight || 800;
-  platforms.forEach(({ x, w }) => { 
-      ctx.fillStyle = "black"; ctx.fillRect(x, canvasHeight - platformHeight, w, platformHeight + (wHeight - canvasHeight) / 2); 
-      if (sticks[sticks.length - 1] && sticks[sticks.length - 1].x < x) { ctx.fillStyle = "red"; let pArea = getPerfectAreaSize(w); ctx.fillRect(x + w / 2 - pArea / 2, canvasHeight - platformHeight, pArea, pArea); } 
+  platforms.forEach((p) => { 
+      ctx.fillStyle = "black"; ctx.fillRect(p.x, canvasHeight - platformHeight, p.w, platformHeight + (wHeight - canvasHeight) / 2); 
+      
+      // 🔥 SANDIĞI ÇİZİMİ
+      if (p.hasChest) {
+          ctx.save();
+          ctx.translate(p.x + p.w / 2, canvasHeight - platformHeight - 15);
+          ctx.font = "24px Arial";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          if (!p.chestOpened) {
+              ctx.fillText("🎁", 0, 0);
+          } else {
+              ctx.globalAlpha = 0.5;
+              ctx.fillText("✨", 0, -10); // Açılınca efekt
+          }
+          ctx.restore();
+      }
+
+      if (sticks[sticks.length - 1] && sticks[sticks.length - 1].x < p.x) { ctx.fillStyle = "red"; let pArea = getPerfectAreaSize(p.w); ctx.fillRect(p.x + p.w / 2 - pArea / 2, canvasHeight - platformHeight, pArea, pArea); } 
   }); 
 }
 
