@@ -8,6 +8,7 @@ let currentLang = localStorage.getItem("ninjaLang") || "tr";
 const texts = {
     tr: {
         btnScore: "🏆 Skor", btnShop: "🛒 Market", btnAd: "📺 +Jeton",
+        btnMenu: "⚙️ Menü", menuTitle: "⚙️ Menü", btnPromo: "🎁 Kod Gir", promoTitle: "🎁 Promosyon Kodu", promoDesc: "Ödülü almak için kodu gir ve reklamı izle!", btnWatchClaim: "📺 İzle ve Al", cancel: "İptal", msgEmptyCode: "Kodu boş bırakamazsın!",
         intro: "Köprü Oluşturmak İçin Basılı Tut!", restart: "TEKRAR OYNA",
         reviveAd: "📺 İzle & Canlan", reviveSkip: "❌ Hayır, Bitir",
         leaderboardTitle: "Global Top 25", close: "Kapat",
@@ -31,6 +32,7 @@ const texts = {
     },
     en: {
         btnScore: "🏆 Score", btnShop: "🛒 Shop", btnAd: "📺 +Coins",
+        btnMenu: "⚙️ Menu", menuTitle: "⚙️ Main Menu", btnPromo: "🎁 Promo Code", promoTitle: "🎁 Promo Code", promoDesc: "Enter code and watch an ad to claim!", btnWatchClaim: "📺 Watch & Claim", cancel: "Cancel", msgEmptyCode: "Please enter a code!",
         intro: "Hold to Build Bridge!", restart: "RESTART",
         reviveAd: "📺 Watch & Revive", reviveSkip: "❌ No, End Game",
         leaderboardTitle: "Global Top 25", close: "Close",
@@ -56,6 +58,15 @@ const texts = {
 
 function updateUITexts() {
     const t = texts[currentLang];
+    document.getElementById("mainMenuBtn").innerText = t.btnMenu;
+    document.getElementById("menuTitleText").innerText = t.menuTitle;
+    document.getElementById("promoMenuBtn").innerText = t.btnPromo;
+    document.getElementById("promoTitleText").innerText = t.promoTitle;
+    document.getElementById("promoDescText").innerText = t.promoDesc;
+    document.getElementById("submitPromoBtn").innerText = t.btnWatchClaim;
+    document.getElementById("closePromoModal").innerText = t.cancel;
+    document.getElementById("closeMainMenu").innerText = t.close;
+
     document.getElementById("leaderboardBtn").innerText = t.btnScore;
     document.getElementById("shopBtn").innerText = t.btnShop;
     document.getElementById("watchEarnBtn").innerText = t.btnAd;
@@ -78,6 +89,62 @@ function updateUITexts() {
 document.getElementById("langBtn").addEventListener("click", () => { currentLang = currentLang === "tr" ? "en" : "tr"; localStorage.setItem("ninjaLang", currentLang); updateUITexts(); });
 
 // ------------------------------------
+// MENÜ VE PROMOSYON KODU SİSTEMİ BAĞLANTILARI
+// ------------------------------------
+document.getElementById("mainMenuBtn").addEventListener("click", () => {
+    if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(texts[currentLang].msgPlaying); return; }
+    document.getElementById("mainMenuModal").style.display = "block";
+});
+document.getElementById("closeMainMenu").addEventListener("click", () => {
+    document.getElementById("mainMenuModal").style.display = "none";
+});
+document.getElementById("promoMenuBtn").addEventListener("click", () => {
+    document.getElementById("mainMenuModal").style.display = "none";
+    document.getElementById("promoModal").style.display = "block";
+});
+document.getElementById("closePromoModal").addEventListener("click", () => {
+    document.getElementById("promoModal").style.display = "none";
+});
+
+// Promosyon Kodu Doğrulama ve Reklam İzleme
+document.getElementById("submitPromoBtn").addEventListener("click", () => {
+    let codeInput = document.getElementById("promoInput").value.trim().toUpperCase();
+    if (codeInput === "") { if(tg && tg.showAlert) tg.showAlert(texts[currentLang].msgEmptyCode); return; }
+    
+    if (!adController) { if(tg && tg.showAlert) tg.showAlert(texts[currentLang].msgAdFail); return; }
+    
+    // Reklamı Göster
+    adController.show().then((result) => { 
+        if (result.done) { 
+            // Reklam bitti, VDS'ye kodu sor
+            fetch('https://ninjabridgeapi.duckdns.org/api/score/promocode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: tgUserId, code: codeInput })
+            }).then(res => res.json()).then(data => {
+                if(data.success) {
+                    if(tg && tg.showAlert) tg.showAlert(`🎁 Tebrikler! ${data.message}`);
+                    document.getElementById("promoModal").style.display = "none";
+                    document.getElementById("promoInput").value = "";
+                    loadPlayerData(); // Bakiyeyi yenile
+                } else {
+                    if(tg && tg.showAlert) tg.showAlert(`❌ ${data.message}`);
+                }
+            }).catch(() => { if(tg && tg.showAlert) tg.showAlert("Hata oluştu."); });
+        } 
+    }).catch(() => { });
+});
+
+function isMenuOpen() { 
+    return (document.getElementById("shopModal") && document.getElementById("shopModal").style.display === "block") || 
+           (document.getElementById("leaderboardModal") && document.getElementById("leaderboardModal").style.display === "block") || 
+           (document.getElementById("mainMenuModal") && document.getElementById("mainMenuModal").style.display === "block") || 
+           (document.getElementById("promoModal") && document.getElementById("promoModal").style.display === "block") || 
+           (document.getElementById("reviveMenu") && document.getElementById("reviveMenu").style.display === "flex"); 
+}
+
+
+// ------------------------------------
 // 2. TELEGRAM & OYUNCU VERİLERİ (DAVET SİSTEMİ EKLENDİ)
 // ------------------------------------
 let tg = window.Telegram?.WebApp;
@@ -96,12 +163,11 @@ let currentSkin = "default"; let ownedSkins = ["default"];
 let currentPet = "default"; let ownedPets = {}; 
 let isDuelMode = false; let opponentName = ""; let opponentTargetScore = -1; let duelCheckInterval = null; 
 
-// 🔥 EKRANA DAVET ET BUTONU ÇİZİMİ (SABİT SOL KÖŞE) 🔥
 let inviteBtn = document.createElement("button");
 inviteBtn.id = "inviteBtnObj";
 inviteBtn.style.position = "absolute"; 
-inviteBtn.style.top = "215px"; // Dil butonunun altı
-inviteBtn.style.left = "20px"; // Sol butonlarla aynı hizada
+inviteBtn.style.top = "215px"; 
+inviteBtn.style.left = "20px"; 
 inviteBtn.style.padding = "8px 12px"; 
 inviteBtn.style.fontSize = "13px"; 
 inviteBtn.style.fontWeight = "bold"; 
@@ -226,7 +292,6 @@ function saveScoreToAPI() { fetch('https://ninjabridgeapi.duckdns.org/api/score/
 function getPerfectAreaSize(platformWidth) { let baseArea = 10; if (currentPet === "kedi") { let lvl = ownedPets["kedi"] || 1; baseArea = 20 + (lvl * 5); } else if (currentPet === "kurt") { let lvl = ownedPets["kurt"] || 1; baseArea = 15 + (lvl * 6); } return Math.min(baseArea, platformWidth * 0.8); }
 function getMonkeyStats() { let lvl = ownedPets["maymun"] || 1; return { lives: Math.floor((lvl - 1) / 2) + 1, bonusCoins: (lvl % 2 === 0) ? lvl * 5 : 0 }; }
 function processCoinGeneration(earnedPts) { stepCount += earnedPts; let reqSteps = 8; if (currentPet === "kopek" || currentPet === "kurt") { let lvl = ownedPets[currentPet] || 1; reqSteps = Math.max(1, 8 - lvl); } if (stepCount >= reqSteps) { let coinsToAdd = Math.floor(stepCount / reqSteps); playerCoins += coinsToAdd; sessionEarnedCoins += coinsToAdd; updateCoinUI(); stepCount = stepCount % reqSteps; } }
-function isMenuOpen() { return (document.getElementById("shopModal") && document.getElementById("shopModal").style.display === "block") || (document.getElementById("leaderboardModal") && document.getElementById("leaderboardModal").style.display === "block") || (document.getElementById("reviveMenu") && document.getElementById("reviveMenu").style.display === "flex"); }
 
 function cleanUpOldObjects() {
     let safeX = sceneOffset - (window.innerWidth || 375); 
@@ -257,42 +322,25 @@ function generateTree() { const minimumGap = 30, maximumGap = 150; const lastTre
 function generatePlatform() {
     let minimumGap, maximumGap, minimumWidth, maximumWidth, spawnChance;
 
-    // --- ZORLUK KADEMELERİ (11 ADIM) ---
-    if (score >= 6000) {
-        minimumGap = 150; maximumGap = 320; minimumWidth = 5; maximumWidth = 15; spawnChance = 0.65;
-    } else if (score >= 5000) {
-        minimumGap = 140; maximumGap = 300; minimumWidth = 10; maximumWidth = 20; spawnChance = 0.60;
-    } else if (score >= 4500) {
-        minimumGap = 130; maximumGap = 280; minimumWidth = 10; maximumWidth = 25; spawnChance = 0.55;
-    } else if (score >= 4000) {
-        minimumGap = 120; maximumGap = 260; minimumWidth = 15; maximumWidth = 30; spawnChance = 0.50;
-    } else if (score >= 3500) {
-        minimumGap = 110; maximumGap = 240; minimumWidth = 15; maximumWidth = 35; spawnChance = 0.45;
-    } else if (score >= 3000) {
-        minimumGap = 100; maximumGap = 220; minimumWidth = 20; maximumWidth = 45; spawnChance = 0.40;
-    } else if (score >= 2500) {
-        minimumGap = 90; maximumGap = 200; minimumWidth = 25; maximumWidth = 55; spawnChance = 0.35;
-    } else if (score >= 2000) {
-        minimumGap = 80; maximumGap = 180; minimumWidth = 30; maximumWidth = 65; spawnChance = 0.30;
-    } else if (score >= 1500) {
-        minimumGap = 70; maximumGap = 160; minimumWidth = 35; maximumWidth = 75; spawnChance = 0.25;
-    } else if (score >= 1000) {
-        minimumGap = 60; maximumGap = 140; minimumWidth = 40; maximumWidth = 80; spawnChance = 0.20;
-    } else if (score >= 500) {
-        minimumGap = 50; maximumGap = 120; minimumWidth = 45; maximumWidth = 90; spawnChance = 0.15;
-    } else {
-        // BAŞLANGIÇ (0 - 499 Puan Arası) - Canavar Yok
-        minimumGap = 40; maximumGap = 100; minimumWidth = 50; maximumWidth = 100; spawnChance = 0.0;
-    }
+    if (score >= 6000) { minimumGap = 150; maximumGap = 320; minimumWidth = 5; maximumWidth = 15; spawnChance = 0.65; } 
+    else if (score >= 5000) { minimumGap = 140; maximumGap = 300; minimumWidth = 10; maximumWidth = 20; spawnChance = 0.60; } 
+    else if (score >= 4500) { minimumGap = 130; maximumGap = 280; minimumWidth = 10; maximumWidth = 25; spawnChance = 0.55; } 
+    else if (score >= 4000) { minimumGap = 120; maximumGap = 260; minimumWidth = 15; maximumWidth = 30; spawnChance = 0.50; } 
+    else if (score >= 3500) { minimumGap = 110; maximumGap = 240; minimumWidth = 15; maximumWidth = 35; spawnChance = 0.45; } 
+    else if (score >= 3000) { minimumGap = 100; maximumGap = 220; minimumWidth = 20; maximumWidth = 45; spawnChance = 0.40; } 
+    else if (score >= 2500) { minimumGap = 90; maximumGap = 200; minimumWidth = 25; maximumWidth = 55; spawnChance = 0.35; } 
+    else if (score >= 2000) { minimumGap = 80; maximumGap = 180; minimumWidth = 30; maximumWidth = 65; spawnChance = 0.30; } 
+    else if (score >= 1500) { minimumGap = 70; maximumGap = 160; minimumWidth = 35; maximumWidth = 75; spawnChance = 0.25; } 
+    else if (score >= 1000) { minimumGap = 60; maximumGap = 140; minimumWidth = 40; maximumWidth = 80; spawnChance = 0.20; } 
+    else if (score >= 500) { minimumGap = 50; maximumGap = 120; minimumWidth = 45; maximumWidth = 90; spawnChance = 0.15; } 
+    else { minimumGap = 40; maximumGap = 100; minimumWidth = 50; maximumWidth = 100; spawnChance = 0.0; }
 
-    // Telefon/Ekran boyutuna göre aralığın saçmalamasını engelleyen kilit
     let maxScreenGap = window.innerWidth - 130;
     if (maximumGap > maxScreenGap) { maximumGap = Math.max(minimumGap + 10, maxScreenGap); }
     
     const lastPlatform = platforms[platforms.length - 1];
     let furthestX = lastPlatform.x + lastPlatform.w;
     
-    // Yeni platformun X konumu ve Genişliği (W)
     const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap));
     const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth));
     platforms.push({ x, w });
@@ -302,7 +350,6 @@ function generatePlatform() {
         platforms[platforms.length - 1].isVampireTrigger = true; 
     }
 
-    // --- CANAVAR OLUŞTURMA SİSTEMİ ---
     if (spawnChance > 0 && platforms.length > 2) {
         if (Math.random() < spawnChance) {
             let isWorld3 = score >= 3000;
@@ -310,12 +357,9 @@ function generatePlatform() {
             let mType = mList[Math.floor(Math.random() * mList.length)];
             
             if (!isWorld3) {
-                // Çöl Canavarları (Boşluktan fırlar)
-                let gapStartX = lastPlatform.x + lastPlatform.w;
-                let gapWidth = x - gapStartX;
+                let gapStartX = lastPlatform.x + lastPlatform.w; let gapWidth = x - gapStartX;
                 monsters.push({ world: 2, platformIndex: platforms.length - 1, x: gapStartX + gapWidth / 2, y: Math.random() > 0.5 ? -150 : 100, dir: Math.random() > 0.5 ? 1 : -1, speed: 2 + Math.random() * 1.5, type: mType, dead: false });
             } else {
-                // Buz Canavarları (Platformda gezer)
                 monsters.push({ world: 3, platformIndex: platforms.length - 1, x: x + w / 2, y: 0, dir: Math.random() > 0.5 ? 1 : -1, speed: 0.8 + Math.random() * 0.5, type: mType, dead: false });
             }
         }
@@ -359,22 +403,18 @@ function animate(timestamp) {
           if (oldScore < 4 && score >= 4) { easterMessage = "Yapımcı: @onurviski"; easterMessageTimer = 180; }
           if (oldScore < 10 && score >= 10) { easterMessage = "Mercan Hanıma Teşekkürler"; easterMessageTimer = 180; }
          if (score >= nextMessageMilestone) {
-              // Her 500'de bir sıradaki mesajı seçmesi için matematiksel indeks hesaplıyoruz
               let mesajIndeksi = (nextMessageMilestone / 500) - 1;
-              
-              // İstediğin kadar mesaj ekleyebilirsin, sırayla çıkacaklar!
               const ozelMesajlar = [
-                  "Bu zorluklara nasıl gelebildin?",      // 500 Puan
-                  "Parmakların yorulmadı mı?",            // 1000 Puan
-                  "Gerçek bir Ninja Ustası!",             // 1500 Puan
-                  "Makine misin mübarek!",                // 2000 Puan
-                  "Gözlerime inanamıyorum!",              // 2500 Puan
-                  "Yok artık, hile mi açtın? 😅",          // 3000 Puan
-                  "Oyunun sonu yok, pes et bence!",       // 3500 Puan
-                  "Sen bir efsanesin!"                    // 4000 Puan
+                  "Bu zorluklara nasıl gelebildin?",      
+                  "Parmakların yorulmadı mı?",            
+                  "Gerçek bir Ninja Ustası!",             
+                  "Makine misin mübarek!",                
+                  "Gözlerime inanamıyorum!",              
+                  "Yok artık, hile mi açtın? 😅",          
+                  "Oyunun sonu yok, pes et bence!",       
+                  "Sen bir efsanesin!"                    
               ];
 
-              // Eğer oyuncu listendeki tüm mesajları bitirirse (Örn: 4500 ve üstü) bu çıkacak:
               if (mesajIndeksi >= ozelMesajlar.length) {
                   easterMessage = "Limitleri aştın, saygı duyuyorum!";
               } else {
@@ -487,12 +527,12 @@ function getHillY(windowX, baseHeight, amplitude, stretch) { let wHeight = windo
 function getTreeY(x, baseHeight, amplitude) { let wHeight = window.innerHeight || 800; return Math.sinus(x) * amplitude + wHeight - baseHeight; }
 
 // ------------------------------------
-// 8. UI VE MARKET İŞLEMLERİ 
+// UI VE MARKET İŞLEMLERİ 
 // ------------------------------------
 
-document.getElementById("leaderboardBtn").addEventListener("click", () => { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; } document.getElementById("leaderboardModal").style.display = "block"; const list = document.getElementById("scoreList"); list.innerHTML = `<li style='text-align:center;'>${t.loading}</li>`; fetch(`https://ninjabridgeapi.duckdns.org/api/score/global?t=${Date.now()}`).then(res => res.json()).then(data => { list.innerHTML = ""; if(data.length === 0) { list.innerHTML = `<li>${t.noOne}</li>`; return; } data.forEach((item, i) => { list.innerHTML += `<li style="padding:4px; border-bottom:1px solid #ddd;"><b>${i + 1}.</b> ${item.name} <span style="float:right;">${item.score}</span></li>`; }); }).catch(() => list.innerHTML = `<li style='color:red;'>${t.error}</li>`); }); 
+document.getElementById("leaderboardBtn").addEventListener("click", () => { const t = texts[currentLang]; document.getElementById("mainMenuModal").style.display = "none"; document.getElementById("leaderboardModal").style.display = "block"; const list = document.getElementById("scoreList"); list.innerHTML = `<li style='text-align:center;'>${t.loading}</li>`; fetch(`https://ninjabridgeapi.duckdns.org/api/score/global?t=${Date.now()}`).then(res => res.json()).then(data => { list.innerHTML = ""; if(data.length === 0) { list.innerHTML = `<li>${t.noOne}</li>`; return; } data.forEach((item, i) => { list.innerHTML += `<li style="padding:4px; border-bottom:1px solid #ddd;"><b>${i + 1}.</b> ${item.name} <span style="float:right;">${item.score}</span></li>`; }); }).catch(() => list.innerHTML = `<li style='color:red;'>${t.error}</li>`); }); 
 document.getElementById("closeLeaderboard").addEventListener("click", () => { document.getElementById("leaderboardModal").style.display = "none"; });
-document.getElementById("shopBtn").addEventListener("click", () => { if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(texts[currentLang].msgPlaying); return; } document.getElementById("shopModal").style.display = "block"; renderShop(); });
+document.getElementById("shopBtn").addEventListener("click", () => { document.getElementById("mainMenuModal").style.display = "none"; document.getElementById("shopModal").style.display = "block"; renderShop(); });
 document.getElementById("closeShop").addEventListener("click", () => { document.getElementById("shopModal").style.display = "none"; });
 
 function renderShop() {
