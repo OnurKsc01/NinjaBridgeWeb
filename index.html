@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="css.css">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
-  <script src="java.js?v=38" defer></script>
+  <script src="java.js?v=40" defer></script>
   <style>
     @keyframes pulse {
       0% { transform: scale(1); }
@@ -21,16 +21,33 @@
     
     <div id="ui-top" style="position: absolute; top: 15px; left: 15px; right: 15px; display: flex; justify-content: space-between; z-index: 100; pointer-events: none;">
         <div id="ui-left" style="display: flex; flex-direction: column; gap: 8px; pointer-events: auto;">
-            <button id="leaderboardBtn" style="background:#f1c40f; border:none; padding:6px 12px; border-radius:8px; font-weight:bold; font-size:12px; box-shadow:0 2px 4px rgba(0,0,0,0.2); cursor:pointer;">🏆 Skor</button>
-            <button id="shopBtn" style="background:#2ecc71; color:white; border:none; padding:6px 12px; border-radius:8px; font-weight:bold; font-size:12px; box-shadow:0 2px 4px rgba(0,0,0,0.2); cursor:pointer;">🛒 Market</button>
+            <button id="mainMenuBtn" style="background:#34495e; color:white; border:none; padding:8px 14px; border-radius:8px; font-weight:bold; font-size:14px; box-shadow:0 2px 4px rgba(0,0,0,0.2); cursor:pointer;">⚙️ Menü</button>
             <button id="watchEarnBtn" style="background:#e74c3c; color:white; border:none; padding:6px 12px; border-radius:8px; font-weight:bold; font-size:12px; box-shadow:0 2px 4px rgba(0,0,0,0.2); cursor:pointer;">📺 +Jeton</button>
-            <button id="langBtn" style="background:#34495e; color:white; border:none; padding:6px 12px; border-radius:8px; font-weight:bold; font-size:12px; box-shadow:0 2px 4px rgba(0,0,0,0.2); cursor:pointer;">🌍 EN / TR</button>
         </div>
         
         <div id="ui-right" style="pointer-events: auto; display: flex; align-items: center; justify-content: flex-end; gap: 10px; height: 100%;">
             <div id="score" style="position: static !important; font-size: 34px; font-weight: 900; color: white; -webkit-text-stroke: 1.5px black; text-shadow: 2px 2px 5px rgba(0,0,0,0.7); margin: 0; display: flex; align-items: center; height: 26px;">0</div>
             <div id="coinCount" style="background:rgba(255,255,255,0.9); padding:6px 10px; border-radius:12px; font-weight:bold; font-size:12px; box-shadow:0 2px 4px rgba(0,0,0,0.2); white-space: nowrap; display: flex; align-items: center; height: 14px;">🪙 0 | 💎 0</div>
         </div>
+    </div>
+
+    <div id="mainMenuModal" style="display:none; position:absolute; z-index:200; background:white; padding:20px; border-radius:10px; top:50%; left:50%; transform:translate(-50%, -50%); width:260px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.3);">
+        <h2 style="margin-top:0; font-size:18px;" id="menuTitleText">⚙️ Menü</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+            <button id="leaderboardBtn" style="background:#f1c40f; border:none; padding:10px; border-radius:8px; font-weight:bold; font-size:13px; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.2);">🏆 Skor</button>
+            <button id="shopBtn" style="background:#2ecc71; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; font-size:13px; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.2);">🛒 Market</button>
+            <button id="promoMenuBtn" style="background:#9b59b6; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; font-size:13px; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.2);">🎁 Kod Gir</button>
+            <button id="langBtn" style="background:#34495e; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; font-size:13px; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.2);">🌍 EN/TR</button>
+        </div>
+        <button id="closeMainMenu" style="background:#e74c3c; color:white; border:none; padding:8px 16px; border-radius:5px; cursor:pointer; width:100%; font-weight:bold;">Kapat</button>
+    </div>
+
+    <div id="promoModal" style="display:none; position:absolute; z-index:201; background:white; padding:20px; border-radius:10px; top:50%; left:50%; transform:translate(-50%, -50%); width:240px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.3);">
+        <h2 style="margin-top:0; font-size:16px;" id="promoTitleText">🎁 Promosyon Kodu</h2>
+        <p style="font-size:12px; color:gray; margin-bottom:10px;" id="promoDescText">Ödülü almak için kodu gir ve reklamı izle!</p>
+        <input type="text" id="promoInput" placeholder="KODU BURAYA YAZ" style="width:85%; padding:10px; margin-bottom:12px; border:2px solid #ccc; border-radius:5px; text-align:center; font-weight:bold; font-size:14px; text-transform:uppercase;">
+        <button id="submitPromoBtn" style="background:#2ecc71; color:white; border:none; padding:10px 16px; border-radius:5px; cursor:pointer; width:100%; margin-bottom:8px; font-weight:bold;">📺 İzle ve Al</button>
+        <button id="closePromoModal" style="background:#e74c3c; color:white; border:none; padding:8px 16px; border-radius:5px; cursor:pointer; width:100%; font-weight:bold;" id="promoCancelText">İptal</button>
     </div>
 
     <div id="duelDeathBanner" style="display:none; position:absolute; top:75px; left:50%; transform:translateX(-50%); background:#d81b60; color:white; padding:10px 20px; border-radius:8px; font-weight:900; font-size:16px; z-index:100; box-shadow:0 4px 8px rgba(0,0,0,0.5); text-align:center; transition: opacity 1s; line-height: 1.3;">
