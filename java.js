@@ -555,7 +555,9 @@ function thePlatformTheStickHits() {
 
 function draw() { 
     let wWidth = window.innerWidth || 375; let wHeight = window.innerHeight || 800;
-    ctx.save(); ctx.clearRect(0, 0, wWidth, wHeight); drawBackground(); ctx.translate((wWidth - canvasWidth) / 2 - sceneOffset, (wHeight - canvasHeight) / 2); 
+    ctx.save(); ctx.clearRect(0, 0, wWidth, wHeight); drawBackground(); 
+    // 🔥 KASMA ÇÖZÜMÜ: Kamera küsüratlı piksellerde titremez, tam sayılarda akar.
+    ctx.translate(Math.floor((wWidth - canvasWidth) / 2 - sceneOffset), Math.floor((wHeight - canvasHeight) / 2));
     drawPlatforms(); drawMonsters(); drawPet(); drawHero(); drawSticks(); 
 
     // 🔥 KASMAYI ÖNLEYEN VE METNİ NETLEŞTİREN GÖLGE SİSTEMİ (Math.floor Eklendi)
@@ -652,7 +654,15 @@ function drawSticks() {
 }
 
 function drawBackground() { let wWidth = window.innerWidth || 375; let wHeight = window.innerHeight || 800; let theme = getTheme(); var gradient = ctx.createLinearGradient(0, 0, 0, wHeight); gradient.addColorStop(0, theme.top); gradient.addColorStop(1, theme.bot); ctx.fillStyle = gradient; ctx.fillRect(0, 0, wWidth, wHeight); drawHill(hill1BaseHeight, hill1Amplitude, hill1Stretch, theme.h1); drawHill(hill2BaseHeight, hill2Amplitude, hill2Stretch, theme.h2); trees.forEach((tree) => drawTree(tree.x, tree.color)); }
-function drawHill(baseHeight, amplitude, stretch, color) { let wWidth = window.innerWidth || 375; let wHeight = window.innerHeight || 800; ctx.beginPath(); ctx.moveTo(0, wHeight); ctx.lineTo(0, getHillY(0, baseHeight, amplitude, stretch)); for (let i = 0; i < wWidth; i++) { ctx.lineTo(i, getHillY(i, baseHeight, amplitude, stretch)); } ctx.lineTo(wWidth, wHeight); ctx.fillStyle = color; ctx.fill(); }
+function drawHill(baseHeight, amplitude, stretch, color) { 
+    let wWidth = window.innerWidth || 375; let wHeight = window.innerHeight || 800; 
+    ctx.beginPath(); ctx.moveTo(0, wHeight); ctx.lineTo(0, getHillY(0, baseHeight, amplitude, stretch)); 
+    // 🔥 KASMA ÇÖZÜMÜ: 1 piksel yerine 20 piksel atlayarak çiz, performansı uçur!
+    for (let i = 0; i <= wWidth + 20; i += 20) { 
+        ctx.lineTo(i, getHillY(i, baseHeight, amplitude, stretch)); 
+    } 
+    ctx.lineTo(wWidth, wHeight); ctx.fillStyle = color; ctx.fill(); 
+}
 function drawTree(x, color) { ctx.save(); ctx.translate((-sceneOffset * backgroundSpeedMultiplier + x) * hill1Stretch, getTreeY(x, hill1BaseHeight, hill1Amplitude)); const treeTrunkHeight = 5, treeTrunkWidth = 2, treeCrownHeight = 25, treeCrownWidth = 10; ctx.fillStyle = "#7D833C"; ctx.fillRect(-treeTrunkWidth / 2, -treeTrunkHeight, treeTrunkWidth, treeTrunkHeight); ctx.beginPath(); ctx.moveTo(-treeCrownWidth / 2, -treeTrunkHeight); ctx.lineTo(0, -(treeTrunkHeight + treeCrownHeight)); ctx.lineTo(treeCrownWidth / 2, -treeTrunkHeight); ctx.fillStyle = color; ctx.fill(); ctx.restore(); }
 function getHillY(windowX, baseHeight, amplitude, stretch) { let wHeight = window.innerHeight || 800; return Math.sinus((sceneOffset * backgroundSpeedMultiplier + windowX) * stretch) * amplitude + wHeight - baseHeight; }
 function getTreeY(x, baseHeight, amplitude) { let wHeight = window.innerHeight || 800; return Math.sinus(x) * amplitude + wHeight - baseHeight; }
