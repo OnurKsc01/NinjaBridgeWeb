@@ -163,14 +163,12 @@ inviteBtn.addEventListener("click", () => {
     if (tg && tg.openTelegramLink) { tg.openTelegramLink(shareUrl); } else { window.open(shareUrl, "_blank"); }
 });
 
-// 🔥 DÜNYA TEMALARI GÜNCELLENDİ (4000: Cehennem / Dark Tema)
 const worldThemes = {
     1: { top: "#BBD691", bot: "#FEF1E1", h1: "#95C629", h2: "#659F1C", tColors: ["#6D8821", "#8FAC34", "#98B333"], isDark: false }, 
     2: { top: "#FDEB71", bot: "#F8D800", h1: "#E67E22", h2: "#D35400", tColors: ["#A04000", "#BA4A00", "#CA6F1E"], isDark: false }, 
     3: { top: "#E0C3FC", bot: "#8EC5FC", h1: "#BDC3C7", h2: "#ECF0F1", tColors: ["#FFFFFF", "#F2F3F4", "#E5E8E8"], isDark: false },
     4: { top: "#1a0000", bot: "#4d0000", h1: "#660000", h2: "#330000", tColors: ["#ff3300", "#cc2900", "#991f00"], isDark: true }
 };
-// Dünyalar: 0-1000 Çimen | 1000-2500 Çöl | 2500-4000 Buzul | 4000+ Cehennem
 function getTheme() { 
     if (score >= 4000) return worldThemes[4]; 
     if (score >= 2500) return worldThemes[3]; 
@@ -336,7 +334,6 @@ function generatePlatform() {
 
     if (spawnChance > 0 && platforms.length > 2 && !isChestSpawn) { 
         if (Math.random() < spawnChance) {
-            // 🔥 YENİ DÜNYA SEÇİCİ
             let worldId = score >= 4000 ? 4 : (score >= 2500 ? 3 : 2);
             let mList = monsterData[worldId] || monsterData[2];
             let mType = mList[Math.floor(Math.random() * mList.length)];
@@ -345,8 +342,6 @@ function generatePlatform() {
             let gapWidth = x - gapStartX;
             
             if (worldId === 4) {
-                // Cehennem Canavarları: Boşlukta uçarak ateş ederler
-                // isLow = true ise köprü ile ezilebilir!
                 let isLow = Math.random() > 0.5;
                 monsters.push({ 
                     world: 4, 
@@ -354,7 +349,7 @@ function generatePlatform() {
                     x: gapStartX + gapWidth / 2, 
                     y: isLow ? -10 : -90, 
                     dir: 1, 
-                    speed: 1.5 + Math.random() * 2, // Hızlı hareket ederler
+                    speed: 1.5 + Math.random() * 2,
                     type: mType, 
                     dead: false,
                     isLow: isLow
@@ -386,7 +381,6 @@ function animate(timestamp) {
       if (m.world === 2) { m.y += m.dir * m.speed * (dt / 16.66); if (m.y > 120) m.dir = -1; if (m.y < -180) m.dir = 1; } 
       else if (m.world === 3) { let p = platforms[m.platformIndex]; if (p) { m.x += m.dir * m.speed * (dt / 16.66); if (m.x > p.x + p.w - 12) m.dir = -1; if (m.x < p.x + 12) m.dir = 1; } }
       else if (m.world === 4) { 
-          // Cehennem Canavarı Hareketi (Dikey)
           m.y += m.dir * m.speed * (dt / 16.66); 
           if(m.isLow) {
               if (m.y > 20) m.dir = -1; 
@@ -413,10 +407,9 @@ function animate(timestamp) {
         // 🔥 CEHENNEM CANAVARINI EZME MEKANİĞİ
         monsters.forEach(m => {
             if (!m.dead && m.world === 4 && m.isLow) {
-                // Eğer köprünün altındaysa ezilir!
                 if (m.x > stickX && m.x < stickX + stickLen) {
                     m.dead = true; 
-                    score += 5; // Ezdiği için ekstra 5 puan hediye
+                    score += 5;
                 }
             }
         });
@@ -459,7 +452,6 @@ function animate(timestamp) {
           } else if (m.world === 3) { 
               let p = platforms[m.platformIndex]; if (p && Math.abs(heroX - m.x) < 15) { if(!isImmuneWorld3) { phase = "dead_monster"; fallSound.currentTime = 0; fallSound.play().catch(e=>{}); } } 
           } else if (m.world === 4) {
-              // 🔥 CEHENNEM CANAVARINA ÇARPMA
               if (Math.abs(heroX - m.x) < 15 && m.y > -50 && m.y < 10) {
                   if(!isImmuneWorld4) { phase = "dead_monster"; fallSound.currentTime = 0; fallSound.play().catch(e=>{}); }
               }
@@ -518,8 +510,12 @@ function draw() {
     ctx.save(); ctx.clearRect(0, 0, wWidth, wHeight); drawBackground(); ctx.translate((wWidth - canvasWidth) / 2 - sceneOffset, (wHeight - canvasHeight) / 2); 
     drawPlatforms(); drawMonsters(); drawPet(); drawHero(); drawSticks(); 
 
+    // 🔥 KASMAYI ÖNLEMEK İÇİN GÖLGE(SHADOW) YERİNE METNİ ÇİFT ÇİZİYORUZ
     if (chestMessageTimer > 0) {
-        ctx.save(); ctx.globalAlpha = Math.min(1, chestMessageTimer / 30); ctx.font = "bold 22px Arial"; ctx.fillStyle = chestMessageColor; ctx.textAlign = "center"; ctx.shadowColor = "black"; ctx.shadowBlur = 4; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2; ctx.fillText(chestMessage, chestMessageX, chestMessageY - (90 - chestMessageTimer) * 0.5); ctx.restore(); chestMessageTimer--;
+        ctx.save(); ctx.globalAlpha = Math.min(1, chestMessageTimer / 30); ctx.font = "bold 22px Arial"; ctx.textAlign = "center"; 
+        ctx.fillStyle = "black"; ctx.fillText(chestMessage, chestMessageX + 2, chestMessageY - (90 - chestMessageTimer) * 0.5 + 2); // Siyah Gölge
+        ctx.fillStyle = chestMessageColor; ctx.fillText(chestMessage, chestMessageX, chestMessageY - (90 - chestMessageTimer) * 0.5); // Asıl Yazı
+        ctx.restore(); chestMessageTimer--;
     }
 
     ctx.restore(); 
@@ -531,9 +527,12 @@ function draw() {
         ctx.fillStyle = "rgba(192, 57, 43, " + (0.18 * Math.sin(progress * Math.PI)) + ")"; ctx.fillRect(0, 0, wWidth, wHeight); ctx.restore(); vampireEffectTimer--;
     }
 
+    // 🔥 KASMAYI ÖNLEYEN METİN DÜZELTMESİ (PİKSELLER GİDERİLDİ)
     if (easterMessageTimer > 0) {
-        ctx.save(); ctx.globalAlpha = Math.min(1, easterMessageTimer / 30); ctx.font = "bold 25px Arial"; ctx.fillStyle = "white"; ctx.textAlign = "center";
-        ctx.shadowColor = "black"; ctx.shadowBlur = 6; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2; ctx.fillText(easterMessage, wWidth / 2, wHeight * 0.22); ctx.restore(); easterMessageTimer--;
+        ctx.save(); ctx.globalAlpha = Math.min(1, easterMessageTimer / 30); ctx.font = "bold 25px Arial"; ctx.textAlign = "center";
+        ctx.fillStyle = "black"; ctx.fillText(easterMessage, wWidth / 2 + 2, wHeight * 0.22 + 2); // Siyah Gölge
+        ctx.fillStyle = "white"; ctx.fillText(easterMessage, wWidth / 2, wHeight * 0.22); // Asıl Yazı
+        ctx.restore(); easterMessageTimer--;
     }
 }
 
@@ -541,25 +540,11 @@ restartButton.addEventListener("click", function (event) { event.preventDefault(
 
 function drawPlatforms() { 
   let wHeight = window.innerHeight || 800;
-  let theme = getTheme(); // 🔥 TEMA KONTROLÜ
   
   platforms.forEach((p) => { 
-      ctx.save();
-      
-      // 🔥 EĞER DÜNYA 4 İSE (DARK) PLATFORMLARA NEON EFEKTİ VER
-      if (theme.isDark) {
-          ctx.fillStyle = "#111111"; // Koyu zemin
-          ctx.strokeStyle = "#ff3300"; // Neon Kırmızı Çizgi
-          ctx.lineWidth = 2;
-          ctx.shadowBlur = 15;
-          ctx.shadowColor = "#ff0000"; // Parlama
-          ctx.strokeRect(p.x, canvasHeight - platformHeight, p.w, platformHeight + (wHeight - canvasHeight) / 2);
-      } else {
-          ctx.fillStyle = "black"; 
-      }
-      
+      // 🔥 SÜTUNLARDAKİ NEON EFEKTİ TAMAMEN KALDIRILDI (KASMA VE BOZULMA BİTTİ)
+      ctx.fillStyle = "black"; 
       ctx.fillRect(p.x, canvasHeight - platformHeight, p.w, platformHeight + (wHeight - canvasHeight) / 2); 
-      ctx.restore();
 
       if (p.hasChest) {
           ctx.save(); ctx.translate(p.x + p.w / 2, canvasHeight - platformHeight - 15); ctx.font = "24px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
@@ -573,17 +558,14 @@ function drawPlatforms() {
 function drawMonsters() {
     monsters.forEach(m => {
         if (m.x < sceneOffset - 50) return; ctx.save(); ctx.translate(m.x, canvasHeight - platformHeight + m.y); 
-        if (m.dead) { ctx.globalAlpha = 0.5; ctx.scale(1, 0.2); } // Canavar ezilirse yassılaşır
+        if (m.dead) { ctx.globalAlpha = 0.5; ctx.scale(1, 0.2); } 
         
         if (preRenderedMonsters[m.type] && preRenderedMonsters[m.type].complete && preRenderedMonsters[m.type].naturalWidth !== 0) { 
             ctx.drawImage(preRenderedMonsters[m.type], -16, -32, 32, 32); 
         } else { 
-            // 🔥 Resim yoksa Cehennem dünyası için ateş topu efekti çiz
             if(m.world === 4) {
-                ctx.fillStyle = "#e67e22";
-                ctx.beginPath(); ctx.arc(0, -10, 12, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = "#f1c40f";
-                ctx.beginPath(); ctx.arc(0, -10, 6, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#e67e22"; ctx.beginPath(); ctx.arc(0, -10, 12, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#f1c40f"; ctx.beginPath(); ctx.arc(0, -10, 6, 0, Math.PI * 2); ctx.fill();
             } else {
                 ctx.fillStyle = "purple"; ctx.fillRect(-10, -20, 20, 20); 
             }
@@ -603,16 +585,16 @@ function drawPet() { if (currentPet === "default") return; let bounce = (phase =
 function drawRoundedRect(x, y, width, height, radius) { ctx.beginPath(); ctx.moveTo(x, y + radius); ctx.lineTo(x, y + height - radius); ctx.arcTo(x, y + height, x + radius, y + height, radius); ctx.lineTo(x + width - radius, y + height); ctx.arcTo(x + width, y + height, x + width, y + height - radius, radius); ctx.lineTo(x + width, y + radius); ctx.arcTo(x + width, y, x + width - radius, y, radius); ctx.lineTo(x + radius, y); ctx.arcTo(x, y, x, y + radius, radius); ctx.fill(); }
 
 function drawSticks() { 
-  let theme = getTheme(); // 🔥 TEMA KONTROLÜ
+  let theme = getTheme(); 
   sticks.forEach((stick) => { 
       ctx.save(); ctx.translate(stick.x, canvasHeight - platformHeight); ctx.rotate((Math.PI / 180) * stick.rotation); ctx.beginPath(); 
       
-      // 🔥 EĞER DÜNYA 4 İSE (DARK) ÇUBUKLARA NEON EFEKTİ VER
+      // 🔥 SADECE ÇUBUKLARA NEON EFEKTİ UYGULANIYOR
       if(theme.isDark) {
           ctx.lineWidth = 4;
-          ctx.strokeStyle = "#ff3300"; // Neon Ateş Rengi
+          ctx.strokeStyle = "#ff3300"; 
           ctx.shadowBlur = 15;
-          ctx.shadowColor = "#ff0000"; // Parlama
+          ctx.shadowColor = "#ff0000"; 
       } else {
           ctx.lineWidth = 2;
           ctx.strokeStyle = "black";
