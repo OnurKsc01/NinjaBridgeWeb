@@ -375,7 +375,6 @@ function animate(timestamp) {
   if (!lastTimestamp) { lastTimestamp = timestamp; window.requestAnimationFrame(animate); return; }
   let dt = timestamp - lastTimestamp; if (dt >= 12 && dt <= 20) { dt = 16.66; } else if (dt > 32) { dt = 16.66; } 
 
-  // Canavar Hareketleri
   monsters.forEach(m => {
       if (m.dead) return;
       if (m.world === 2) { m.y += m.dir * m.speed * (dt / 16.66); if (m.y > 120) m.dir = -1; if (m.y < -180) m.dir = 1; } 
@@ -404,13 +403,9 @@ function animate(timestamp) {
         let stickX = sticks[sticks.length - 1].x;
         let stickLen = sticks[sticks.length - 1].length;
 
-        // 🔥 CEHENNEM CANAVARINI EZME MEKANİĞİ
         monsters.forEach(m => {
             if (!m.dead && m.world === 4 && m.isLow) {
-                if (m.x > stickX && m.x < stickX + stickLen) {
-                    m.dead = true; 
-                    score += 5;
-                }
+                if (m.x > stickX && m.x < stickX + stickLen) { m.dead = true; score += 5; }
             }
         });
 
@@ -427,9 +422,7 @@ function animate(timestamp) {
           if (oldScore < 10 && score >= 10) { easterMessage = "Mercan Hanıma Teşekkürler"; easterMessageTimer = 180; }
          if (score >= nextMessageMilestone) {
               let mesajIndeksi = (nextMessageMilestone / 500) - 1;
-              const ozelMesajlar = [
-                  "Bu zorluklara nasıl gelebildin?", "Parmakların yorulmadı mı?", "Gerçek bir Ninja Ustası!", "Makine misin mübarek!", "Gözlerime inanamıyorum!", "Yok artık, hile mi açtın? 😅", "Oyunun sonu yok, pes et bence!", "Sen bir efsanesin!"                    
-              ];
+              const ozelMesajlar = ["Bu zorluklara nasıl gelebildin?", "Parmakların yorulmadı mı?", "Gerçek bir Ninja Ustası!", "Makine misin mübarek!", "Gözlerime inanamıyorum!", "Yok artık, hile mi açtın? 😅", "Oyunun sonu yok, pes et bence!", "Sen bir efsanesin!"];
               if (mesajIndeksi >= ozelMesajlar.length) { easterMessage = "Limitleri aştın, saygı duyuyorum!"; } else { easterMessage = ozelMesajlar[mesajIndeksi]; }
               easterMessageTimer = 180; nextMessageMilestone += 500;
           }
@@ -510,11 +503,12 @@ function draw() {
     ctx.save(); ctx.clearRect(0, 0, wWidth, wHeight); drawBackground(); ctx.translate((wWidth - canvasWidth) / 2 - sceneOffset, (wHeight - canvasHeight) / 2); 
     drawPlatforms(); drawMonsters(); drawPet(); drawHero(); drawSticks(); 
 
-    // 🔥 KASMAYI ÖNLEMEK İÇİN GÖLGE(SHADOW) YERİNE METNİ ÇİFT ÇİZİYORUZ
+    // 🔥 KASMAYI ÖNLEYEN VE METNİ NETLEŞTİREN GÖLGE SİSTEMİ (Math.floor Eklendi)
     if (chestMessageTimer > 0) {
         ctx.save(); ctx.globalAlpha = Math.min(1, chestMessageTimer / 30); ctx.font = "bold 22px Arial"; ctx.textAlign = "center"; 
-        ctx.fillStyle = "black"; ctx.fillText(chestMessage, chestMessageX + 2, chestMessageY - (90 - chestMessageTimer) * 0.5 + 2); // Siyah Gölge
-        ctx.fillStyle = chestMessageColor; ctx.fillText(chestMessage, chestMessageX, chestMessageY - (90 - chestMessageTimer) * 0.5); // Asıl Yazı
+        let cX = Math.floor(chestMessageX); let cY = Math.floor(chestMessageY - (90 - chestMessageTimer) * 0.5);
+        ctx.fillStyle = "black"; ctx.fillText(chestMessage, cX + 2, cY + 2); 
+        ctx.fillStyle = chestMessageColor; ctx.fillText(chestMessage, cX, cY); 
         ctx.restore(); chestMessageTimer--;
     }
 
@@ -527,11 +521,11 @@ function draw() {
         ctx.fillStyle = "rgba(192, 57, 43, " + (0.18 * Math.sin(progress * Math.PI)) + ")"; ctx.fillRect(0, 0, wWidth, wHeight); ctx.restore(); vampireEffectTimer--;
     }
 
-    // 🔥 KASMAYI ÖNLEYEN METİN DÜZELTMESİ (PİKSELLER GİDERİLDİ)
     if (easterMessageTimer > 0) {
         ctx.save(); ctx.globalAlpha = Math.min(1, easterMessageTimer / 30); ctx.font = "bold 25px Arial"; ctx.textAlign = "center";
-        ctx.fillStyle = "black"; ctx.fillText(easterMessage, wWidth / 2 + 2, wHeight * 0.22 + 2); // Siyah Gölge
-        ctx.fillStyle = "white"; ctx.fillText(easterMessage, wWidth / 2, wHeight * 0.22); // Asıl Yazı
+        let eX = Math.floor(wWidth / 2); let eY = Math.floor(wHeight * 0.22);
+        ctx.fillStyle = "black"; ctx.fillText(easterMessage, eX + 2, eY + 2); 
+        ctx.fillStyle = "white"; ctx.fillText(easterMessage, eX, eY); 
         ctx.restore(); easterMessageTimer--;
     }
 }
@@ -542,9 +536,9 @@ function drawPlatforms() {
   let wHeight = window.innerHeight || 800;
   
   platforms.forEach((p) => { 
-      // 🔥 SÜTUNLARDAKİ NEON EFEKTİ TAMAMEN KALDIRILDI (KASMA VE BOZULMA BİTTİ)
+      // 🔥 SÜTUNLARDAKİ TÜM GÖLGE(SHADOW) SİLİNDİ, DÜMDÜZ ÇİZİLİYOR
       ctx.fillStyle = "black"; 
-      ctx.fillRect(p.x, canvasHeight - platformHeight, p.w, platformHeight + (wHeight - canvasHeight) / 2); 
+      ctx.fillRect(Math.floor(p.x), Math.floor(canvasHeight - platformHeight), Math.floor(p.w), Math.floor(platformHeight + (wHeight - canvasHeight) / 2)); 
 
       if (p.hasChest) {
           ctx.save(); ctx.translate(p.x + p.w / 2, canvasHeight - platformHeight - 15); ctx.font = "24px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
@@ -587,20 +581,18 @@ function drawRoundedRect(x, y, width, height, radius) { ctx.beginPath(); ctx.mov
 function drawSticks() { 
   let theme = getTheme(); 
   sticks.forEach((stick) => { 
-      ctx.save(); ctx.translate(stick.x, canvasHeight - platformHeight); ctx.rotate((Math.PI / 180) * stick.rotation); ctx.beginPath(); 
+      ctx.save(); ctx.translate(stick.x, canvasHeight - platformHeight); ctx.rotate((Math.PI / 180) * stick.rotation); 
       
-      // 🔥 SADECE ÇUBUKLARA NEON EFEKTİ UYGULANIYOR
+      // 🔥 EKRAN KARTINI ÇÖKERTEN "SHADOW" KODU SİLİNDİ
+      // YERİNE SAHTE NEON (ŞEFFAF ÇİZGİLER) EKLENDİ - KASMA 0!
       if(theme.isDark) {
-          ctx.lineWidth = 4;
-          ctx.strokeStyle = "#ff3300"; 
-          ctx.shadowBlur = 15;
-          ctx.shadowColor = "#ff0000"; 
+          ctx.beginPath(); ctx.lineWidth = 8; ctx.strokeStyle = "rgba(255, 0, 0, 0.4)"; ctx.moveTo(0, 0); ctx.lineTo(0, -stick.length); ctx.stroke();
+          ctx.beginPath(); ctx.lineWidth = 4; ctx.strokeStyle = "rgba(255, 80, 0, 0.8)"; ctx.moveTo(0, 0); ctx.lineTo(0, -stick.length); ctx.stroke();
+          ctx.beginPath(); ctx.lineWidth = 2; ctx.strokeStyle = "#ffffff"; ctx.moveTo(0, 0); ctx.lineTo(0, -stick.length); ctx.stroke();
       } else {
-          ctx.lineWidth = 2;
-          ctx.strokeStyle = "black";
+          ctx.beginPath(); ctx.lineWidth = 2; ctx.strokeStyle = "black"; ctx.moveTo(0, 0); ctx.lineTo(0, -stick.length); ctx.stroke();
       }
-
-      ctx.moveTo(0, 0); ctx.lineTo(0, -stick.length); ctx.stroke(); ctx.restore(); 
+      ctx.restore(); 
   }); 
 }
 
