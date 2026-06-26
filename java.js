@@ -181,7 +181,14 @@ const monsterData = { 2: ["scorpion", "snake", "mummy"], 3: ["ice_golem", "yeti"
 const preRenderedMonsters = {}; Object.values(monsterData).flat().forEach(m => { let img = new Image(); img.src = m + '.png'; preRenderedMonsters[m] = img; });
 
 const skinData = { "default": { nameTr: "Varsayılan", nameEn: "Default", price: 0, body: "black", bandana: "red" }, "yesil": { nameTr: "Yeşil Ninja", nameEn: "Green Ninja", price: 20, body: "#228B22", bandana: "black" }, "bronz": { nameTr: "Bronz Ninja", nameEn: "Bronze Ninja", price: 30, body: "#cd7f32", bandana: "#5c4033" }, "demir": { nameTr: "Demir Ninja", nameEn: "Iron Ninja", price: 40, body: "#a9a9a9", bandana: "#696969" }, "altin": { nameTr: "Altın Ninja", nameEn: "Gold Ninja", price: 50, body: "#ffd700", bandana: "#b8860b" }, "hiper": { nameTr: "Hiper Ninja", nameEn: "Hyper Ninja", price: 65, body: "#800080", bandana: "#00ffff" }, "golge": { nameTr: "Gölge Katili", nameEn: "Shadow Killer", price: 80, body: "#1a1a1a", bandana: "#4a0000" }, "buzul": { nameTr: "Buzul Ninja", nameEn: "Ice Ninja", price: 100, body: "#add8e6", bandana: "#ffffff" }, "col_koruyucusu": { nameTr: "Kum Fırtınası", nameEn: "Sandstorm", price: 0, priceGem: 15, gradient: true, colors: ["#E67E22", "#F1C40F", "#D35400"], bandana: "#5c2a00", descTr: "Çöl canavarlarına dokunulmazlık", descEn: "Immunity to Desert monsters" }, "buz_bekcisi": { nameTr: "Kuzey Işığı", nameEn: "Aurora", price: 0, priceGem: 25, gradient: true, colors: ["#00FFFF", "#85C1E9", "#2874A6"], bandana: "#ffffff", descTr: "Buz canavarlarına dokunulmazlık", descEn: "Immunity to Ice monsters" }, "efsanevi": { nameTr: "Kadim Ruh", nameEn: "Ancient Soul", price: 0, priceGem: 35, gradient: true, colors: ["#ff0055", "#8E44AD", "#F1C40F"], bandana: "#000000", descTr: "Tüm canavarlara dokunulmazlık", descEn: "Immunity to ALL monsters" } };
-const petData = { "kopek": { nameTr: "Altın Avcısı", nameEn: "Gold Hunter", descTr: "Daha hızlı Jeton", descEn: "Faster Coins", price: 200, emoji: "🐶" }, "kedi": { nameTr: "Gözcü Kedi", nameEn: "Scout Cat", descTr: "Büyük Kombo Alanı", descEn: "Bigger Combo Zone", price: 250, emoji: "🐱" }, "maymun": { nameTr: "Kuyruklu Maymun", nameEn: "Tailed Monkey", descTr: "Ekstra Can & Jeton", descEn: "Extra Life & Coins", price: 400, emoji: "🐒" }, "kurt": { nameTr: "Gölge Kurdu", nameEn: "Shadow Wolf", descTr: "Jeton + Dev Kırmızı Alan", descEn: "Coins + Huge Perfect Zone", price: 750, emoji: "🐺" } };
+const petData = { 
+    "kopek": { nameTr: "Altın Avcısı", nameEn: "Gold Hunter", descTr: "Daha hızlı Jeton", descEn: "Faster Coins", price: 200, emoji: "🐶" }, 
+    "kedi": { nameTr: "Gözcü Kedi", nameEn: "Scout Cat", descTr: "Büyük Kombo Alanı", descEn: "Bigger Combo Zone", price: 250, emoji: "🐱" }, 
+    "maymun": { nameTr: "Kuyruklu Maymun", nameEn: "Tailed Monkey", descTr: "Ekstra Can & Jeton", descEn: "Extra Life & Coins", price: 400, emoji: "🐒" }, 
+    "kurt": { nameTr: "Gölge Kurdu", nameEn: "Shadow Wolf", descTr: "Jeton + Dev Kırmızı Alan", descEn: "Coins + Huge Perfect Zone", price: 750, emoji: "🐺" },
+    "yarasa": { nameTr: "Gece Yarasası", nameEn: "Night Bat", descTr: "Hareketli zeminleri yavaşlatır", descEn: "Slows moving platforms", price: 1000, emoji: "🦇" },
+    "ejderha": { nameTr: "Alev Ejderi", nameEn: "Flame Dragon", descTr: "Bol Sandık & Yüksek Elmas", descEn: "More Chests & Gem Chance", price: 1500, emoji: "🐉" }
+};
 
 const preRenderedPets = {}; try { Object.keys(petData).forEach(key => { let c = document.createElement('canvas'); c.width = 32; c.height = 32; let cCtx = c.getContext('2d'); cCtx.font = "22px Arial"; cCtx.fillText(petData[key].emoji, 2, 24); preRenderedPets[key] = c; let img = new Image(); img.src = key + '.png'; img.onload = () => { cCtx.clearRect(0, 0, 32, 32); cCtx.drawImage(img, 0, 0, 26, 26); }; }); } catch(e) {}
 
@@ -324,19 +331,31 @@ function generatePlatform() {
     const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap));
     const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth));
     
-   let isChestSpawn = score >= 100 && Math.random() < 0.15;
+   // 🔥 EJDERHA GÜCÜ: Sandık çıkma ihtimalini artırır
+    let chestChance = 0.15;
+    if (currentPet === "ejderha") {
+        let lvl = ownedPets["ejderha"] || 1;
+        chestChance = 0.15 + (lvl * 0.05); // Seviyeye göre %40'a kadar sandık şansı!
+    }
+    let isChestSpawn = score >= 100 && Math.random() < chestChance;
     
-    // YENİ: Platform objesini oluştur
     let newPlatform = { x: x, w: w, hasChest: isChestSpawn, chestOpened: false, isMoving: false };
     
-    // YENİ: 1500 Puandan sonra platformlara hareket özelliği ekle (%30 ihtimalle)
     if (score >= 1500 && !isChestSpawn && platforms.length > 1) {
         if (Math.random() < 0.3) {
             newPlatform.isMoving = true;
             newPlatform.dir = Math.random() > 0.5 ? 1 : -1;
-            newPlatform.speed = 1 + Math.random() * 1.5; // Platformun hızı
-            newPlatform.minX = x - 40; // 40 piksel sola kayabilir
-            newPlatform.maxX = x + 40; // 40 piksel sağa kayabilir
+            
+            // 🔥 YARASA GÜCÜ: Hareketli platformları yavaşlatır
+            let moveSpeed = 1 + Math.random() * 1.5;
+            if (currentPet === "yarasa") {
+                let lvl = ownedPets["yarasa"] || 1;
+                moveSpeed = moveSpeed * (0.85 - (lvl * 0.05)); // Seviyeye göre yarı yarıya yavaşlar!
+            }
+            newPlatform.speed = moveSpeed;
+            
+            newPlatform.minX = x - 40; 
+            newPlatform.maxX = x + 40; 
         }
     }
     
@@ -435,10 +454,12 @@ function animate(timestamp) {
             }
         });
 
-        const [nextPlatform, perfectHit] = thePlatformTheStickHits();
+       const [nextPlatform, perfectHit] = thePlatformTheStickHits();
         if (nextPlatform) {
+          nextPlatform.isMoving = false; 
+
           let earnedPts = 0;
-          if (perfectHit) { 
+          if (perfectHit) {
               combo++; earnedPts = 1 + combo; let pIdx = platforms.indexOf(nextPlatform); let m = monsters.find(mo => mo.platformIndex === pIdx && mo.world === 3); if (m) m.dead = true; perfectElement.innerText = `${texts[currentLang].perfect} +${earnedPts}`; perfectElement.style.opacity = 1; setTimeout(() => (perfectElement.style.opacity = 0), 1000); comboSound.currentTime = 0; comboSound.play().catch(e => {}); 
           } else { combo = 0; earnedPts = 1; perfectElement.innerText = ""; }
           
@@ -485,7 +506,15 @@ function animate(timestamp) {
       if (currentPlat && currentPlat.hasChest && !currentPlat.chestOpened) {
           if (heroX > currentPlat.x + currentPlat.w / 2 - 10) { 
               currentPlat.chestOpened = true; let r = Math.random();
-              if (r < 0.05) { playerGems += 1; chestMessage = "+1 💎"; chestMessageColor = "#00ffff"; } 
+              
+              // 🔥 EJDERHA GÜCÜ: Elmas bulma şansı artar
+              let gemChance = 0.05;
+              if (currentPet === "ejderha") {
+                  let lvl = ownedPets["ejderha"] || 1;
+                  gemChance += (lvl * 0.03); // %20'lere kadar elmas şansı
+              }
+              
+              if (r < gemChance) { playerGems += 1; chestMessage = "+1 💎"; chestMessageColor = "#00ffff"; }
               else if (r < 0.20) { playerCoins += 150; sessionEarnedCoins += 150; chestMessage = "+150 🪙"; chestMessageColor = "#f1c40f"; } 
               else { playerCoins += 50; sessionEarnedCoins += 50; chestMessage = "+50 🪙"; chestMessageColor = "#f1c40f"; }
               updateCoinUI(); chestMessageTimer = 90; chestMessageX = currentPlat.x + currentPlat.w / 2; chestMessageY = canvasHeight - platformHeight - 30; comboSound.currentTime = 0; comboSound.play().catch(e=>{});
@@ -652,9 +681,32 @@ function renderShop() {
     html += `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; margin-top:6px; text-align:center;">🐾 <b>${t.shopPets}</b></li>`;
     Object.keys(petData).forEach(key => { 
         const pet = petData[key]; let pName = currentLang === "tr" ? pet.nameTr : pet.nameEn; let pDesc = currentLang === "tr" ? pet.descTr : pet.descEn; let isOwned = ownedPets.hasOwnProperty(key); let level = isOwned ? ownedPets[key] : 0; 
-        if (!isOwned) { html += `<li style=\"padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee;\"><span style=\"line-height:1.2;\">${pet.emoji} ${pName} (Sv.1)<br><small style=\"color:gray; font-size:11px;\">${pDesc}</small></span> <button style=\"padding: 5px 10px; font-size:12px; margin:0; border:none; background:#2196F3; color:white; border-radius:5px; cursor:pointer;\" onclick=\"buyPet('${key}', ${pet.price})\">🪙 ${pet.price}</button></li>`; } else { let eqBtn = (currentPet === key) ? `<span style=\"font-size:13px; margin-right:5px;\">${t.equipped}</span>` : `<button style=\"padding: 5px 10px; font-size:12px; margin-right:5px; border:none; background:#34495e; color:white; border-radius:5px; cursor:pointer;\" onclick=\"equipPet('${key}')\">${t.equip}</button>`; let upgBtn = ""; if (level < 5 && key === "kurt") { let costVal = level * 2; upgBtn = `<button style=\"background:#e67e22; padding: 4px 8px; font-size:11px; border:none; color:white; border-radius:5px; cursor:pointer;\" onclick=\"upgradePet('${key}', ${level+1}, ${costVal})\">⬆️ 💎 ${costVal}</button>`; } else if (level < 4 && key !== "kurt") { let costVal = (level === 1) ? 1 : (level === 2) ? 3 : 5; upgBtn = `<button style=\"background:#e67e22; padding: 4px 8px; font-size:11px; border:none; color:white; border-radius:5px; cursor:pointer;\" onclick=\"upgradePet('${key}', ${level+1}, ${costVal})\">⬆️ 💎 ${costVal}</button>`; } else { upgBtn = `<span style=\"font-size:11px; color:red; font-weight:bold;\">${t.max}</span>`; } html += `<li style=\"padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee;\"><span style=\"line-height:1.2;\">${pet.emoji} ${pName} (Sv.${level})<br><small style=\"color:gray; font-size:11px;\">${pDesc}</small></span> <div style=\"display:flex; align-items:center;\">${eqBtn}${upgBtn}</div></li>`; } 
-    }); list.innerHTML = html;
-}
+        if (!isOwned) { 
+            html += `<li style=\"padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee;\"><span style=\"line-height:1.2;\">${pet.emoji} ${pName} (Sv.1)<br><small style=\"color:gray; font-size:11px;\">${pDesc}</small></span> <button style=\"padding: 5px 10px; font-size:12px; margin:0; border:none; background:#2196F3; color:white; border-radius:5px; cursor:pointer;\" onclick=\"buyPet('${key}', ${pet.price})\">🪙 ${pet.price}</button></li>`; 
+        } else { 
+            let eqBtn = (currentPet === key) ? `<span style=\"font-size:13px; margin-right:5px;\">${t.equipped}</span>` : `<button style=\"padding: 5px 10px; font-size:12px; margin-right:5px; border:none; background:#34495e; color:white; border-radius:5px; cursor:pointer;\" onclick=\"equipPet('${key}')\">${t.equip}</button>`; 
+            let upgBtn = ""; 
+            
+            // 🔥 YENİ PETLER (YARASA VE EJDERHA) İÇİN 5-10-15-20 ELMAS SİSTEMİ
+            if (level < 5 && (key === "yarasa" || key === "ejderha")) {
+                let costVal = level * 5; 
+                upgBtn = `<button style=\"background:#e67e22; padding: 4px 8px; font-size:11px; border:none; color:white; border-radius:5px; cursor:pointer;\" onclick=\"upgradePet('${key}', ${level+1}, ${costVal})\">⬆️ 💎 ${costVal}</button>`; 
+            }
+            // ESKİ PETLER İÇİN VAR OLAN SİSTEM
+            else if (level < 5 && key === "kurt") { 
+                let costVal = level * 2; 
+                upgBtn = `<button style=\"background:#e67e22; padding: 4px 8px; font-size:11px; border:none; color:white; border-radius:5px; cursor:pointer;\" onclick=\"upgradePet('${key}', ${level+1}, ${costVal})\">⬆️ 💎 ${costVal}</button>`; 
+            } else if (level < 4 && key !== "kurt" && key !== "yarasa" && key !== "ejderha") { 
+                let costVal = (level === 1) ? 1 : (level === 2) ? 3 : 5; 
+                upgBtn = `<button style=\"background:#e67e22; padding: 4px 8px; font-size:11px; border:none; color:white; border-radius:5px; cursor:pointer;\" onclick=\"upgradePet('${key}', ${level+1}, ${costVal})\">⬆️ 💎 ${costVal}</button>`; 
+            } else { 
+                upgBtn = `<span style=\"font-size:11px; color:red; font-weight:bold;\">${t.max}</span>`; 
+            } 
+            
+            html += `<li style=\"padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee;\"><span style=\"line-height:1.2;\">${pet.emoji} ${pName} (Sv.${level})<br><small style=\"color:gray; font-size:11px;\">${pDesc}</small></span> <div style=\"display:flex; align-items:center;\">${eqBtn}${upgBtn}</div></li>`; 
+        } 
+    }); 
+    list.innerHTML = html;
 
 window.convertGems = function() { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; } if(playerCoins < 1000) { if(tg && tg.showAlert) tg.showAlert(t.msgNoCoin1000); return; } if(tg && tg.showConfirm) { tg.showConfirm(t.askGem, function(agreed) { if(agreed) { fetch('https://ninjabridgeapi.duckdns.org/api/score/convert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId }) }).then(res => res.json()).then(data => { if(data.success) { playerCoins -= 1000; playerGems += 1; updateCoinUI(); renderShop(); } }); } }); } }
 window.upgradePet = function(petKey, nextLevel, costVal) { const t = texts[currentLang]; if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(t.msgPlaying); return; } if (playerGems < costVal) { if(tg && tg.showAlert) tg.showAlert(t.msgNoGem); return; } if(tg && tg.showConfirm) { let pName = currentLang==="tr"?petData[petKey].nameTr:petData[petKey].nameEn; tg.showConfirm(t.askPet.replace("{name}", pName).replace("{lvl}", nextLevel), function(agreed) { if(agreed) { fetch('https://ninjabridgeapi.duckdns.org/api/score/upgradepet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, petName: petKey, coinCost: 0, gemCost: costVal, nextLevel: nextLevel }) }).then(res => res.json()).then(data => { if(data.success) { playerGems -= costVal; ownedPets[petKey] = nextLevel; updateCoinUI(); renderShop(); } }); } }); } }
