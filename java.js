@@ -324,8 +324,23 @@ function generatePlatform() {
     const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap));
     const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth));
     
-    let isChestSpawn = score >= 100 && Math.random() < 0.15;
-    platforms.push({ x, w, hasChest: isChestSpawn, chestOpened: false });
+   let isChestSpawn = score >= 100 && Math.random() < 0.15;
+    
+    // YENİ: Platform objesini oluştur
+    let newPlatform = { x: x, w: w, hasChest: isChestSpawn, chestOpened: false, isMoving: false };
+    
+    // YENİ: 1500 Puandan sonra platformlara hareket özelliği ekle (%30 ihtimalle)
+    if (score >= 1500 && !isChestSpawn && platforms.length > 1) {
+        if (Math.random() < 0.3) {
+            newPlatform.isMoving = true;
+            newPlatform.dir = Math.random() > 0.5 ? 1 : -1;
+            newPlatform.speed = 1 + Math.random() * 1.5; // Platformun hızı
+            newPlatform.minX = x - 40; // 40 piksel sola kayabilir
+            newPlatform.maxX = x + 40; // 40 piksel sağa kayabilir
+        }
+    }
+    
+    platforms.push(newPlatform);
     
     totalPlatformsGenerated++;
     if (totalPlatformsGenerated === vampirePlatformTarget) { 
@@ -388,6 +403,17 @@ function animate(timestamp) {
               if (m.y > -60) m.dir = -1; 
               if (m.y < -150) m.dir = 1;
           }
+      }
+  });
+
+  // 🔥 YENİ: HAREKETLİ PLATFORM MOTORU
+  platforms.forEach(p => {
+      // Platform sadece oyuncu beklerken, köprüyü uzatırken veya köprü düşerken hareket etsin!
+      // Oyuncu üstünde yürürken sabitlenir ki hata olmasın.
+      if (p.isMoving && (phase === "waiting" || phase === "stretching" || phase === "turning")) {
+          p.x += p.dir * p.speed * (dt / 16.66);
+          if (p.x > p.maxX) { p.x = p.maxX; p.dir = -1; }
+          if (p.x < p.minX) { p.x = p.minX; p.dir = 1; }
       }
   });
 
