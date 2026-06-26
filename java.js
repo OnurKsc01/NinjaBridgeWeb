@@ -666,7 +666,10 @@ window.buyVIP = function() {
         btn.innerText = "💳 SATIN AL (25 ⭐️)"; btn.disabled = false;
         if (data.success && data.invoiceUrl) {
             tg.openInvoice(data.invoiceUrl, function(status) {
-                if (status === 'paid') { fetch('https://ninjabridgeapi.duckdns.org/api/score/grant-vip', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId }) }).then(() => { closeVipMenu(); if(tg && tg.showAlert) tg.showAlert("Tebrikler! 👑 VIP Aktif!"); }); }
+                if (status === 'paid') { 
+                    closeVipMenu(); 
+                    if(tg && tg.showAlert) tg.showAlert("Tebrikler! Ödemen alındı. VIP rozetini görmek için oyunu yeniden başlat!"); 
+                }
             });
         } else { if(tg && tg.showAlert) tg.showAlert("Fatura Hatası: " + (data.message || "Bilinmiyor")); }
     }).catch(e => { btn.innerText = "💳 SATIN AL (25 ⭐️)"; btn.disabled = false; if(tg && tg.showAlert) tg.showAlert("Bağlantı Hatası: " + e.message); });
