@@ -56,10 +56,6 @@ const texts = {
     }
 };
 
-
-
-
-
 function updateUITexts() {
     const t = texts[currentLang];
     document.getElementById("mainMenuBtn").innerText = t.btnMenu;
@@ -68,9 +64,7 @@ function updateUITexts() {
     document.getElementById("promoTitleText").innerText = t.promoTitle;
     document.getElementById("promoDescText").innerText = t.promoDesc;
     document.getElementById("submitPromoBtn").innerText = t.btnWatchClaim;
-    document.getElementById("closePromoModal").innerText = t.cancel;
     document.getElementById("closeMainMenu").innerText = t.close;
-
     document.getElementById("leaderboardBtn").innerText = t.btnScore;
     document.getElementById("shopBtn").innerText = t.btnShop;
     document.getElementById("watchEarnBtn").innerText = t.btnAd;
@@ -99,16 +93,12 @@ document.getElementById("mainMenuBtn").addEventListener("click", () => {
     if (phase !== "waiting") { if(tg && tg.showAlert) tg.showAlert(texts[currentLang].msgPlaying); return; }
     document.getElementById("mainMenuModal").style.display = "block";
 });
-document.getElementById("closeMainMenu").addEventListener("click", () => {
-    document.getElementById("mainMenuModal").style.display = "none";
-});
+document.getElementById("closeMainMenu").addEventListener("click", () => { document.getElementById("mainMenuModal").style.display = "none"; });
 document.getElementById("promoMenuBtn").addEventListener("click", () => {
     document.getElementById("mainMenuModal").style.display = "none";
     document.getElementById("promoModal").style.display = "block";
 });
-document.getElementById("closePromoModal").addEventListener("click", () => {
-    document.getElementById("promoModal").style.display = "none";
-});
+document.getElementById("closePromoModal").addEventListener("click", () => { document.getElementById("promoModal").style.display = "none"; });
 
 document.getElementById("submitPromoBtn").addEventListener("click", () => {
     let codeInput = document.getElementById("promoInput").value.trim().toUpperCase();
@@ -118,18 +108,14 @@ document.getElementById("submitPromoBtn").addEventListener("click", () => {
     adController.show().then((result) => { 
         if (result.done) { 
             fetch('https://ninjabridgeapi.duckdns.org/api/score/promocode', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: tgUserId, code: codeInput })
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, code: codeInput })
             }).then(res => res.json()).then(data => {
                 if(data.success) {
                     if(tg && tg.showAlert) tg.showAlert(`🎁 Tebrikler! ${data.message}`);
                     document.getElementById("promoModal").style.display = "none";
                     document.getElementById("promoInput").value = "";
                     loadPlayerData();
-                } else {
-                    if(tg && tg.showAlert) tg.showAlert(`❌ ${data.message}`);
-                }
+                } else { if(tg && tg.showAlert) tg.showAlert(`❌ ${data.message}`); }
             }).catch(() => { if(tg && tg.showAlert) tg.showAlert("Hata oluştu."); });
         } 
     }).catch(() => { });
@@ -140,7 +126,9 @@ function isMenuOpen() {
            (document.getElementById("leaderboardModal") && document.getElementById("leaderboardModal").style.display === "block") || 
            (document.getElementById("mainMenuModal") && document.getElementById("mainMenuModal").style.display === "block") || 
            (document.getElementById("promoModal") && document.getElementById("promoModal").style.display === "block") || 
-           (document.getElementById("reviveMenu") && document.getElementById("reviveMenu").style.display === "flex"); 
+           (document.getElementById("reviveMenu") && document.getElementById("reviveMenu").style.display === "flex") ||
+           (document.getElementById("vipInfoModal") && document.getElementById("vipInfoModal").style.display === "flex") ||
+           (document.getElementById("dailyRewardModal") && document.getElementById("dailyRewardModal").style.display === "flex"); 
 }
 
 // ------------------------------------
@@ -164,19 +152,7 @@ let isDuelMode = false; let opponentName = ""; let opponentTargetScore = -1; let
 
 let inviteBtn = document.createElement("button");
 inviteBtn.id = "inviteBtnObj";
-inviteBtn.style.position = "absolute"; 
-inviteBtn.style.top = "215px"; 
-inviteBtn.style.left = "20px"; 
-inviteBtn.style.padding = "8px 12px"; 
-inviteBtn.style.fontSize = "13px"; 
-inviteBtn.style.fontWeight = "bold"; 
-inviteBtn.style.backgroundColor = "#e74c3c"; 
-inviteBtn.style.color = "white"; 
-inviteBtn.style.border = "none"; 
-inviteBtn.style.borderRadius = "5px"; 
-inviteBtn.style.cursor = "pointer"; 
-inviteBtn.style.boxShadow = "0 2px 4px rgba(0,0,0,0.2)"; 
-inviteBtn.style.zIndex = "100";
+inviteBtn.style.position = "absolute"; inviteBtn.style.top = "215px"; inviteBtn.style.left = "20px"; inviteBtn.style.padding = "8px 12px"; inviteBtn.style.fontSize = "13px"; inviteBtn.style.fontWeight = "bold"; inviteBtn.style.backgroundColor = "#e74c3c"; inviteBtn.style.color = "white"; inviteBtn.style.border = "none"; inviteBtn.style.borderRadius = "5px"; inviteBtn.style.cursor = "pointer"; inviteBtn.style.boxShadow = "0 2px 4px rgba(0,0,0,0.2)"; inviteBtn.style.zIndex = "100";
 document.body.appendChild(inviteBtn);
 
 inviteBtn.addEventListener("click", () => {
@@ -187,14 +163,23 @@ inviteBtn.addEventListener("click", () => {
     if (tg && tg.openTelegramLink) { tg.openTelegramLink(shareUrl); } else { window.open(shareUrl, "_blank"); }
 });
 
+// 🔥 DÜNYA TEMALARI GÜNCELLENDİ (4000: Cehennem / Dark Tema)
 const worldThemes = {
-    1: { top: "#BBD691", bot: "#FEF1E1", h1: "#95C629", h2: "#659F1C", tColors: ["#6D8821", "#8FAC34", "#98B333"] }, 
-    2: { top: "#FDEB71", bot: "#F8D800", h1: "#E67E22", h2: "#D35400", tColors: ["#A04000", "#BA4A00", "#CA6F1E"] }, 
-    3: { top: "#E0C3FC", bot: "#8EC5FC", h1: "#BDC3C7", h2: "#ECF0F1", tColors: ["#FFFFFF", "#F2F3F4", "#E5E8E8"] }  
+    1: { top: "#BBD691", bot: "#FEF1E1", h1: "#95C629", h2: "#659F1C", tColors: ["#6D8821", "#8FAC34", "#98B333"], isDark: false }, 
+    2: { top: "#FDEB71", bot: "#F8D800", h1: "#E67E22", h2: "#D35400", tColors: ["#A04000", "#BA4A00", "#CA6F1E"], isDark: false }, 
+    3: { top: "#E0C3FC", bot: "#8EC5FC", h1: "#BDC3C7", h2: "#ECF0F1", tColors: ["#FFFFFF", "#F2F3F4", "#E5E8E8"], isDark: false },
+    4: { top: "#1a0000", bot: "#4d0000", h1: "#660000", h2: "#330000", tColors: ["#ff3300", "#cc2900", "#991f00"], isDark: true }
 };
-function getTheme() { if (score >= 3000) return worldThemes[3]; if (score >= 1000) return worldThemes[2]; return worldThemes[1]; }
+// Dünyalar: 0-1000 Çimen | 1000-2500 Çöl | 2500-4000 Buzul | 4000+ Cehennem
+function getTheme() { 
+    if (score >= 4000) return worldThemes[4]; 
+    if (score >= 2500) return worldThemes[3]; 
+    if (score >= 1000) return worldThemes[2]; 
+    return worldThemes[1]; 
+}
 
-let monsters = []; const monsterData = { 2: ["scorpion", "snake", "mummy"], 3: ["ice_golem", "yeti", "ghost"] };
+let monsters = []; 
+const monsterData = { 2: ["scorpion", "snake", "mummy"], 3: ["ice_golem", "yeti", "ghost"], 4: ["fireball", "demon"] };
 const preRenderedMonsters = {}; Object.values(monsterData).flat().forEach(m => { let img = new Image(); img.src = m + '.png'; preRenderedMonsters[m] = img; });
 
 const skinData = { "default": { nameTr: "Varsayılan", nameEn: "Default", price: 0, body: "black", bandana: "red" }, "yesil": { nameTr: "Yeşil Ninja", nameEn: "Green Ninja", price: 20, body: "#228B22", bandana: "black" }, "bronz": { nameTr: "Bronz Ninja", nameEn: "Bronze Ninja", price: 30, body: "#cd7f32", bandana: "#5c4033" }, "demir": { nameTr: "Demir Ninja", nameEn: "Iron Ninja", price: 40, body: "#a9a9a9", bandana: "#696969" }, "altin": { nameTr: "Altın Ninja", nameEn: "Gold Ninja", price: 50, body: "#ffd700", bandana: "#b8860b" }, "hiper": { nameTr: "Hiper Ninja", nameEn: "Hyper Ninja", price: 65, body: "#800080", bandana: "#00ffff" }, "golge": { nameTr: "Gölge Katili", nameEn: "Shadow Killer", price: 80, body: "#1a1a1a", bandana: "#4a0000" }, "buzul": { nameTr: "Buzul Ninja", nameEn: "Ice Ninja", price: 100, body: "#add8e6", bandana: "#ffffff" }, "col_koruyucusu": { nameTr: "Kum Fırtınası", nameEn: "Sandstorm", price: 0, priceGem: 15, gradient: true, colors: ["#E67E22", "#F1C40F", "#D35400"], bandana: "#5c2a00", descTr: "Çöl canavarlarına dokunulmazlık", descEn: "Immunity to Desert monsters" }, "buz_bekcisi": { nameTr: "Kuzey Işığı", nameEn: "Aurora", price: 0, priceGem: 25, gradient: true, colors: ["#00FFFF", "#85C1E9", "#2874A6"], bandana: "#ffffff", descTr: "Buz canavarlarına dokunulmazlık", descEn: "Immunity to Ice monsters" }, "efsanevi": { nameTr: "Kadim Ruh", nameEn: "Ancient Soul", price: 0, priceGem: 35, gradient: true, colors: ["#ff0055", "#8E44AD", "#F1C40F"], bandana: "#000000", descTr: "Tüm canavarlara dokunulmazlık", descEn: "Immunity to ALL monsters" } };
@@ -209,7 +194,6 @@ let devClickCount = 0; scoreElement.addEventListener("click", () => { devClickCo
 const bgMusic = new Audio('bg.mp3'); bgMusic.loop = true; bgMusic.volume = 0.3; 
 const comboSound = new Audio('combo.mp3'); comboSound.volume = 0.8;
 const fallSound = new Audio('dusme.mp3'); fallSound.volume = 0.8;
-
 let vampireImg = new Image(); vampireImg.src = 'vampir.jpg'; 
 const screamSound = new Audio('ciglik.mp3'); screamSound.volume = 1.0;
 
@@ -242,13 +226,9 @@ document.getElementById("watchEarnBtn").addEventListener("click", () => {
     }).catch(() => { });
 });
 
-
-
 let phase = "waiting"; let lastTimestamp; let heroX, heroY, sceneOffset; 
 let platforms = [], sticks = [], trees = []; let combo = 0; let currentMonkeyLives = 0;
 let totalPlatformsGenerated = 0; let vampirePlatformTarget = 0; let vampireEffectTimer = 0; let easterMessage = ""; let easterMessageTimer = 0; let nextMessageMilestone = 500;
-
-// 🔥 GİZEMLİ SANDIK DEĞİŞKENLERİ
 let chestMessage = ""; let chestMessageTimer = 0; let chestMessageX = 0; let chestMessageY = 0; let chestMessageColor = "";
 
 const canvasWidth = 375, canvasHeight = 375, platformHeight = 100; const heroDistanceFromEdge = 10, paddingX = 100;
@@ -260,10 +240,8 @@ window.addEventListener('load', () => {
     if (tg && tg.ready) tg.ready(); if (tg && tg.expand) tg.expand();
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
     updateUITexts(); initAdsGram(); loadPlayerData(); checkDuelStatus(); processReferralIfAny(); resetGame();
-    
     checkDailyReward(); 
 });
-
 
 function processReferralIfAny() {
     if (startParam && startParam.startsWith("ref_")) {
@@ -306,7 +284,7 @@ function cleanUpOldObjects() {
 
 function resetGame() {
   phase = "waiting"; lastTimestamp = undefined; sceneOffset = 0; score = 0; combo = 0; sessionEarnedCoins = 0; stepCount = 0; adReviveUsedThisRun = false;
-  chestMessageTimer = 0; // Sandık yazısını sıfırla
+  chestMessageTimer = 0; 
   if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } else { currentMonkeyLives = 0; }
   introductionElement.style.opacity = 1; perfectElement.style.opacity = 0; restartButton.style.display = "none";
   if(document.getElementById("reviveMenu")) document.getElementById("reviveMenu").style.display = "none";
@@ -348,7 +326,6 @@ function generatePlatform() {
     const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap));
     const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth));
     
-    // 🔥 SANDIK OLUŞTURMA ALGORİTMASI: 100 puandan sonra %15 şansla çıkar.
     let isChestSpawn = score >= 100 && Math.random() < 0.15;
     platforms.push({ x, w, hasChest: isChestSpawn, chestOpened: false });
     
@@ -357,17 +334,35 @@ function generatePlatform() {
         platforms[platforms.length - 1].isVampireTrigger = true; 
     }
 
-    if (spawnChance > 0 && platforms.length > 2 && !isChestSpawn) { // Sandık olan yere canavar koymayalım
+    if (spawnChance > 0 && platforms.length > 2 && !isChestSpawn) { 
         if (Math.random() < spawnChance) {
-            let isWorld3 = score >= 3000;
-            let mList = isWorld3 ? monsterData[3] : monsterData[2];
+            // 🔥 YENİ DÜNYA SEÇİCİ
+            let worldId = score >= 4000 ? 4 : (score >= 2500 ? 3 : 2);
+            let mList = monsterData[worldId] || monsterData[2];
             let mType = mList[Math.floor(Math.random() * mList.length)];
             
-            if (!isWorld3) {
-                let gapStartX = lastPlatform.x + lastPlatform.w; let gapWidth = x - gapStartX;
-                monsters.push({ world: 2, platformIndex: platforms.length - 1, x: gapStartX + gapWidth / 2, y: Math.random() > 0.5 ? -150 : 100, dir: Math.random() > 0.5 ? 1 : -1, speed: 2 + Math.random() * 1.5, type: mType, dead: false });
-            } else {
+            let gapStartX = lastPlatform.x + lastPlatform.w; 
+            let gapWidth = x - gapStartX;
+            
+            if (worldId === 4) {
+                // Cehennem Canavarları: Boşlukta uçarak ateş ederler
+                // isLow = true ise köprü ile ezilebilir!
+                let isLow = Math.random() > 0.5;
+                monsters.push({ 
+                    world: 4, 
+                    platformIndex: platforms.length - 1, 
+                    x: gapStartX + gapWidth / 2, 
+                    y: isLow ? -10 : -90, 
+                    dir: 1, 
+                    speed: 1.5 + Math.random() * 2, // Hızlı hareket ederler
+                    type: mType, 
+                    dead: false,
+                    isLow: isLow
+                });
+            } else if (worldId === 3) {
                 monsters.push({ world: 3, platformIndex: platforms.length - 1, x: x + w / 2, y: 0, dir: Math.random() > 0.5 ? 1 : -1, speed: 0.8 + Math.random() * 0.5, type: mType, dead: false });
+            } else {
+                monsters.push({ world: 2, platformIndex: platforms.length - 1, x: gapStartX + gapWidth / 2, y: Math.random() > 0.5 ? -150 : 100, dir: Math.random() > 0.5 ? 1 : -1, speed: 2 + Math.random() * 1.5, type: mType, dead: false });
             }
         }
     }
@@ -385,10 +380,22 @@ function animate(timestamp) {
   if (!lastTimestamp) { lastTimestamp = timestamp; window.requestAnimationFrame(animate); return; }
   let dt = timestamp - lastTimestamp; if (dt >= 12 && dt <= 20) { dt = 16.66; } else if (dt > 32) { dt = 16.66; } 
 
+  // Canavar Hareketleri
   monsters.forEach(m => {
       if (m.dead) return;
       if (m.world === 2) { m.y += m.dir * m.speed * (dt / 16.66); if (m.y > 120) m.dir = -1; if (m.y < -180) m.dir = 1; } 
       else if (m.world === 3) { let p = platforms[m.platformIndex]; if (p) { m.x += m.dir * m.speed * (dt / 16.66); if (m.x > p.x + p.w - 12) m.dir = -1; if (m.x < p.x + 12) m.dir = 1; } }
+      else if (m.world === 4) { 
+          // Cehennem Canavarı Hareketi (Dikey)
+          m.y += m.dir * m.speed * (dt / 16.66); 
+          if(m.isLow) {
+              if (m.y > 20) m.dir = -1; 
+              if (m.y < -30) m.dir = 1;
+          } else {
+              if (m.y > -60) m.dir = -1; 
+              if (m.y < -150) m.dir = 1;
+          }
+      }
   });
 
   switch (phase) {
@@ -398,7 +405,23 @@ function animate(timestamp) {
     case "turning": {
       sticks[sticks.length - 1].rotation += dt / turningSpeed;
       if (sticks[sticks.length - 1].rotation > 90) {
-        sticks[sticks.length - 1].rotation = 90; const [nextPlatform, perfectHit] = thePlatformTheStickHits();
+        sticks[sticks.length - 1].rotation = 90; 
+        
+        let stickX = sticks[sticks.length - 1].x;
+        let stickLen = sticks[sticks.length - 1].length;
+
+        // 🔥 CEHENNEM CANAVARINI EZME MEKANİĞİ
+        monsters.forEach(m => {
+            if (!m.dead && m.world === 4 && m.isLow) {
+                // Eğer köprünün altındaysa ezilir!
+                if (m.x > stickX && m.x < stickX + stickLen) {
+                    m.dead = true; 
+                    score += 5; // Ezdiği için ekstra 5 puan hediye
+                }
+            }
+        });
+
+        const [nextPlatform, perfectHit] = thePlatformTheStickHits();
         if (nextPlatform) {
           let earnedPts = 0;
           if (perfectHit) { 
@@ -412,24 +435,10 @@ function animate(timestamp) {
          if (score >= nextMessageMilestone) {
               let mesajIndeksi = (nextMessageMilestone / 500) - 1;
               const ozelMesajlar = [
-                  "Bu zorluklara nasıl gelebildin?",      
-                  "Parmakların yorulmadı mı?",            
-                  "Gerçek bir Ninja Ustası!",             
-                  "Makine misin mübarek!",                
-                  "Gözlerime inanamıyorum!",              
-                  "Yok artık, hile mi açtın? 😅",          
-                  "Oyunun sonu yok, pes et bence!",       
-                  "Sen bir efsanesin!"                    
+                  "Bu zorluklara nasıl gelebildin?", "Parmakların yorulmadı mı?", "Gerçek bir Ninja Ustası!", "Makine misin mübarek!", "Gözlerime inanamıyorum!", "Yok artık, hile mi açtın? 😅", "Oyunun sonu yok, pes et bence!", "Sen bir efsanesin!"                    
               ];
-
-              if (mesajIndeksi >= ozelMesajlar.length) {
-                  easterMessage = "Limitleri aştın, saygı duyuyorum!";
-              } else {
-                  easterMessage = ozelMesajlar[mesajIndeksi];
-              }
-
-              easterMessageTimer = 180;
-              nextMessageMilestone += 500;
+              if (mesajIndeksi >= ozelMesajlar.length) { easterMessage = "Limitleri aştın, saygı duyuyorum!"; } else { easterMessage = ozelMesajlar[mesajIndeksi]; }
+              easterMessageTimer = 180; nextMessageMilestone += 500;
           }
 
           processCoinGeneration(earnedPts); scoreElement.innerText = score; generatePlatform(); generateTree(); generateTree();
@@ -439,44 +448,36 @@ function animate(timestamp) {
       break;
     }
     case "walking": {
-      let isImmuneWorld2 = (currentSkin === "col_koruyucusu" || currentSkin === "efsanevi"); let isImmuneWorld3 = (currentSkin === "buz_bekcisi" || currentSkin === "efsanevi");
-      monsters.forEach(m => { if (m.dead) return; if (m.world === 2) { if (Math.abs(heroX - m.x) < 15 && Math.abs(m.y) < 35) { if(!isImmuneWorld2) { phase = "dead_monster"; fallSound.currentTime = 0; fallSound.play().catch(e=>{}); } } } else if (m.world === 3) { let p = platforms[m.platformIndex]; if (p && Math.abs(heroX - m.x) < 15) { if(!isImmuneWorld3) { phase = "dead_monster"; fallSound.currentTime = 0; fallSound.play().catch(e=>{}); } } } });
+      let isImmuneWorld2 = (currentSkin === "col_koruyucusu" || currentSkin === "efsanevi"); 
+      let isImmuneWorld3 = (currentSkin === "buz_bekcisi" || currentSkin === "efsanevi");
+      let isImmuneWorld4 = (currentSkin === "efsanevi");
+
+      monsters.forEach(m => { 
+          if (m.dead) return; 
+          if (m.world === 2) { 
+              if (Math.abs(heroX - m.x) < 15 && Math.abs(m.y) < 35) { if(!isImmuneWorld2) { phase = "dead_monster"; fallSound.currentTime = 0; fallSound.play().catch(e=>{}); } } 
+          } else if (m.world === 3) { 
+              let p = platforms[m.platformIndex]; if (p && Math.abs(heroX - m.x) < 15) { if(!isImmuneWorld3) { phase = "dead_monster"; fallSound.currentTime = 0; fallSound.play().catch(e=>{}); } } 
+          } else if (m.world === 4) {
+              // 🔥 CEHENNEM CANAVARINA ÇARPMA
+              if (Math.abs(heroX - m.x) < 15 && m.y > -50 && m.y < 10) {
+                  if(!isImmuneWorld4) { phase = "dead_monster"; fallSound.currentTime = 0; fallSound.play().catch(e=>{}); }
+              }
+          }
+      });
 
       if (phase === "dead_monster") break;
 
       let currentPlat = platforms.find(p => heroX >= p.x && heroX <= p.x + p.w);
       if (currentPlat && currentPlat.isVampireTrigger && !currentPlat.vampireTriggered) { currentPlat.vampireTriggered = true; vampireEffectTimer = 75; screamSound.currentTime = 0; screamSound.play().catch(e=>{}); }
 
-      // 🔥 SANDIK AÇMA ALGORİTMASI
       if (currentPlat && currentPlat.hasChest && !currentPlat.chestOpened) {
-          if (heroX > currentPlat.x + currentPlat.w / 2 - 10) { // Ninja sandığa dokundu
-              currentPlat.chestOpened = true;
-              let r = Math.random();
-              
-              if (r < 0.05) { // %5 İhtimal (Jackpot)
-                  playerGems += 1;
-                  chestMessage = "+1 💎";
-                  chestMessageColor = "#00ffff"; // Parlak Turkuaz
-              } 
-              else if (r < 0.20) { // %15 İhtimal (Orta)
-                  playerCoins += 150;
-                  sessionEarnedCoins += 150;
-                  chestMessage = "+150 🪙";
-                  chestMessageColor = "#f1c40f"; // Sarı
-              } 
-              else { // %80 İhtimal (Normal)
-                  playerCoins += 50;
-                  sessionEarnedCoins += 50;
-                  chestMessage = "+50 🪙";
-                  chestMessageColor = "#f1c40f";
-              }
-              
-              updateCoinUI();
-              chestMessageTimer = 90;
-              chestMessageX = currentPlat.x + currentPlat.w / 2;
-              chestMessageY = canvasHeight - platformHeight - 30;
-              comboSound.currentTime = 0;
-              comboSound.play().catch(e=>{});
+          if (heroX > currentPlat.x + currentPlat.w / 2 - 10) { 
+              currentPlat.chestOpened = true; let r = Math.random();
+              if (r < 0.05) { playerGems += 1; chestMessage = "+1 💎"; chestMessageColor = "#00ffff"; } 
+              else if (r < 0.20) { playerCoins += 150; sessionEarnedCoins += 150; chestMessage = "+150 🪙"; chestMessageColor = "#f1c40f"; } 
+              else { playerCoins += 50; sessionEarnedCoins += 50; chestMessage = "+50 🪙"; chestMessageColor = "#f1c40f"; }
+              updateCoinUI(); chestMessageTimer = 90; chestMessageX = currentPlat.x + currentPlat.w / 2; chestMessageY = canvasHeight - platformHeight - 30; comboSound.currentTime = 0; comboSound.play().catch(e=>{});
           }
       }
 
@@ -506,8 +507,6 @@ function animate(timestamp) {
   draw(); window.requestAnimationFrame(animate); lastTimestamp = timestamp;
 }
 
-
-
 function thePlatformTheStickHits() { 
   if (sticks[sticks.length - 1].rotation != 90) throw Error(`Stick is ${sticks[sticks.length - 1].rotation}°`); 
   const stickFarX = sticks[sticks.length - 1].x + sticks[sticks.length - 1].length; const platformTheStickHits = platforms.find((platform) => platform.x < stickFarX && stickFarX < platform.x + platform.w); let pArea = getPerfectAreaSize(platformTheStickHits ? platformTheStickHits.w : 0); 
@@ -519,20 +518,8 @@ function draw() {
     ctx.save(); ctx.clearRect(0, 0, wWidth, wHeight); drawBackground(); ctx.translate((wWidth - canvasWidth) / 2 - sceneOffset, (wHeight - canvasHeight) / 2); 
     drawPlatforms(); drawMonsters(); drawPet(); drawHero(); drawSticks(); 
 
-    // 🔥 SANDIK AÇILMA ANİMASYONU (Çeviri Merkezine Göre Ayarlandı)
     if (chestMessageTimer > 0) {
-        ctx.save();
-        ctx.globalAlpha = Math.min(1, chestMessageTimer / 30);
-        ctx.font = "bold 22px Arial";
-        ctx.fillStyle = chestMessageColor;
-        ctx.textAlign = "center";
-        ctx.shadowColor = "black";
-        ctx.shadowBlur = 4;
-        ctx.shadowOffsetX = 2;
-        ctx.shadowOffsetY = 2;
-        ctx.fillText(chestMessage, chestMessageX, chestMessageY - (90 - chestMessageTimer) * 0.5); // Yazı yavaşça yukarı süzülür
-        ctx.restore();
-        chestMessageTimer--;
+        ctx.save(); ctx.globalAlpha = Math.min(1, chestMessageTimer / 30); ctx.font = "bold 22px Arial"; ctx.fillStyle = chestMessageColor; ctx.textAlign = "center"; ctx.shadowColor = "black"; ctx.shadowBlur = 4; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2; ctx.fillText(chestMessage, chestMessageX, chestMessageY - (90 - chestMessageTimer) * 0.5); ctx.restore(); chestMessageTimer--;
     }
 
     ctx.restore(); 
@@ -554,23 +541,29 @@ restartButton.addEventListener("click", function (event) { event.preventDefault(
 
 function drawPlatforms() { 
   let wHeight = window.innerHeight || 800;
+  let theme = getTheme(); // 🔥 TEMA KONTROLÜ
+  
   platforms.forEach((p) => { 
-      ctx.fillStyle = "black"; ctx.fillRect(p.x, canvasHeight - platformHeight, p.w, platformHeight + (wHeight - canvasHeight) / 2); 
+      ctx.save();
       
-      // 🔥 SANDIĞI ÇİZİMİ
+      // 🔥 EĞER DÜNYA 4 İSE (DARK) PLATFORMLARA NEON EFEKTİ VER
+      if (theme.isDark) {
+          ctx.fillStyle = "#111111"; // Koyu zemin
+          ctx.strokeStyle = "#ff3300"; // Neon Kırmızı Çizgi
+          ctx.lineWidth = 2;
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = "#ff0000"; // Parlama
+          ctx.strokeRect(p.x, canvasHeight - platformHeight, p.w, platformHeight + (wHeight - canvasHeight) / 2);
+      } else {
+          ctx.fillStyle = "black"; 
+      }
+      
+      ctx.fillRect(p.x, canvasHeight - platformHeight, p.w, platformHeight + (wHeight - canvasHeight) / 2); 
+      ctx.restore();
+
       if (p.hasChest) {
-          ctx.save();
-          ctx.translate(p.x + p.w / 2, canvasHeight - platformHeight - 15);
-          ctx.font = "24px Arial";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          if (!p.chestOpened) {
-              ctx.fillText("🎁", 0, 0);
-          } else {
-              ctx.globalAlpha = 0.5;
-              ctx.fillText("✨", 0, -10); // Açılınca efekt
-          }
-          ctx.restore();
+          ctx.save(); ctx.translate(p.x + p.w / 2, canvasHeight - platformHeight - 15); ctx.font = "24px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+          if (!p.chestOpened) { ctx.fillText("🎁", 0, 0); } else { ctx.globalAlpha = 0.5; ctx.fillText("✨", 0, -10); } ctx.restore();
       }
 
       if (sticks[sticks.length - 1] && sticks[sticks.length - 1].x < p.x) { ctx.fillStyle = "red"; let pArea = getPerfectAreaSize(p.w); ctx.fillRect(p.x + p.w / 2 - pArea / 2, canvasHeight - platformHeight, pArea, pArea); } 
@@ -580,8 +573,21 @@ function drawPlatforms() {
 function drawMonsters() {
     monsters.forEach(m => {
         if (m.x < sceneOffset - 50) return; ctx.save(); ctx.translate(m.x, canvasHeight - platformHeight + m.y); 
-        if (m.dead) { ctx.globalAlpha = 0.5; ctx.scale(1, 0.2); } 
-        if (preRenderedMonsters[m.type] && preRenderedMonsters[m.type].complete && preRenderedMonsters[m.type].naturalWidth !== 0) { ctx.drawImage(preRenderedMonsters[m.type], -16, -32, 32, 32); } else { ctx.fillStyle = "purple"; ctx.fillRect(-10, -20, 20, 20); } 
+        if (m.dead) { ctx.globalAlpha = 0.5; ctx.scale(1, 0.2); } // Canavar ezilirse yassılaşır
+        
+        if (preRenderedMonsters[m.type] && preRenderedMonsters[m.type].complete && preRenderedMonsters[m.type].naturalWidth !== 0) { 
+            ctx.drawImage(preRenderedMonsters[m.type], -16, -32, 32, 32); 
+        } else { 
+            // 🔥 Resim yoksa Cehennem dünyası için ateş topu efekti çiz
+            if(m.world === 4) {
+                ctx.fillStyle = "#e67e22";
+                ctx.beginPath(); ctx.arc(0, -10, 12, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#f1c40f";
+                ctx.beginPath(); ctx.arc(0, -10, 6, 0, Math.PI * 2); ctx.fill();
+            } else {
+                ctx.fillStyle = "purple"; ctx.fillRect(-10, -20, 20, 20); 
+            }
+        } 
         ctx.restore(); 
     });
 }
@@ -595,7 +601,26 @@ function drawHero() {
 
 function drawPet() { if (currentPet === "default") return; let bounce = (phase === "walking" || phase === "transitioning") ? Math.abs(Math.sin(Date.now() / 100)) * 6 : 0; ctx.save(); ctx.translate(heroX - 32, heroY + canvasHeight - platformHeight - 20 - bounce); if (preRenderedPets[currentPet]) { ctx.drawImage(preRenderedPets[currentPet], 0, 0); } ctx.restore(); }
 function drawRoundedRect(x, y, width, height, radius) { ctx.beginPath(); ctx.moveTo(x, y + radius); ctx.lineTo(x, y + height - radius); ctx.arcTo(x, y + height, x + radius, y + height, radius); ctx.lineTo(x + width - radius, y + height); ctx.arcTo(x + width, y + height, x + width, y + height - radius, radius); ctx.lineTo(x + width, y + radius); ctx.arcTo(x + width, y, x + width - radius, y, radius); ctx.lineTo(x + radius, y); ctx.arcTo(x, y, x, y + radius, radius); ctx.fill(); }
-function drawSticks() { sticks.forEach((stick) => { ctx.save(); ctx.translate(stick.x, canvasHeight - platformHeight); ctx.rotate((Math.PI / 180) * stick.rotation); ctx.beginPath(); ctx.lineWidth = 2; ctx.moveTo(0, 0); ctx.lineTo(0, -stick.length); ctx.stroke(); ctx.restore(); }); }
+
+function drawSticks() { 
+  let theme = getTheme(); // 🔥 TEMA KONTROLÜ
+  sticks.forEach((stick) => { 
+      ctx.save(); ctx.translate(stick.x, canvasHeight - platformHeight); ctx.rotate((Math.PI / 180) * stick.rotation); ctx.beginPath(); 
+      
+      // 🔥 EĞER DÜNYA 4 İSE (DARK) ÇUBUKLARA NEON EFEKTİ VER
+      if(theme.isDark) {
+          ctx.lineWidth = 4;
+          ctx.strokeStyle = "#ff3300"; // Neon Ateş Rengi
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = "#ff0000"; // Parlama
+      } else {
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = "black";
+      }
+
+      ctx.moveTo(0, 0); ctx.lineTo(0, -stick.length); ctx.stroke(); ctx.restore(); 
+  }); 
+}
 
 function drawBackground() { let wWidth = window.innerWidth || 375; let wHeight = window.innerHeight || 800; let theme = getTheme(); var gradient = ctx.createLinearGradient(0, 0, 0, wHeight); gradient.addColorStop(0, theme.top); gradient.addColorStop(1, theme.bot); ctx.fillStyle = gradient; ctx.fillRect(0, 0, wWidth, wHeight); drawHill(hill1BaseHeight, hill1Amplitude, hill1Stretch, theme.h1); drawHill(hill2BaseHeight, hill2Amplitude, hill2Stretch, theme.h2); trees.forEach((tree) => drawTree(tree.x, tree.color)); }
 function drawHill(baseHeight, amplitude, stretch, color) { let wWidth = window.innerWidth || 375; let wHeight = window.innerHeight || 800; ctx.beginPath(); ctx.moveTo(0, wHeight); ctx.lineTo(0, getHillY(0, baseHeight, amplitude, stretch)); for (let i = 0; i < wWidth; i++) { ctx.lineTo(i, getHillY(i, baseHeight, amplitude, stretch)); } ctx.lineTo(wWidth, wHeight); ctx.fillStyle = color; ctx.fill(); }
@@ -615,10 +640,7 @@ document.getElementById("closeShop").addEventListener("click", () => { document.
 function renderShop() {
     const t = texts[currentLang]; const list = document.getElementById("shopList");
     let html = `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; text-align:center;">💎 <b>${t.shopGemExchange}</b></li>`;
-// 1. VIP Pass Menüsünü Açan Buton
     html += `<li style="background:linear-gradient(45deg, #8e44ad, #3498db); justify-content:center; padding:10px; font-size:14px; text-align:center; border-radius:8px; cursor:pointer; color:white; font-weight:bold; margin-bottom:10px; box-shadow:0 4px 6px rgba(0,0,0,0.3);" onclick="showVipMenu()">👑 VIP Pass Ayrıcalıkları</li>`;
-    
-    // 2. Premium Kasa Butonu
     html += `<li style="background:linear-gradient(45deg, #f1c40f, #e67e22); justify-content:center; padding:10px; font-size:14px; text-align:center; border-radius:8px; cursor:pointer; color:white; font-weight:bold; margin-bottom:10px; box-shadow:0 4px 6px rgba(0,0,0,0.3);" onclick="openPremiumBox()">🎁 Premium Kasa Aç (30 💎)</li>`;
     html += `<li style="padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee;"><span>${t.shopExchangeBtn}</span> <button style="background:#9b59b6; padding: 5px 10px; font-size:12px; margin:0; border:none; color:white; border-radius:5px; cursor:pointer;" onclick="convertGems()">${t.shopGetGem}</button></li>`;
     html += `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; margin-top:6px; text-align:center;">🥷 <b>${t.shopSkins}</b></li>`;
@@ -645,132 +667,61 @@ window.equipPet = function(petKey) { const t = texts[currentLang]; if (phase !==
 // 🔥 FONKSİYONLAR 🔥
 // ==========================================
 
-window.showVipMenu = function() { 
-    document.getElementById("shopModal").style.display = "none"; 
-    document.getElementById("vipInfoModal").style.display = "flex"; 
-};
+window.showVipMenu = function() { document.getElementById("shopModal").style.display = "none"; document.getElementById("vipInfoModal").style.display = "flex"; };
+window.closeVipMenu = function() { document.getElementById("vipInfoModal").style.display = "none"; document.getElementById("shopModal").style.display = "block"; };
 
-window.closeVipMenu = function() { 
-    document.getElementById("vipInfoModal").style.display = "none"; 
-    document.getElementById("shopModal").style.display = "block"; 
-};
-
-// Premium Kasa Sistemi 
 window.openPremiumBox = function() {
     if (phase !== "waiting") return;
-    if (playerGems < 30) {
-        if(tg && tg.showAlert) tg.showAlert("Yetersiz Elmas! Kasa için 30 💎 gerekiyor.");
-        return;
-    }
-    
+    if (playerGems < 30) { if(tg && tg.showAlert) tg.showAlert("Yetersiz Elmas! Kasa için 30 💎 gerekiyor."); return; }
     if (tg && tg.showConfirm) {
         tg.showConfirm("30 Elmas ile kasayı açıyorsun. Onaylıyor musun?", function(agreed) {
             if (agreed) {
-                fetch('https://ninjabridgeapi.duckdns.org/api/score/openbox', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: tgUserId })
-                })
-                .then(res => {
-                    // Hatanın asıl sebebini ekrana basıyoruz
-                    if (!res.ok) throw new Error("Lütfen oyunu 1 kere oynayıp bilerek yanın (Veritabanı güncellemesi için).");
-                    return res.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        playerGems -= 30; 
-                        playerGems += data.rewardGems; 
-                        updateCoinUI(); renderShop();
-                        if (tg && tg.showAlert) tg.showAlert(`🎁 ${data.message}`);
-                    } else {
-                        if (tg && tg.showAlert) tg.showAlert(`❌ ${data.message}`);
-                    }
-                }).catch(err => {
-                    if (tg && tg.showAlert) tg.showAlert("KASA HATASI: " + err.message);
-                });
+                fetch('https://ninjabridgeapi.duckdns.org/api/score/openbox', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId }) })
+                .then(res => { if (!res.ok) throw new Error("Lütfen oyunu 1 kere oynayıp bilerek yanın (Veritabanı güncellemesi için)."); return res.json(); })
+                .then(data => { if (data.success) { playerGems -= 30; playerGems += data.rewardGems; updateCoinUI(); renderShop(); if (tg && tg.showAlert) tg.showAlert(`🎁 ${data.message}`); } else { if (tg && tg.showAlert) tg.showAlert(`❌ ${data.message}`); } })
+                .catch(err => { if (tg && tg.showAlert) tg.showAlert("KASA HATASI: " + err.message); });
             }
         });
     }
 };
 
-// Telegram Stars Faturası
 window.buyVIP = function() {
-    const btn = document.getElementById("buyVipBtn");
-    btn.innerText = "⏳ Fatura İsteniyor...";
-    btn.disabled = true;
-    
-    fetch('https://ninjabridgeapi.duckdns.org/api/score/create-vip-invoice', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId })
-    }).then(res => res.json()).then(data => {
+    const btn = document.getElementById("buyVipBtn"); btn.innerText = "⏳ Fatura İsteniyor..."; btn.disabled = true;
+    fetch('https://ninjabridgeapi.duckdns.org/api/score/create-vip-invoice', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId }) })
+    .then(res => res.json()).then(data => {
         btn.innerText = "💳 SATIN AL (25 ⭐️)"; btn.disabled = false;
         if (data.success && data.invoiceUrl) {
             tg.openInvoice(data.invoiceUrl, function(status) {
-                if (status === 'paid') {
-                    fetch('https://ninjabridgeapi.duckdns.org/api/score/grant-vip', {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId })
-                    }).then(() => {
-                        closeVipMenu();
-                        if(tg && tg.showAlert) tg.showAlert("Tebrikler! 👑 VIP Aktif!");
-                    });
-                }
+                if (status === 'paid') { fetch('https://ninjabridgeapi.duckdns.org/api/score/grant-vip', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId }) }).then(() => { closeVipMenu(); if(tg && tg.showAlert) tg.showAlert("Tebrikler! 👑 VIP Aktif!"); }); }
             });
-        } else {
-            if(tg && tg.showAlert) tg.showAlert("Fatura Hatası: " + (data.message || "Bilinmiyor"));
-        }
-    }).catch(e => {
-        btn.innerText = "💳 SATIN AL (25 ⭐️)"; btn.disabled = false;
-        if(tg && tg.showAlert) tg.showAlert("Bağlantı Hatası: " + e.message);
-    });
+        } else { if(tg && tg.showAlert) tg.showAlert("Fatura Hatası: " + (data.message || "Bilinmiyor")); }
+    }).catch(e => { btn.innerText = "💳 SATIN AL (25 ⭐️)"; btn.disabled = false; if(tg && tg.showAlert) tg.showAlert("Bağlantı Hatası: " + e.message); });
 };
 
-// Günlük Takvim Sistemi
 window.checkDailyReward = function() {
     fetch(`https://ninjabridgeapi.duckdns.org/api/score/daily-status/${tgUserId}`)
     .then(res => res.json())
-    .then(data => {
-        if(data.success && !data.claimedToday) {
-            renderDailyCalendar(data.currentDay, data.isPremium);
-            document.getElementById('dailyRewardModal').style.display = 'flex';
-        }
-    }).catch(e => console.log("Takvim Hatası:", e));
+    .then(data => { if(data.success && !data.claimedToday) { renderDailyCalendar(data.currentDay, data.isPremium); document.getElementById('dailyRewardModal').style.display = 'flex'; } }).catch(e => console.log("Takvim Hatası:", e));
 };
 
 window.renderDailyCalendar = function(currentDay, isPremium) {
     const grid = document.getElementById("calendarGrid"); grid.innerHTML = "";
     const normalDays = [1, 3, 5, 7, 10, 13, 15, 18, 20, 23, 25, 28, 30];
-
     for(let i = 1; i <= 30; i++) {
-        let isPast = i < currentDay; let isToday = i === currentDay;
-        let bgColor = isToday ? "#f39c12" : (isPast ? "#27ae60" : "#34495e");
-        let icon = "❌";
-        
-        if (isPremium) {
-            icon = (i % 5 === 0) ? "💎" : "🪙"; if(i === 30) icon = "👑";
-        } else {
-            if (normalDays.includes(i)) icon = (i === 15 || i === 30) ? "💎" : "🪙";
-        }
+        let isPast = i < currentDay; let isToday = i === currentDay; let bgColor = isToday ? "#f39c12" : (isPast ? "#27ae60" : "#34495e"); let icon = "❌";
+        if (isPremium) { icon = (i % 5 === 0) ? "💎" : "🪙"; if(i === 30) icon = "👑"; } else { if (normalDays.includes(i)) icon = (i === 15 || i === 30) ? "💎" : "🪙"; }
         if (isPast) icon = "✅";
-        
         grid.innerHTML += `<div style="background:${bgColor}; border-radius:5px; padding:5px; font-weight:bold; border: 1px solid #7f8c8d; text-align:center;"><div style="font-size:10px; color:#ecf0f1;">G.${i}</div><div style="font-size:14px;">${icon}</div></div>`;
     }
 };
 
 window.claimDailyReward = function() {
-    const btn = document.getElementById("claimDailyBtn");
-    btn.innerText = "⏳ Bekle..."; btn.disabled = true;
-
-    fetch('https://ninjabridgeapi.duckdns.org/api/score/claim-daily', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId })
-    }).then(res => res.json()).then(data => {
+    const btn = document.getElementById("claimDailyBtn"); btn.innerText = "⏳ Bekle..."; btn.disabled = true;
+    fetch('https://ninjabridgeapi.duckdns.org/api/score/claim-daily', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId }) })
+    .then(res => res.json()).then(data => {
         if(data.success) {
-            if(data.rewardCoins > 0 || data.rewardGems > 0) {
-                playerCoins += data.rewardCoins; playerGems += data.rewardGems; updateCoinUI();
-            }
-            if(tg && tg.showAlert) tg.showAlert(data.message);
-            document.getElementById('dailyRewardModal').style.display = 'none';
+            if(data.rewardCoins > 0 || data.rewardGems > 0) { playerCoins += data.rewardCoins; playerGems += data.rewardGems; updateCoinUI(); }
+            if(tg && tg.showAlert) tg.showAlert(data.message); document.getElementById('dailyRewardModal').style.display = 'none';
         }
-    }).catch(e => {
-        btn.innerText = "🎁 ÖDÜLÜ AL"; btn.disabled = false;
-        if(tg && tg.showAlert) tg.showAlert("Hata: " + e.message);
-    });
+    }).catch(e => { btn.innerText = "🎁 ÖDÜLÜ AL"; btn.disabled = false; if(tg && tg.showAlert) tg.showAlert("Hata: " + e.message); });
 };
