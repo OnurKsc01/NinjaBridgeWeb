@@ -97,7 +97,7 @@ document.getElementById("closeMainMenu").addEventListener("click", () => { docum
 document.getElementById("promoMenuBtn").addEventListener("click", () => {
     document.getElementById("mainMenuModal").style.display = "none";
     document.getElementById("promoModal").style.display = "block";
-    document.getElementById("promoInput").value = "NINJA";
+    document.getElementById("promoInput").value = "NINJA"; // 🔥 OTO-DOLDURMA EKLENDİ
 });
 document.getElementById("closePromoModal").addEventListener("click", () => { document.getElementById("promoModal").style.display = "none"; });
 
@@ -146,7 +146,7 @@ let urlGroupId = urlParams.get('groupid') || urlParams.get('startapp');
 let tgGroupId = startParam ? Number(startParam) : (urlGroupId ? Number(urlGroupId) : 0);
 
 let playerCoins = 0; let playerGems = 0; 
-let isPremiumUser = false;
+let isPremiumUser = false; // 🔥 VIP KONTROL DEĞİŞKENİ
 let sessionEarnedCoins = 0; let stepCount = 0; 
 let currentSkin = "default"; let ownedSkins = ["default"]; 
 let currentPet = "default"; let ownedPets = {}; 
@@ -261,8 +261,8 @@ function processReferralIfAny() {
 
 function loadPlayerData() {
     fetch(`https://ninjabridgeapi.duckdns.org/api/score/player/${tgUserId}?t=${Date.now()}`).then(res => res.json()).then(data => {
-        playerCoins = data.coins || 0; playerGems = data.gems || 0; currentSkin = data.currentSkin || "default"; ownedSkins = data.ownedSkins || ["default"]; currentPet = data.currentPet || "default"; ownedPets = data.ownedPets || {};
-        isPremiumUser = data.isPremium || false; // 🔥 YENİ EKLENDİ
+        playerCoins = data.coins || 0; playerGems = data.gems || 0; 
+        isPremiumUser = data.isPremium || false;
         currentSkin = data.currentSkin || "default"; ownedSkins = data.ownedSkins || ["default"]; currentPet = data.currentPet || "default"; ownedPets = data.ownedPets || {};
         updateCoinUI(); if (phase === "waiting") { if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } draw(); }
     }).catch(err => console.error(err));
@@ -301,7 +301,7 @@ function resetGame() {
   isDuelMode = false; opponentTargetScore = -1; checkDuelStatus(); 
   monsters = []; totalPlatformsGenerated = 1; vampirePlatformTarget = Math.floor(Math.random() * 31) + 10; vampireEffectTimer = 0; easterMessage = ""; easterMessageTimer = 0; nextMessageMilestone = 500;
 
-  scoreElement.innerText = score; platforms = [{ x: 50, w: 50, hasChest: false, chestOpened: false }];
+  scoreElement.innerText = score; platforms = [{ x: 50, w: 50, hasChest: false, chestOpened: false, isMoving: false }];
   generatePlatform(); generatePlatform(); generatePlatform(); generatePlatform();
   sticks = [{ x: platforms[0].x + platforms[0].w, length: 0, rotation: 0 }];
   trees = []; for(let i=0; i<10; i++) generateTree();
@@ -335,11 +335,10 @@ function generatePlatform() {
     const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap));
     const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth));
     
-   // 🔥 EJDERHA GÜCÜ: Sandık çıkma ihtimalini artırır
     let chestChance = 0.15;
     if (currentPet === "ejderha") {
         let lvl = ownedPets["ejderha"] || 1;
-        chestChance = 0.15 + (lvl * 0.05); // Seviyeye göre %40'a kadar sandık şansı!
+        chestChance = 0.15 + (lvl * 0.05);
     }
     let isChestSpawn = score >= 100 && Math.random() < chestChance;
     
@@ -350,14 +349,12 @@ function generatePlatform() {
             newPlatform.isMoving = true;
             newPlatform.dir = Math.random() > 0.5 ? 1 : -1;
             
-            // 🔥 YARASA GÜCÜ: Hareketli platformları yavaşlatır
             let moveSpeed = 1 + Math.random() * 1.5;
             if (currentPet === "yarasa") {
                 let lvl = ownedPets["yarasa"] || 1;
-                moveSpeed = moveSpeed * (0.85 - (lvl * 0.05)); // Seviyeye göre yarı yarıya yavaşlar!
+                moveSpeed = moveSpeed * (0.85 - (lvl * 0.05)); 
             }
             newPlatform.speed = moveSpeed;
-            
             newPlatform.minX = x - 40; 
             newPlatform.maxX = x + 40; 
         }
@@ -429,10 +426,7 @@ function animate(timestamp) {
       }
   });
 
-  // 🔥 YENİ: HAREKETLİ PLATFORM MOTORU
   platforms.forEach(p => {
-      // Platform sadece oyuncu beklerken, köprüyü uzatırken veya köprü düşerken hareket etsin!
-      // Oyuncu üstünde yürürken sabitlenir ki hata olmasın.
       if (p.isMoving && (phase === "waiting" || phase === "stretching" || phase === "turning")) {
           p.x += p.dir * p.speed * (dt / 16.66);
           if (p.x > p.maxX) { p.x = p.maxX; p.dir = -1; }
@@ -511,11 +505,10 @@ function animate(timestamp) {
           if (heroX > currentPlat.x + currentPlat.w / 2 - 10) { 
               currentPlat.chestOpened = true; let r = Math.random();
               
-              // 🔥 EJDERHA GÜCÜ: Elmas bulma şansı artar
               let gemChance = 0.05;
               if (currentPet === "ejderha") {
                   let lvl = ownedPets["ejderha"] || 1;
-                  gemChance += (lvl * 0.03); // %20'lere kadar elmas şansı
+                  gemChance += (lvl * 0.03); 
               }
               
               if (r < gemChance) { playerGems += 1; chestMessage = "+1 💎"; chestMessageColor = "#00ffff"; }
@@ -560,11 +553,9 @@ function thePlatformTheStickHits() {
 function draw() { 
     let wWidth = window.innerWidth || 375; let wHeight = window.innerHeight || 800;
     ctx.save(); ctx.clearRect(0, 0, wWidth, wHeight); drawBackground(); 
-    // 🔥 KASMA ÇÖZÜMÜ: Kamera küsüratlı piksellerde titremez, tam sayılarda akar.
     ctx.translate(Math.floor((wWidth - canvasWidth) / 2 - sceneOffset), Math.floor((wHeight - canvasHeight) / 2));
     drawPlatforms(); drawMonsters(); drawPet(); drawHero(); drawSticks(); 
 
-    // 🔥 KASMAYI ÖNLEYEN VE METNİ NETLEŞTİREN GÖLGE SİSTEMİ (Math.floor Eklendi)
     if (chestMessageTimer > 0) {
         ctx.save(); ctx.globalAlpha = Math.min(1, chestMessageTimer / 30); ctx.font = "bold 22px Arial"; ctx.textAlign = "center"; 
         let cX = Math.floor(chestMessageX); let cY = Math.floor(chestMessageY - (90 - chestMessageTimer) * 0.5);
@@ -597,7 +588,6 @@ function drawPlatforms() {
   let wHeight = window.innerHeight || 800;
   
   platforms.forEach((p) => { 
-      // 🔥 SÜTUNLARDAKİ TÜM GÖLGE(SHADOW) SİLİNDİ, DÜMDÜZ ÇİZİLİYOR
       ctx.fillStyle = "black"; 
       ctx.fillRect(Math.floor(p.x), Math.floor(canvasHeight - platformHeight), Math.floor(p.w), Math.floor(platformHeight + (wHeight - canvasHeight) / 2)); 
 
@@ -644,8 +634,6 @@ function drawSticks() {
   sticks.forEach((stick) => { 
       ctx.save(); ctx.translate(stick.x, canvasHeight - platformHeight); ctx.rotate((Math.PI / 180) * stick.rotation); 
       
-      // 🔥 EKRAN KARTINI ÇÖKERTEN "SHADOW" KODU SİLİNDİ
-      // YERİNE SAHTE NEON (ŞEFFAF ÇİZGİLER) EKLENDİ - KASMA 0!
       if(theme.isDark) {
           ctx.beginPath(); ctx.lineWidth = 8; ctx.strokeStyle = "rgba(255, 0, 0, 0.4)"; ctx.moveTo(0, 0); ctx.lineTo(0, -stick.length); ctx.stroke();
           ctx.beginPath(); ctx.lineWidth = 4; ctx.strokeStyle = "rgba(255, 80, 0, 0.8)"; ctx.moveTo(0, 0); ctx.lineTo(0, -stick.length); ctx.stroke();
@@ -661,7 +649,6 @@ function drawBackground() { let wWidth = window.innerWidth || 375; let wHeight =
 function drawHill(baseHeight, amplitude, stretch, color) { 
     let wWidth = window.innerWidth || 375; let wHeight = window.innerHeight || 800; 
     ctx.beginPath(); ctx.moveTo(0, wHeight); ctx.lineTo(0, getHillY(0, baseHeight, amplitude, stretch)); 
-    // 🔥 KASMA ÇÖZÜMÜ: 1 piksel yerine 20 piksel atlayarak çiz, performansı uçur!
     for (let i = 0; i <= wWidth + 20; i += 20) { 
         ctx.lineTo(i, getHillY(i, baseHeight, amplitude, stretch)); 
     } 
@@ -684,14 +671,12 @@ function renderShop() {
     const t = texts[currentLang]; const list = document.getElementById("shopList");
     let html = `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; text-align:center;">💎 <b>${t.shopGemExchange}</b></li>`;
     
-    // 🔥 VIP KONTROLÜ
     if (isPremiumUser) {
         html += `<li style="background:linear-gradient(45deg, #27ae60, #2ecc71); justify-content:center; padding:10px; font-size:14px; text-align:center; border-radius:8px; color:white; font-weight:bold; margin-bottom:10px; box-shadow:0 4px 6px rgba(0,0,0,0.3);">👑 VIP Pass (Zaten Alınmış)</li>`;
     } else {
         html += `<li style="background:linear-gradient(45deg, #8e44ad, #3498db); justify-content:center; padding:10px; font-size:14px; text-align:center; border-radius:8px; cursor:pointer; color:white; font-weight:bold; margin-bottom:10px; box-shadow:0 4px 6px rgba(0,0,0,0.3);" onclick="showVipMenu()">👑 VIP Pass Ayrıcalıkları</li>`;
     }
 
-    // 🔥 ALTTAKİ FAZLADAN VIP SATIRI SİLİNDİ, DİREKT KASA BUTONU GELİYOR
     html += `<li style="background:linear-gradient(45deg, #f1c40f, #e67e22); justify-content:center; padding:10px; font-size:14px; text-align:center; border-radius:8px; cursor:pointer; color:white; font-weight:bold; margin-bottom:10px; box-shadow:0 4px 6px rgba(0,0,0,0.3);" onclick="openPremiumBox()">🎁 Premium Kasa Aç (30 💎)</li>`;
     html += `<li style="padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee;"><span>${t.shopExchangeBtn}</span> <button style="background:#9b59b6; padding: 5px 10px; font-size:12px; margin:0; border:none; color:white; border-radius:5px; cursor:pointer;" onclick="convertGems()">${t.shopGetGem}</button></li>`;
     html += `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; margin-top:6px; text-align:center;">🥷 <b>${t.shopSkins}</b></li>`;
@@ -745,10 +730,7 @@ window.equipPet = function(petKey) { const t = texts[currentLang]; if (phase !==
 window.showVipMenu = function() { document.getElementById("shopModal").style.display = "none"; document.getElementById("vipInfoModal").style.display = "flex"; };
 window.closeVipMenu = function() { document.getElementById("vipInfoModal").style.display = "none"; document.getElementById("shopModal").style.display = "block"; };
 
-window.openPremiumBox = function() {
-   let isBoxOpening = false; // 🔥 KİLİT MEKANİZMASI İÇİN BAYRAK
-
-let isBoxOpening = false; // 🔥 KİLİT MEKANİZMASI İÇİN BAYRAK (EN DIŞARIYA ALINDI)
+let isBoxOpening = false; // 🔥 KİLİT MEKANİZMASI İÇİN BAYRAK
 
 window.openPremiumBox = function() {
     if (phase !== "waiting" || isBoxOpening) return; // 🔥 İŞLEM SÜRERKEN ÇİFT TIKLAMAYI ENGELLE
