@@ -97,7 +97,7 @@ document.getElementById("closeMainMenu").addEventListener("click", () => { docum
 document.getElementById("promoMenuBtn").addEventListener("click", () => {
     document.getElementById("mainMenuModal").style.display = "none";
     document.getElementById("promoModal").style.display = "block";
-    document.getElementById("promoInput").value = "NINJA"; // 🔥 OTO-DOLDURMA EKLENDİ
+    document.getElementById("promoInput").value = "NINJA";
 });
 document.getElementById("closePromoModal").addEventListener("click", () => { document.getElementById("promoModal").style.display = "none"; });
 
@@ -146,7 +146,7 @@ let urlGroupId = urlParams.get('groupid') || urlParams.get('startapp');
 let tgGroupId = startParam ? Number(startParam) : (urlGroupId ? Number(urlGroupId) : 0);
 
 let playerCoins = 0; let playerGems = 0; 
-let isPremiumUser = false; // 🔥 VIP KONTROL DEĞİŞKENİ
+let isPremiumUser = false; 
 let sessionEarnedCoins = 0; let stepCount = 0; 
 let currentSkin = "default"; let ownedSkins = ["default"]; 
 let currentPet = "default"; let ownedPets = {}; 
@@ -734,7 +734,11 @@ let isBoxOpening = false; // 🔥 KİLİT MEKANİZMASI İÇİN BAYRAK
 
 window.openPremiumBox = function() {
     if (phase !== "waiting" || isBoxOpening) return; // 🔥 İŞLEM SÜRERKEN ÇİFT TIKLAMAYI ENGELLE
-    if (playerGems < 30) { if(tg && tg.showAlert) tg.showAlert("Yetersiz Elmas! Kasa için 30 💎 gerekiyor."); return; }
+    if (playerGems < 30) { 
+        if(tg && tg.showAlert) tg.showAlert("Yetersiz Elmas! Kasa için 30 💎 gerekiyor."); 
+        else alert("Yetersiz Elmas! Kasa için 30 💎 gerekiyor.");
+        return; 
+    }
     
     if (tg && tg.showConfirm) {
         isBoxOpening = true; // 🔥 KİLİDİ KAPAT
@@ -747,19 +751,42 @@ window.openPremiumBox = function() {
                     if (data.success) { 
                         playerGems -= 30; playerGems += data.rewardGems; 
                         updateCoinUI(); renderShop(); 
-                        if (tg && tg.showAlert) tg.showAlert(`🎁 ${data.message}`); 
+                        
+                        // 🔥 BUG FİX: Telegram popup'ları üst üste binip kilitlenmesin diye 300ms gecikme eklendi!
+                        setTimeout(() => {
+                            if (tg && tg.showAlert) tg.showAlert(`🎁 ${data.message}`); 
+                            else alert(`🎁 ${data.message}`);
+                        }, 300);
                     } else { 
-                        if (tg && tg.showAlert) tg.showAlert(`❌ ${data.message}`); 
+                        setTimeout(() => {
+                            if (tg && tg.showAlert) tg.showAlert(`❌ ${data.message}`); 
+                            else alert(`❌ ${data.message}`);
+                        }, 300);
                     } 
                 })
                 .catch(err => { 
                     isBoxOpening = false; // 🔥 HATA OLURSA DA KİLİDİ AÇ
-                    if (tg && tg.showAlert) tg.showAlert("KASA HATASI: " + err.message); 
+                    setTimeout(() => {
+                        if (tg && tg.showAlert) tg.showAlert("KASA HATASI: " + err.message); 
+                        else alert("KASA HATASI: " + err.message);
+                    }, 300);
                 });
             } else {
                 isBoxOpening = false; // 🔥 İPTAL EDERSE KİLİDİ AÇ
             }
         });
+    } else {
+        // 🔥 TELEGRAM APİ'Sİ YANIT VERMEZSE BROWSER DESTEĞİ
+        let agreed = confirm("30 Elmas ile kasayı açıyorsun. Onaylıyor musun?");
+        if(agreed) {
+             isBoxOpening = true;
+             fetch('https://ninjabridgeapi.duckdns.org/api/score/openbox', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId }) })
+             .then(res => res.json()).then(data => {
+                 isBoxOpening = false;
+                 if(data.success) { playerGems -= 30; playerGems += data.rewardGems; updateCoinUI(); renderShop(); alert(`🎁 ${data.message}`); }
+                 else { alert(`❌ ${data.message}`); }
+             }).catch(e => { isBoxOpening = false; alert("Hata: " + e.message); });
+        }
     }
 };
 
@@ -774,7 +801,10 @@ window.buyVIP = function() {
                     isPremiumUser = true; // 🔥 YENİ: KULLANICIYI ANINDA VIP YAP
                     closeVipMenu(); 
                     renderShop(); // 🔥 YENİ: MARKETİ YENİLE Kİ BUTON YEŞİL "ALINMIŞ" OLSUN
-                    if(tg && tg.showAlert) tg.showAlert("Tebrikler! Ödemen alındı. VIP rozetini görmek için oyunu yeniden başlat!"); 
+                    setTimeout(() => {
+                        if(tg && tg.showAlert) tg.showAlert("Tebrikler! Ödemen alındı. VIP rozetini görmek için oyunu yeniden başlat!"); 
+                        else alert("Tebrikler! Ödemen alındı. VIP rozetini görmek için oyunu yeniden başlat!");
+                    }, 300);
                 }
             });
         } else { if(tg && tg.showAlert) tg.showAlert("Fatura Hatası: " + (data.message || "Bilinmiyor")); }
