@@ -202,11 +202,25 @@ let devClickCount = 0; scoreElement.addEventListener("click", () => { devClickCo
 const bgMusic = new Audio('bg.mp3'); bgMusic.loop = true; bgMusic.volume = 0.3; 
 const comboSound = new Audio('combo.mp3'); comboSound.volume = 0.8;
 const fallSound = new Audio('dusme.mp3'); fallSound.volume = 0.8;
+
+// 🔥 SES VE GÖRSELLER (Vampir ve Yeni YEEEY)
 let vampireImg = new Image(); vampireImg.src = 'vampir.jpg'; 
 const screamSound = new Audio('ciglik.mp3'); screamSound.volume = 1.0;
 
+let yeeyImg = new Image(); yeeyImg.src = 'yeey.png'; 
+const yeeySound = new Audio('yeey.mp3'); yeeySound.volume = 1.0;
+
 let soundsUnlocked = false;
-function unlockSounds() { if (!soundsUnlocked) { bgMusic.play().catch(()=>{}); comboSound.play().then(() => comboSound.pause()).catch(()=>{}); fallSound.play().then(() => fallSound.pause()).catch(()=>{}); screamSound.play().then(() => screamSound.pause()).catch(()=>{}); soundsUnlocked = true; } }
+function unlockSounds() { 
+    if (!soundsUnlocked) { 
+        bgMusic.play().catch(()=>{}); 
+        comboSound.play().then(() => comboSound.pause()).catch(()=>{}); 
+        fallSound.play().then(() => fallSound.pause()).catch(()=>{}); 
+        screamSound.play().then(() => screamSound.pause()).catch(()=>{}); 
+        yeeySound.play().then(() => yeeySound.pause()).catch(()=>{}); // YEEEY sesi eklendi
+        soundsUnlocked = true; 
+    } 
+}
 
 let adController = null; let adReviveUsedThisRun = false; 
 function initAdsGram() { try { if (window.Adsgram) { adController = window.Adsgram.init({ blockId: "35103" }); } else { setTimeout(initAdsGram, 500); } } catch (err) {} }
@@ -236,7 +250,15 @@ document.getElementById("watchEarnBtn").addEventListener("click", () => {
 
 let phase = "waiting"; let lastTimestamp; let heroX, heroY, sceneOffset; 
 let platforms = [], sticks = [], trees = []; let combo = 0; let currentMonkeyLives = 0;
-let totalPlatformsGenerated = 0; let vampirePlatformTarget = 0; let vampireEffectTimer = 0; let easterMessage = ""; let easterMessageTimer = 0; let nextMessageMilestone = 500;
+let totalPlatformsGenerated = 0; 
+let vampirePlatformTarget = 0; let vampireEffectTimer = 0; 
+
+// 🔥 YEEEY SİSTEMİ DEĞİŞKENLERİ
+let yeeyPlatformTarget = 0; 
+let yeeyAnimTimer = 0; 
+let yeeyX = 0; 
+
+let easterMessage = ""; let easterMessageTimer = 0; let nextMessageMilestone = 500;
 let chestMessage = ""; let chestMessageTimer = 0; let chestMessageX = 0; let chestMessageY = 0; let chestMessageColor = "";
 
 const canvasWidth = 375, canvasHeight = 375, platformHeight = 100; const heroDistanceFromEdge = 10, paddingX = 100;
@@ -300,7 +322,15 @@ function resetGame() {
   if(document.getElementById("reviveMenu")) document.getElementById("reviveMenu").style.display = "none";
   const banner = document.getElementById("duelDeathBanner"); if (banner) { banner.style.display = "none"; banner.style.opacity = "0"; }
   isDuelMode = false; opponentTargetScore = -1; checkDuelStatus(); 
-  monsters = []; totalPlatformsGenerated = 1; vampirePlatformTarget = Math.floor(Math.random() * 31) + 10; vampireEffectTimer = 0; easterMessage = ""; easterMessageTimer = 0; nextMessageMilestone = 500;
+  monsters = []; 
+  
+  totalPlatformsGenerated = 1; 
+  vampirePlatformTarget = Math.floor(Math.random() * 31) + 10; 
+  yeeyPlatformTarget = vampirePlatformTarget + 3; // 🔥 Vampirden 3 platform sonra YEEEY çıkar
+  vampireEffectTimer = 0; 
+  yeeyAnimTimer = 0;
+
+  easterMessage = ""; easterMessageTimer = 0; nextMessageMilestone = 500;
 
   scoreElement.innerText = score; platforms = [{ x: 50, w: 50, hasChest: false, chestOpened: false, isMoving: false }];
   generatePlatform(); generatePlatform(); generatePlatform(); generatePlatform();
@@ -366,6 +396,9 @@ function generatePlatform() {
     totalPlatformsGenerated++;
     if (totalPlatformsGenerated === vampirePlatformTarget) { 
         platforms[platforms.length - 1].isVampireTrigger = true; 
+    }
+    if (totalPlatformsGenerated === yeeyPlatformTarget) { 
+        platforms[platforms.length - 1].isYeeyTrigger = true; 
     }
 
     if (spawnChance > 0 && platforms.length > 2 && !isChestSpawn) { 
@@ -456,6 +489,15 @@ function animate(timestamp) {
        const [nextPlatform, perfectHit] = thePlatformTheStickHits();
         if (nextPlatform) {
           nextPlatform.isMoving = false; 
+
+          // 🔥 YEEEY TETİKLEYİCİSİ (Sopa platforma düştüğü an çıkar!)
+          if (nextPlatform.isYeeyTrigger && !nextPlatform.yeeyTriggered) {
+              nextPlatform.yeeyTriggered = true;
+              yeeyAnimTimer = 100; // 100 frame boyunca ekranda kalacak
+              yeeyX = nextPlatform.x + nextPlatform.w / 2;
+              yeeySound.currentTime = 0;
+              yeeySound.play().catch(e=>{});
+          }
 
           let earnedPts = 0;
           if (perfectHit) {
@@ -555,6 +597,26 @@ function draw() {
     let wWidth = window.innerWidth || 375; let wHeight = window.innerHeight || 800;
     ctx.save(); ctx.clearRect(0, 0, wWidth, wHeight); drawBackground(); 
     ctx.translate(Math.floor((wWidth - canvasWidth) / 2 - sceneOffset), Math.floor((wHeight - canvasHeight) / 2));
+    
+    // 🔥 YEEEY ANİMASYONU ÇİZİMİ (Sütun arkasında maskelensin diye platformdan ÖNCE)
+    if (yeeyAnimTimer > 0) {
+        ctx.save();
+        let yOffset = 0;
+        // 100 framelik animasyon süresi: Çıkış, Bekleme, İniş
+        if (yeeyAnimTimer > 80) { yOffset = -80 * ((100 - yeeyAnimTimer) / 20); }
+        else if (yeeyAnimTimer > 20) { yOffset = -80; }
+        else { yOffset = -80 * (yeeyAnimTimer / 20); }
+
+        let yPos = canvasHeight - platformHeight + yOffset;
+        if (yeeyImg.complete && yeeyImg.naturalWidth !== 0) {
+            ctx.drawImage(yeeyImg, yeeyX - 40, yPos, 80, 80);
+        } else {
+            ctx.font = "50px Arial"; ctx.textAlign = "center"; ctx.fillText("👽", yeeyX, yPos + 60);
+        }
+        ctx.restore();
+        yeeyAnimTimer--;
+    }
+
     drawPlatforms(); drawMonsters(); drawPet(); drawHero(); drawSticks(); 
 
     if (chestMessageTimer > 0) {
@@ -565,7 +627,7 @@ function draw() {
         ctx.restore(); chestMessageTimer--;
     }
 
-    ctx.restore(); 
+    ctx.restore(); // Kamera kaydırması bitti, ekrana sabitlenen çizimler aşağıda
 
     if (vampireEffectTimer > 0) {
         ctx.save(); let totalDuration = 75; let progress = (totalDuration - vampireEffectTimer) / totalDuration;
@@ -580,6 +642,20 @@ function draw() {
         ctx.fillStyle = "black"; ctx.fillText(easterMessage, eX + 2, eY + 2); 
         ctx.fillStyle = "white"; ctx.fillText(easterMessage, eX, eY); 
         ctx.restore(); easterMessageTimer--;
+    }
+
+    // 🔥 16. VE 20. SKOR ARALIĞI ÖZEL MESAJ
+    if (score >= 16 && score <= 20) {
+        ctx.save();
+        ctx.font = "bold 22px Arial";
+        ctx.textAlign = "center";
+        let eX = Math.floor(wWidth / 2);
+        let eY = Math.floor(wHeight * 0.15); // Ekranda üstlerde belirecek
+        ctx.fillStyle = "black";
+        ctx.fillText("☬𝓑𝓮𝓷𝓱𝓾𝓻 Hocam'a Sonsuz Teşekkürler", eX + 2, eY + 2);
+        ctx.fillStyle = "#3498db"; // Tatlı bir turkuaz mavi
+        ctx.fillText("☬𝓑𝓮𝓷𝓱𝓾𝓻 Hocam'a Sonsuz Teşekkürler", eX, eY);
+        ctx.restore();
     }
 }
 
