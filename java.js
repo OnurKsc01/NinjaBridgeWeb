@@ -683,20 +683,25 @@ document.getElementById("closeShop").addEventListener("click", () => { document.
 function renderShop() {
     const t = texts[currentLang]; const list = document.getElementById("shopList");
     let html = `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; text-align:center;">💎 <b>${t.shopGemExchange}</b></li>`;
+    
+    // 🔥 VIP KONTROLÜ
     if (isPremiumUser) {
         html += `<li style="background:linear-gradient(45deg, #27ae60, #2ecc71); justify-content:center; padding:10px; font-size:14px; text-align:center; border-radius:8px; color:white; font-weight:bold; margin-bottom:10px; box-shadow:0 4px 6px rgba(0,0,0,0.3);">👑 VIP Pass (Zaten Alınmış)</li>`;
     } else {
         html += `<li style="background:linear-gradient(45deg, #8e44ad, #3498db); justify-content:center; padding:10px; font-size:14px; text-align:center; border-radius:8px; cursor:pointer; color:white; font-weight:bold; margin-bottom:10px; box-shadow:0 4px 6px rgba(0,0,0,0.3);" onclick="showVipMenu()">👑 VIP Pass Ayrıcalıkları</li>`;
     }
-    html += `<li style="background:linear-gradient(45deg, #8e44ad, #3498db); justify-content:center; padding:10px; font-size:14px; text-align:center; border-radius:8px; cursor:pointer; color:white; font-weight:bold; margin-bottom:10px; box-shadow:0 4px 6px rgba(0,0,0,0.3);" onclick="showVipMenu()">👑 VIP Pass Ayrıcalıkları</li>`;
+
+    // 🔥 ALTTAKİ FAZLADAN VIP SATIRI SİLİNDİ, DİREKT KASA BUTONU GELİYOR
     html += `<li style="background:linear-gradient(45deg, #f1c40f, #e67e22); justify-content:center; padding:10px; font-size:14px; text-align:center; border-radius:8px; cursor:pointer; color:white; font-weight:bold; margin-bottom:10px; box-shadow:0 4px 6px rgba(0,0,0,0.3);" onclick="openPremiumBox()">🎁 Premium Kasa Aç (30 💎)</li>`;
     html += `<li style="padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee;"><span>${t.shopExchangeBtn}</span> <button style="background:#9b59b6; padding: 5px 10px; font-size:12px; margin:0; border:none; color:white; border-radius:5px; cursor:pointer;" onclick="convertGems()">${t.shopGetGem}</button></li>`;
     html += `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; margin-top:6px; text-align:center;">🥷 <b>${t.shopSkins}</b></li>`;
+    
     Object.keys(skinData).forEach(key => { 
         const skin = skinData[key]; let sName = currentLang === "tr" ? skin.nameTr : skin.nameEn; let sDesc = currentLang === "tr" ? (skin.descTr || "") : (skin.descEn || ""); let actionHTML = ""; 
         if (currentSkin === key) { actionHTML = `<span style=\"font-size:13px;\">${t.equipped}</span>`; } else if (ownedSkins.includes(key)) { actionHTML = `<button style=\"padding: 5px 10px; font-size:12px; margin:0; border:none; background:#34495e; color:white; border-radius:5px; cursor:pointer;\" onclick=\"equipSkin('${key}')\">${t.equip}</button>`; } else { if (skin.priceGem > 0) { actionHTML = `<button style=\"padding: 5px 10px; font-size:12px; margin:0; border:none; background:#9b59b6; color:white; border-radius:5px; cursor:pointer;\" onclick=\"buySkin('${key}')\">💎 ${skin.priceGem}</button>`; } else { actionHTML = `<button style=\"padding: 5px 10px; font-size:12px; margin:0; border:none; background:#2196F3; color:white; border-radius:5px; cursor:pointer;\" onclick=\"buySkin('${key}')\">🪙 ${skin.price}</button>`; } }
         let colorPreview = skin.gradient ? `background: linear-gradient(${skin.colors[0]}, ${skin.colors[2]}); -webkit-background-clip: text; -webkit-text-fill-color: transparent;` : `color:${skin.body};`; let descHTML = sDesc ? `<br><small style="color:gray; font-size:11px;">${sDesc}</small>` : ""; html += `<li style=\"padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee;\"><span style="line-height:1.2;"><span style=\"${colorPreview} text-shadow: 1px 1px 1px black;\">⬤</span> ${sName}${descHTML}</span> ${actionHTML}</li>`; 
     });
+    
     html += `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; margin-top:6px; text-align:center;">🐾 <b>${t.shopPets}</b></li>`;
     Object.keys(petData).forEach(key => { 
         const pet = petData[key]; let pName = currentLang === "tr" ? pet.nameTr : pet.nameEn; let pDesc = currentLang === "tr" ? pet.descTr : pet.descEn; let isOwned = ownedPets.hasOwnProperty(key); let level = isOwned ? ownedPets[key] : 0; 
@@ -706,12 +711,10 @@ function renderShop() {
             let eqBtn = (currentPet === key) ? `<span style=\"font-size:13px; margin-right:5px;\">${t.equipped}</span>` : `<button style=\"padding: 5px 10px; font-size:12px; margin-right:5px; border:none; background:#34495e; color:white; border-radius:5px; cursor:pointer;\" onclick=\"equipPet('${key}')\">${t.equip}</button>`; 
             let upgBtn = ""; 
             
-            // 🔥 YENİ PETLER (YARASA VE EJDERHA) İÇİN 5-10-15-20 ELMAS SİSTEMİ
             if (level < 5 && (key === "yarasa" || key === "ejderha")) {
                 let costVal = level * 5; 
                 upgBtn = `<button style=\"background:#e67e22; padding: 4px 8px; font-size:11px; border:none; color:white; border-radius:5px; cursor:pointer;\" onclick=\"upgradePet('${key}', ${level+1}, ${costVal})\">⬆️ 💎 ${costVal}</button>`; 
             }
-            // ESKİ PETLER İÇİN VAR OLAN SİSTEM
             else if (level < 5 && key === "kurt") { 
                 let costVal = level * 2; 
                 upgBtn = `<button style=\"background:#e67e22; padding: 4px 8px; font-size:11px; border:none; color:white; border-radius:5px; cursor:pointer;\" onclick=\"upgradePet('${key}', ${level+1}, ${costVal})\">⬆️ 💎 ${costVal}</button>`; 
@@ -744,6 +747,8 @@ window.closeVipMenu = function() { document.getElementById("vipInfoModal").style
 
 window.openPremiumBox = function() {
    let isBoxOpening = false; // 🔥 KİLİT MEKANİZMASI İÇİN BAYRAK
+
+let isBoxOpening = false; // 🔥 KİLİT MEKANİZMASI İÇİN BAYRAK (EN DIŞARIYA ALINDI)
 
 window.openPremiumBox = function() {
     if (phase !== "waiting" || isBoxOpening) return; // 🔥 İŞLEM SÜRERKEN ÇİFT TIKLAMAYI ENGELLE
@@ -784,7 +789,9 @@ window.buyVIP = function() {
         if (data.success && data.invoiceUrl) {
             tg.openInvoice(data.invoiceUrl, function(status) {
                 if (status === 'paid') { 
+                    isPremiumUser = true; // 🔥 YENİ: KULLANICIYI ANINDA VIP YAP
                     closeVipMenu(); 
+                    renderShop(); // 🔥 YENİ: MARKETİ YENİLE Kİ BUTON YEŞİL "ALINMIŞ" OLSUN
                     if(tg && tg.showAlert) tg.showAlert("Tebrikler! Ödemen alındı. VIP rozetini görmek için oyunu yeniden başlat!"); 
                 }
             });
