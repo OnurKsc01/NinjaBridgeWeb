@@ -97,6 +97,7 @@ document.getElementById("closeMainMenu").addEventListener("click", () => { docum
 document.getElementById("promoMenuBtn").addEventListener("click", () => {
     document.getElementById("mainMenuModal").style.display = "none";
     document.getElementById("promoModal").style.display = "block";
+    document.getElementById("promoInput").value = "NINJA";
 });
 document.getElementById("closePromoModal").addEventListener("click", () => { document.getElementById("promoModal").style.display = "none"; });
 
@@ -145,6 +146,7 @@ let urlGroupId = urlParams.get('groupid') || urlParams.get('startapp');
 let tgGroupId = startParam ? Number(startParam) : (urlGroupId ? Number(urlGroupId) : 0);
 
 let playerCoins = 0; let playerGems = 0; 
+let isPremiumUser = false;
 let sessionEarnedCoins = 0; let stepCount = 0; 
 let currentSkin = "default"; let ownedSkins = ["default"]; 
 let currentPet = "default"; let ownedPets = {}; 
@@ -260,6 +262,8 @@ function processReferralIfAny() {
 function loadPlayerData() {
     fetch(`https://ninjabridgeapi.duckdns.org/api/score/player/${tgUserId}?t=${Date.now()}`).then(res => res.json()).then(data => {
         playerCoins = data.coins || 0; playerGems = data.gems || 0; currentSkin = data.currentSkin || "default"; ownedSkins = data.ownedSkins || ["default"]; currentPet = data.currentPet || "default"; ownedPets = data.ownedPets || {};
+        isPremiumUser = data.isPremium || false; // 🔥 YENİ EKLENDİ
+        currentSkin = data.currentSkin || "default"; ownedSkins = data.ownedSkins || ["default"]; currentPet = data.currentPet || "default"; ownedPets = data.ownedPets || {};
         updateCoinUI(); if (phase === "waiting") { if (currentPet === "maymun") { currentMonkeyLives = getMonkeyStats().lives; } draw(); }
     }).catch(err => console.error(err));
 }
@@ -679,6 +683,11 @@ document.getElementById("closeShop").addEventListener("click", () => { document.
 function renderShop() {
     const t = texts[currentLang]; const list = document.getElementById("shopList");
     let html = `<li style="background:#ddd; justify-content:center; padding:4px; font-size:14px; text-align:center;">💎 <b>${t.shopGemExchange}</b></li>`;
+    if (isPremiumUser) {
+        html += `<li style="background:linear-gradient(45deg, #27ae60, #2ecc71); justify-content:center; padding:10px; font-size:14px; text-align:center; border-radius:8px; color:white; font-weight:bold; margin-bottom:10px; box-shadow:0 4px 6px rgba(0,0,0,0.3);">👑 VIP Pass (Zaten Alınmış)</li>`;
+    } else {
+        html += `<li style="background:linear-gradient(45deg, #8e44ad, #3498db); justify-content:center; padding:10px; font-size:14px; text-align:center; border-radius:8px; cursor:pointer; color:white; font-weight:bold; margin-bottom:10px; box-shadow:0 4px 6px rgba(0,0,0,0.3);" onclick="showVipMenu()">👑 VIP Pass Ayrıcalıkları</li>`;
+    }
     html += `<li style="background:linear-gradient(45deg, #8e44ad, #3498db); justify-content:center; padding:10px; font-size:14px; text-align:center; border-radius:8px; cursor:pointer; color:white; font-weight:bold; margin-bottom:10px; box-shadow:0 4px 6px rgba(0,0,0,0.3);" onclick="showVipMenu()">👑 VIP Pass Ayrıcalıkları</li>`;
     html += `<li style="background:linear-gradient(45deg, #f1c40f, #e67e22); justify-content:center; padding:10px; font-size:14px; text-align:center; border-radius:8px; cursor:pointer; color:white; font-weight:bold; margin-bottom:10px; box-shadow:0 4px 6px rgba(0,0,0,0.3);" onclick="openPremiumBox()">🎁 Premium Kasa Aç (30 💎)</li>`;
     html += `<li style="padding: 6px 8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee;"><span>${t.shopExchangeBtn}</span> <button style="background:#9b59b6; padding: 5px 10px; font-size:12px; margin:0; border:none; color:white; border-radius:5px; cursor:pointer;" onclick="convertGems()">${t.shopGetGem}</button></li>`;
@@ -734,15 +743,34 @@ window.showVipMenu = function() { document.getElementById("shopModal").style.dis
 window.closeVipMenu = function() { document.getElementById("vipInfoModal").style.display = "none"; document.getElementById("shopModal").style.display = "block"; };
 
 window.openPremiumBox = function() {
-    if (phase !== "waiting") return;
+   let isBoxOpening = false; // 🔥 KİLİT MEKANİZMASI İÇİN BAYRAK
+
+window.openPremiumBox = function() {
+    if (phase !== "waiting" || isBoxOpening) return; // 🔥 İŞLEM SÜRERKEN ÇİFT TIKLAMAYI ENGELLE
     if (playerGems < 30) { if(tg && tg.showAlert) tg.showAlert("Yetersiz Elmas! Kasa için 30 💎 gerekiyor."); return; }
+    
     if (tg && tg.showConfirm) {
+        isBoxOpening = true; // 🔥 KİLİDİ KAPAT
         tg.showConfirm("30 Elmas ile kasayı açıyorsun. Onaylıyor musun?", function(agreed) {
             if (agreed) {
                 fetch('https://ninjabridgeapi.duckdns.org/api/score/openbox', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId }) })
-                .then(res => { if (!res.ok) throw new Error("Lütfen oyunu 1 kere oynayıp bilerek yanın (Veritabanı güncellemesi için)."); return res.json(); })
-                .then(data => { if (data.success) { playerGems -= 30; playerGems += data.rewardGems; updateCoinUI(); renderShop(); if (tg && tg.showAlert) tg.showAlert(`🎁 ${data.message}`); } else { if (tg && tg.showAlert) tg.showAlert(`❌ ${data.message}`); } })
-                .catch(err => { if (tg && tg.showAlert) tg.showAlert("KASA HATASI: " + err.message); });
+                .then(res => { if (!res.ok) throw new Error("Veritabanı bağlantı hatası."); return res.json(); })
+                .then(data => { 
+                    isBoxOpening = false; // 🔥 İŞLEM BİTTİ, KİLİDİ AÇ
+                    if (data.success) { 
+                        playerGems -= 30; playerGems += data.rewardGems; 
+                        updateCoinUI(); renderShop(); 
+                        if (tg && tg.showAlert) tg.showAlert(`🎁 ${data.message}`); 
+                    } else { 
+                        if (tg && tg.showAlert) tg.showAlert(`❌ ${data.message}`); 
+                    } 
+                })
+                .catch(err => { 
+                    isBoxOpening = false; // 🔥 HATA OLURSA DA KİLİDİ AÇ
+                    if (tg && tg.showAlert) tg.showAlert("KASA HATASI: " + err.message); 
+                });
+            } else {
+                isBoxOpening = false; // 🔥 İPTAL EDERSE KİLİDİ AÇ
             }
         });
     }
