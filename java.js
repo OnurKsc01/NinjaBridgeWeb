@@ -180,30 +180,47 @@ function getTheme() {
 }
 
 let monsters = []; 
-const monsterData = { 2: ["scorpion", "snake", "mummy"], 3: ["ice_golem", "yeti", "ghost"], 4: ["fireball", "demon"] };
+const monsterData = { 2: ["scorpion", "snake", "mummy"], 3: ["ice_golem", "yeti", "ghost"], 4: ["demon"] };
 const preRenderedMonsters = {}; Object.values(monsterData).flat().forEach(m => { let img = new Image(); img.src = m + '.png'; preRenderedMonsters[m] = img; });
 
-const skinData = { "default": { nameTr: "Varsayılan", nameEn: "Default", price: 0, body: "black", bandana: "red" }, "yesil": { nameTr: "Yeşil Ninja", nameEn: "Green Ninja", price: 20, body: "#228B22", bandana: "black" }, "bronz": { nameTr: "Bronz Ninja", nameEn: "Bronze Ninja", price: 30, body: "#cd7f32", bandana: "#5c4033" }, "demir": { nameTr: "Demir Ninja", nameEn: "Iron Ninja", price: 40, body: "#a9a9a9", bandana: "#696969" }, "altin": { nameTr: "Altın Ninja", nameEn: "Gold Ninja", price: 50, body: "#ffd700", bandana: "#b8860b" }, "hiper": { nameTr: "Hiper Ninja", nameEn: "Hyper Ninja", price: 65, body: "#800080", bandana: "#00ffff" }, "golge": { nameTr: "Gölge Katili", nameEn: "Shadow Killer", price: 80, body: "#1a1a1a", bandana: "#4a0000" }, "buzul": { nameTr: "Buzul Ninja", nameEn: "Ice Ninja", price: 100, body: "#add8e6", bandana: "#ffffff" }, "col_koruyucusu": { nameTr: "Kum Fırtınası", nameEn: "Sandstorm", price: 0, priceGem: 15, gradient: true, colors: ["#E67E22", "#F1C40F", "#D35400"], bandana: "#5c2a00", descTr: "Çöl canavarlarına dokunulmazlık", descEn: "Immunity to Desert monsters" }, "buz_bekcisi": { nameTr: "Kuzey Işığı", nameEn: "Aurora", price: 0, priceGem: 25, gradient: true, colors: ["#00FFFF", "#85C1E9", "#2874A6"], bandana: "#ffffff", descTr: "Buz canavarlarına dokunulmazlık", descEn: "Immunity to Ice monsters" }, "efsanevi": { nameTr: "Kadim Ruh", nameEn: "Ancient Soul", price: 0, priceGem: 35, gradient: true, colors: ["#ff0055", "#8E44AD", "#F1C40F"], bandana: "#000000", descTr: "Tüm canavarlara dokunulmazlık", descEn: "Immunity to ALL monsters" } };
+// 🔥 YENİ KOSTÜMLER VE EFSANEVİ GÜNCELLEMESİ
+const skinData = { 
+    "default": { nameTr: "Varsayılan", nameEn: "Default", price: 0, body: "black", bandana: "red" }, 
+    "yesil": { nameTr: "Yeşil Ninja", nameEn: "Green Ninja", price: 20, body: "#228B22", bandana: "black" }, 
+    "bronz": { nameTr: "Bronz Ninja", nameEn: "Bronze Ninja", price: 30, body: "#cd7f32", bandana: "#5c4033" }, 
+    "demir": { nameTr: "Demir Ninja", nameEn: "Iron Ninja", price: 40, body: "#a9a9a9", bandana: "#696969" }, 
+    "altin": { nameTr: "Altın Ninja", nameEn: "Gold Ninja", price: 50, body: "#ffd700", bandana: "#b8860b" }, 
+    "hiper": { nameTr: "Hiper Ninja", nameEn: "Hyper Ninja", price: 65, body: "#800080", bandana: "#00ffff" }, 
+    "golge": { nameTr: "Gölge Katili", nameEn: "Shadow Killer", price: 80, body: "#1a1a1a", bandana: "#4a0000" }, 
+    "buzul": { nameTr: "Buzul Ninja", nameEn: "Ice Ninja", price: 100, body: "#add8e6", bandana: "#ffffff" }, 
+    "col_koruyucusu": { nameTr: "Kum Fırtınası", nameEn: "Sandstorm", price: 0, priceGem: 15, gradient: true, colors: ["#E67E22", "#F1C40F", "#D35400"], bandana: "#5c2a00", descTr: "Çöl canavarlarına dokunulmazlık", descEn: "Immunity to Desert monsters" }, 
+    "buz_bekcisi": { nameTr: "Kuzey Işığı", nameEn: "Aurora", price: 0, priceGem: 25, gradient: true, colors: ["#00FFFF", "#85C1E9", "#2874A6"], bandana: "#ffffff", descTr: "Buz canavarlarına dokunulmazlık", descEn: "Immunity to Ice monsters" }, 
+    "cehennem_zebanisi": { nameTr: "Cehennem Şövalyesi", nameEn: "Hell Knight", price: 0, priceGem: 35, gradient: true, colors: ["#c0392b", "#8e44ad", "#2c3e50"], bandana: "#000", descTr: "Cehennem ateşinden korur", descEn: "Immune to Hell Fire" }, 
+    "efsanevi": { nameTr: "Kadim Ruh", nameEn: "Ancient Soul", price: 0, priceGem: 50, gradient: true, colors: ["#ff0055", "#8E44AD", "#F1C40F"], bandana: "#000000", descTr: "Tüm ateş ve canavarlara ölümsüzlük", descEn: "Immunity to ALL monsters & fire" } 
+};
+
+// 🔥 YENİ PETLER EKLENDİ
 const petData = { 
     "kopek": { nameTr: "Altın Avcısı", nameEn: "Gold Hunter", descTr: "Daha hızlı Jeton", descEn: "Faster Coins", price: 200, emoji: "🐶" }, 
     "kedi": { nameTr: "Gözcü Kedi", nameEn: "Scout Cat", descTr: "Büyük Kombo Alanı", descEn: "Bigger Combo Zone", price: 250, emoji: "🐱" }, 
     "maymun": { nameTr: "Kuyruklu Maymun", nameEn: "Tailed Monkey", descTr: "Ekstra Can & Jeton", descEn: "Extra Life & Coins", price: 400, emoji: "🐒" }, 
     "kurt": { nameTr: "Gölge Kurdu", nameEn: "Shadow Wolf", descTr: "Jeton + Dev Kırmızı Alan", descEn: "Coins + Huge Perfect Zone", price: 750, emoji: "🐺" },
     "yarasa": { nameTr: "Gece Yarasası", nameEn: "Night Bat", descTr: "Hareketli zeminleri yavaşlatır", descEn: "Slows moving platforms", price: 1000, emoji: "🦇" },
-    "ejderha": { nameTr: "Alev Ejderi", nameEn: "Flame Dragon", descTr: "Bol Sandık & Yüksek Elmas", descEn: "More Chests & Gem Chance", price: 1500, emoji: "🐉" }
+    "ejderha": { nameTr: "Alev Ejderi", nameEn: "Flame Dragon", descTr: "Bol Sandık & Yüksek Elmas", descEn: "More Chests & Gem Chance", price: 1500, emoji: "🐉" },
+    "grifon": { nameTr: "Altın Grifon", nameEn: "Gold Griffin", descTr: "Hızlı Jeton + Yüksek Elmas/Sandık", descEn: "Fast Coins & High Gem/Chest", price: 2000, emoji: "🦅" },
+    "anka": { nameTr: "Anka Kuşu", nameEn: "Phoenix", descTr: "Dev Kusursuz Alan & Çifte Kombo", descEn: "Huge Perfect & Double Combo", price: 3000, emoji: "🦚" }
 };
 
 const preRenderedPets = {}; try { Object.keys(petData).forEach(key => { let c = document.createElement('canvas'); c.width = 32; c.height = 32; let cCtx = c.getContext('2d'); cCtx.font = "22px Arial"; cCtx.fillText(petData[key].emoji, 2, 24); preRenderedPets[key] = c; let img = new Image(); img.src = key + '.png'; img.onload = () => { cCtx.clearRect(0, 0, 32, 32); cCtx.drawImage(img, 0, 0, 26, 26); }; }); } catch(e) {}
 
 const introductionElement = document.getElementById("introduction"); const perfectElement = document.getElementById("perfect"); const restartButton = document.getElementById("restart"); const scoreElement = document.getElementById("score"); const coinCountElement = document.getElementById("coinCount"); const shopCoinCountElement = document.getElementById("shopCoinCount");
 
-let devClickCount = 0; scoreElement.addEventListener("click", () => { devClickCount++; if (devClickCount >= 10) { score += 1000; scoreElement.innerText = score; devClickCount = 0; if(tg && tg.showAlert) tg.showAlert("👑 Geliştirici Hilesi: +1000 Puan Eklendi!"); } });
+let devClickCount = 0; scoreElement.addEventListener("click", () => { devClickCount++; if (devClickCount >= 10) { score += 4000; scoreElement.innerText = score; devClickCount = 0; if(tg && tg.showAlert) tg.showAlert("👑 Geliştirici Hilesi: +4000 Puan Eklendi!"); } });
 
 const bgMusic = new Audio('bg.mp3'); bgMusic.loop = true; bgMusic.volume = 0.3; 
 const comboSound = new Audio('combo.mp3'); comboSound.volume = 0.8;
 const fallSound = new Audio('dusme.mp3'); fallSound.volume = 0.8;
 
-// 🔥 SES VE GÖRSELLER (Vampir ve Yeni YEEEY)
 let vampireImg = new Image(); vampireImg.src = 'vampir.jpg'; 
 const screamSound = new Audio('ciglik.mp3'); screamSound.volume = 1.0;
 
@@ -234,7 +251,6 @@ document.getElementById("reviveAdBtn").addEventListener("click", () => {
     }).catch(() => { });
 });
 
-// 🔥 BUG FİX: Oyuncu reklam izlemeden çıkarsa buton anında kaydetsin diye temizlendi (Artık otomatik kaydediyor)
 document.getElementById("skipReviveBtn").addEventListener("click", () => { document.getElementById("reviveMenu").style.display = "none"; restartButton.style.display = "block"; });
 
 document.getElementById("watchEarnBtn").addEventListener("click", () => {
@@ -303,9 +319,31 @@ function checkDuelStatus() {
 
 function updateCoinUI() { if(coinCountElement) coinCountElement.innerHTML = `🪙 ${playerCoins} | 💎 ${playerGems}`; if(shopCoinCountElement) shopCoinCountElement.innerHTML = `🪙 ${playerCoins} | 💎 ${playerGems}`; }
 function saveScoreToAPI() { fetch('https://ninjabridgeapi.duckdns.org/api/score/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: tgUserId, firstName: tgUserName, score: score, groupId: tgGroupId, earnedCoins: sessionEarnedCoins, earnedGems: 0 }) }).then(() => { sessionEarnedCoins = 0; }).catch(e => {}); }
-function getPerfectAreaSize(platformWidth) { let baseArea = 10; if (currentPet === "kedi") { let lvl = ownedPets["kedi"] || 1; baseArea = 20 + (lvl * 5); } else if (currentPet === "kurt") { let lvl = ownedPets["kurt"] || 1; baseArea = 15 + (lvl * 6); } return Math.min(baseArea, platformWidth * 0.8); }
+
+// 🔥 ANKA GÜNCELLEMESİ İLE ALAN BÜYÜDÜ
+function getPerfectAreaSize(platformWidth) { 
+    let baseArea = 10; 
+    if (currentPet === "anka") { let lvl = ownedPets["anka"] || 1; baseArea = 25 + (lvl * 6); }
+    else if (currentPet === "kedi") { let lvl = ownedPets["kedi"] || 1; baseArea = 20 + (lvl * 5); } 
+    else if (currentPet === "kurt") { let lvl = ownedPets["kurt"] || 1; baseArea = 15 + (lvl * 6); } 
+    return Math.min(baseArea, platformWidth * 0.8); 
+}
+
 function getMonkeyStats() { let lvl = ownedPets["maymun"] || 1; return { lives: Math.floor((lvl - 1) / 2) + 1, bonusCoins: (lvl % 2 === 0) ? lvl * 5 : 0 }; }
-function processCoinGeneration(earnedPts) { stepCount += earnedPts; let reqSteps = 8; if (currentPet === "kopek" || currentPet === "kurt") { let lvl = ownedPets[currentPet] || 1; reqSteps = Math.max(1, 8 - lvl); } if (stepCount >= reqSteps) { let coinsToAdd = Math.floor(stepCount / reqSteps); playerCoins += coinsToAdd; sessionEarnedCoins += coinsToAdd; updateCoinUI(); stepCount = stepCount % reqSteps; } }
+
+// 🔥 GRİFON GÜNCELLEMESİ EKLENDİ (KÖPEK GİBİ Jeton Hızlandırır)
+function processCoinGeneration(earnedPts) { 
+    stepCount += earnedPts; 
+    let reqSteps = 8; 
+    if (currentPet === "kopek" || currentPet === "kurt" || currentPet === "grifon") { 
+        let lvl = ownedPets[currentPet] || 1; reqSteps = Math.max(1, 8 - lvl); 
+    } 
+    if (stepCount >= reqSteps) { 
+        let coinsToAdd = Math.floor(stepCount / reqSteps); 
+        playerCoins += coinsToAdd; sessionEarnedCoins += coinsToAdd; 
+        updateCoinUI(); stepCount = stepCount % reqSteps; 
+    } 
+}
 
 function cleanUpOldObjects() {
     let safeX = sceneOffset - (window.innerWidth || 375); 
@@ -333,7 +371,7 @@ function resetGame() {
 
   easterMessage = ""; easterMessageTimer = 0; nextMessageMilestone = 500;
 
-  scoreElement.innerText = score; platforms = [{ x: 50, w: 50, hasChest: false, chestOpened: false, isMoving: false }];
+  scoreElement.innerText = score; platforms = [{ x: 50, w: 50, hasChest: false, chestOpened: false, isMoving: false, hasFireRain: false }];
   generatePlatform(); generatePlatform(); generatePlatform(); generatePlatform();
   sticks = [{ x: platforms[0].x + platforms[0].w, length: 0, rotation: 0 }];
   trees = []; for(let i=0; i<10; i++) generateTree();
@@ -367,40 +405,44 @@ function generatePlatform() {
     const x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap));
     const w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth));
     
+    // 🔥 GRİFON GÜNCELLEMESİ (Ejderha Gibi Sandık/Elmas)
     let chestChance = 0.15;
-    if (currentPet === "ejderha") {
-        let lvl = ownedPets["ejderha"] || 1;
+    if (currentPet === "ejderha" || currentPet === "grifon") {
+        let lvl = ownedPets[currentPet] || 1;
         chestChance = 0.15 + (lvl * 0.05);
     }
     let isChestSpawn = score >= 100 && Math.random() < chestChance;
     
-    let newPlatform = { x: x, w: w, hasChest: isChestSpawn, chestOpened: false, isMoving: false };
+    let newPlatform = { x: x, w: w, hasChest: isChestSpawn, chestOpened: false, isMoving: false, hasFireRain: false };
+
+    // 🔥 CEHENNEM ATEŞİ BOŞLUK ÜRETİMİ (Sadece 4000 puandan sonra)
+    let gapStartX = lastPlatform.x + lastPlatform.w; 
+    let gapWidth = x - gapStartX;
+
+    if (score >= 4000) {
+        lastPlatform.hasFireRain = true;
+        lastPlatform.fireGapX = gapStartX + gapWidth / 2; // Boşluğun tam ortasına yağacak
+        lastPlatform.fireY = -150;
+        lastPlatform.fireTimer = Math.random() * 60; // Düşme gecikmesi
+        lastPlatform.fireSpeed = 5 + Math.random() * 3; // Hız
+    }
     
     if (score >= 1500 && !isChestSpawn && platforms.length > 1) {
         if (Math.random() < 0.3) {
             newPlatform.isMoving = true;
             newPlatform.dir = Math.random() > 0.5 ? 1 : -1;
-            
             let moveSpeed = 1 + Math.random() * 1.5;
-            if (currentPet === "yarasa") {
-                let lvl = ownedPets["yarasa"] || 1;
-                moveSpeed = moveSpeed * (0.85 - (lvl * 0.05)); 
-            }
+            if (currentPet === "yarasa") { let lvl = ownedPets["yarasa"] || 1; moveSpeed = moveSpeed * (0.85 - (lvl * 0.05)); }
             newPlatform.speed = moveSpeed;
-            newPlatform.minX = x - 40; 
-            newPlatform.maxX = x + 40; 
+            newPlatform.minX = x - 40; newPlatform.maxX = x + 40; 
         }
     }
     
     platforms.push(newPlatform);
     
     totalPlatformsGenerated++;
-    if (totalPlatformsGenerated === vampirePlatformTarget) { 
-        platforms[platforms.length - 1].isVampireTrigger = true; 
-    }
-    if (totalPlatformsGenerated === yeeyPlatformTarget) { 
-        platforms[platforms.length - 1].isYeeyTrigger = true; 
-    }
+    if (totalPlatformsGenerated === vampirePlatformTarget) { platforms[platforms.length - 1].isVampireTrigger = true; }
+    if (totalPlatformsGenerated === yeeyPlatformTarget) { platforms[platforms.length - 1].isYeeyTrigger = true; }
 
     if (spawnChance > 0 && platforms.length > 2 && !isChestSpawn) { 
         if (Math.random() < spawnChance) {
@@ -408,22 +450,9 @@ function generatePlatform() {
             let mList = monsterData[worldId] || monsterData[2];
             let mType = mList[Math.floor(Math.random() * mList.length)];
             
-            let gapStartX = lastPlatform.x + lastPlatform.w; 
-            let gapWidth = x - gapStartX;
-            
             if (worldId === 4) {
                 let isLow = Math.random() > 0.5;
-                monsters.push({ 
-                    world: 4, 
-                    platformIndex: platforms.length - 1, 
-                    x: gapStartX + gapWidth / 2, 
-                    y: isLow ? -10 : -90, 
-                    dir: 1, 
-                    speed: 1.5 + Math.random() * 2,
-                    type: mType, 
-                    dead: false,
-                    isLow: isLow
-                });
+                monsters.push({ world: 4, platformIndex: platforms.length - 1, x: gapStartX + gapWidth / 2, y: isLow ? -10 : -90, dir: 1, speed: 1.5 + Math.random() * 2, type: mType, dead: false, isLow: isLow });
             } else if (worldId === 3) {
                 monsters.push({ world: 3, platformIndex: platforms.length - 1, x: x + w / 2, y: 0, dir: Math.random() > 0.5 ? 1 : -1, speed: 0.8 + Math.random() * 0.5, type: mType, dead: false });
             } else {
@@ -445,20 +474,26 @@ function animate(timestamp) {
   if (!lastTimestamp) { lastTimestamp = timestamp; window.requestAnimationFrame(animate); return; }
   let dt = timestamp - lastTimestamp; if (dt >= 12 && dt <= 20) { dt = 16.66; } else if (dt > 32) { dt = 16.66; } 
 
+  // 🔥 CEHENNEM ATEŞLERİ HAREKET MOTORU
+  platforms.forEach(p => {
+      if (p.hasFireRain) {
+          if (p.fireTimer > 0) {
+              p.fireTimer -= (dt / 16.66);
+          } else {
+              p.fireY += p.fireSpeed * (dt / 16.66);
+              if (p.fireY > canvasHeight + 100) {
+                  p.fireY = -150; // Başa dön
+                  p.fireTimer = 90 + Math.random() * 30; // 1.5 - 2 saniye ara ile yağar
+              }
+          }
+      }
+  });
+
   monsters.forEach(m => {
       if (m.dead) return;
       if (m.world === 2) { m.y += m.dir * m.speed * (dt / 16.66); if (m.y > 120) m.dir = -1; if (m.y < -180) m.dir = 1; } 
       else if (m.world === 3) { let p = platforms[m.platformIndex]; if (p) { m.x += m.dir * m.speed * (dt / 16.66); if (m.x > p.x + p.w - 12) m.dir = -1; if (m.x < p.x + 12) m.dir = 1; } }
-      else if (m.world === 4) { 
-          m.y += m.dir * m.speed * (dt / 16.66); 
-          if(m.isLow) {
-              if (m.y > 20) m.dir = -1; 
-              if (m.y < -30) m.dir = 1;
-          } else {
-              if (m.y > -60) m.dir = -1; 
-              if (m.y < -150) m.dir = 1;
-          }
-      }
+      else if (m.world === 4) { m.y += m.dir * m.speed * (dt / 16.66); if(m.isLow) { if (m.y > 20) m.dir = -1; if (m.y < -30) m.dir = 1; } else { if (m.y > -60) m.dir = -1; if (m.y < -150) m.dir = 1; } }
   });
 
   platforms.forEach(p => {
@@ -501,7 +536,12 @@ function animate(timestamp) {
 
           let earnedPts = 0;
           if (perfectHit) {
-              combo++; earnedPts = 1 + combo; let pIdx = platforms.indexOf(nextPlatform); let m = monsters.find(mo => mo.platformIndex === pIdx && mo.world === 3); if (m) m.dead = true; perfectElement.innerText = `${texts[currentLang].perfect} +${earnedPts}`; perfectElement.style.opacity = 1; setTimeout(() => (perfectElement.style.opacity = 0), 1000); comboSound.currentTime = 0; comboSound.play().catch(e => {}); 
+              combo++; 
+              // 🔥 ANKA KOMBOSU (2x)
+              let comboMultiplier = (currentPet === "anka") ? 2 : 1;
+              earnedPts = 1 + (combo * comboMultiplier); 
+
+              let pIdx = platforms.indexOf(nextPlatform); let m = monsters.find(mo => mo.platformIndex === pIdx && mo.world === 3); if (m) m.dead = true; perfectElement.innerText = `${texts[currentLang].perfect} +${earnedPts}`; perfectElement.style.opacity = 1; setTimeout(() => (perfectElement.style.opacity = 0), 1000); comboSound.currentTime = 0; comboSound.play().catch(e => {}); 
           } else { combo = 0; earnedPts = 1; perfectElement.innerText = ""; }
           
           let oldScore = score; score += earnedPts;
@@ -524,7 +564,8 @@ function animate(timestamp) {
     case "walking": {
       let isImmuneWorld2 = (currentSkin === "col_koruyucusu" || currentSkin === "efsanevi"); 
       let isImmuneWorld3 = (currentSkin === "buz_bekcisi" || currentSkin === "efsanevi");
-      let isImmuneWorld4 = (currentSkin === "efsanevi");
+      let isImmuneWorld4 = (currentSkin === "efsanevi"); // Efsanevi her şeyden korur
+      let isImmuneFire = (currentSkin === "cehennem_zebanisi" || currentSkin === "efsanevi"); // Cehennem Zebanisi + Efsanevi ateşten korur
 
       monsters.forEach(m => { 
           if (m.dead) return; 
@@ -535,6 +576,19 @@ function animate(timestamp) {
           } else if (m.world === 4) {
               if (Math.abs(heroX - m.x) < 15 && m.y > -50 && m.y < 10) {
                   if(!isImmuneWorld4) { phase = "dead_monster"; fallSound.currentTime = 0; fallSound.play().catch(e=>{}); }
+              }
+          }
+      });
+
+      // 🔥 CEHENNEM ATEŞİNE ÇARPMA KONTROLÜ
+      platforms.forEach(p => {
+          if(p.hasFireRain && !isImmuneFire) {
+              if (Math.abs(heroX - p.fireGapX) < 15) { // Ateşin hizasından geçiyorsa
+                  let heroActualY = canvasHeight - platformHeight - (heroHeight / 2);
+                  if (Math.abs(p.fireY - heroActualY) < 30) { // Ateş o an ninjanın tepesindeyse
+                      phase = "dead_monster"; 
+                      fallSound.currentTime = 0; fallSound.play().catch(e=>{});
+                  }
               }
           }
       });
@@ -555,8 +609,8 @@ function animate(timestamp) {
               currentPlat.chestOpened = true; let r = Math.random();
               
               let gemChance = 0.05;
-              if (currentPet === "ejderha") {
-                  let lvl = ownedPets["ejderha"] || 1;
+              if (currentPet === "ejderha" || currentPet === "grifon") {
+                  let lvl = ownedPets[currentPet] || 1;
                   gemChance += (lvl * 0.03); 
               }
               
@@ -574,9 +628,7 @@ function animate(timestamp) {
     case "transitioning": { sceneOffset += dt / transitioningSpeed; const [nextPlatform] = thePlatformTheStickHits(); if (sceneOffset > nextPlatform.x + nextPlatform.w - paddingX) { sticks.push({ x: nextPlatform.x + nextPlatform.w, length: 0, rotation: 0 }); phase = "waiting"; cleanUpOldObjects(); } break; }
     case "dead_monster": {
         if (currentMonkeyLives > 0) { currentMonkeyLives--; phase = "waiting"; perfectElement.innerText = texts[currentLang].monkey; perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1; setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); let m = monsters.find(mo => Math.abs(heroX - mo.x) < 30); if (m) m.dead = true; break; }
-        
-        saveScoreToAPI(); // 🔥 BUG FIX: ANINDA KAYDET
-
+        saveScoreToAPI();
         perfectElement.innerText = texts[currentLang].monsterDie; perfectElement.style.color = "#e74c3c"; perfectElement.style.opacity = 1; 
         if (isDuelMode) { phase = "dead_options"; restartButton.style.display = "block"; break; }
         let reviveMenuEl = document.getElementById("reviveMenu"); if (!adReviveUsedThisRun && reviveMenuEl) { phase = "dead_options"; reviveMenuEl.style.display = "flex"; break; }
@@ -586,9 +638,7 @@ function animate(timestamp) {
       if (sticks[sticks.length - 1].rotation < 180) sticks[sticks.length - 1].rotation += dt / turningSpeed; heroY += dt / fallingSpeed; const maxHeroY = platformHeight + 100 + (window.innerHeight || 800) / 2;
       if (heroY > maxHeroY) {
         if (currentMonkeyLives > 0) { currentMonkeyLives--; phase = "waiting"; heroY = 0; heroX = sticks[sticks.length - 1].x - heroDistanceFromEdge; sticks[sticks.length - 1].length = 0; sticks[sticks.length - 1].rotation = 0; perfectElement.innerText = texts[currentLang].monkey; perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1; draw(); setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); break; }
-        
-        saveScoreToAPI(); // 🔥 BUG FIX: ANINDA KAYDET
-
+        saveScoreToAPI();
         if (isDuelMode) { phase = "dead_options"; perfectElement.innerText = texts[currentLang].duelEnded; perfectElement.style.color = "#e74c3c"; perfectElement.style.opacity = 1; restartButton.style.display = "block"; break; }
         let reviveMenuEl = document.getElementById("reviveMenu"); if (!adReviveUsedThisRun && reviveMenuEl) { phase = "dead_options"; reviveMenuEl.style.display = "flex"; break; }
         phase = "dead_options"; restartButton.style.display = "block"; break;
@@ -610,6 +660,29 @@ function draw() {
     ctx.save(); ctx.clearRect(0, 0, wWidth, wHeight); drawBackground(); 
     ctx.translate(Math.floor((wWidth - canvasWidth) / 2 - sceneOffset), Math.floor((wHeight - canvasHeight) / 2));
     
+    // 🔥 CEHENNEM ATEŞLERİ ÇİZİMİ (JS İle Neon Ateş)
+    platforms.forEach(p => {
+        if(p.hasFireRain) {
+            ctx.save();
+            ctx.translate(p.fireGapX, p.fireY);
+            // Ateşin Ana Çekirdeği
+            ctx.beginPath();
+            ctx.arc(0, 0, 8, 0, Math.PI * 2);
+            ctx.fillStyle = "#ffffff";
+            ctx.shadowColor = "#ff3300";
+            ctx.shadowBlur = 15;
+            ctx.fill();
+            // Ateşin Arkasında Bıraktığı Kuyruk İzi
+            ctx.beginPath();
+            ctx.moveTo(-6, 0);
+            ctx.lineTo(0, -35);
+            ctx.lineTo(6, 0);
+            ctx.fillStyle = "rgba(255, 69, 0, 0.8)";
+            ctx.fill();
+            ctx.restore();
+        }
+    });
+
     if (yeeyAnimTimer > 0) {
         ctx.save();
         let yOffset = 0;
@@ -808,14 +881,25 @@ function renderShop() {
             let eqBtn = (currentPet === key) ? `<span style=\"font-size:13px; margin-right:5px;\">${t.equipped}</span>` : `<button style=\"padding: 5px 10px; font-size:12px; margin-right:5px; border:none; background:#34495e; color:white; border-radius:5px; cursor:pointer;\" onclick=\"equipPet('${key}')\">${t.equip}</button>`; 
             let upgBtn = ""; 
             
-            if (level < 5 && (key === "yarasa" || key === "ejderha")) {
+            // 🔥 YENİ PETLERİN DİNAMİK ELMAS BEDELLERİ EKLENDİ
+            if (key === "anka") {
+                let costVal = 5 + (level * 5); 
+                if (level < 6) upgBtn = `<button style=\"background:#e67e22; padding: 4px 8px; font-size:11px; border:none; color:white; border-radius:5px; cursor:pointer;\" onclick=\"upgradePet('${key}', ${level+1}, ${costVal})\">⬆️ 💎 ${costVal}</button>`;
+                else upgBtn = `<span style=\"font-size:11px; color:red; font-weight:bold;\">${t.max}</span>`;
+            }
+            else if (key === "grifon") {
+                let costVal = 2 + (level * 5); 
+                if (level < 6) upgBtn = `<button style=\"background:#e67e22; padding: 4px 8px; font-size:11px; border:none; color:white; border-radius:5px; cursor:pointer;\" onclick=\"upgradePet('${key}', ${level+1}, ${costVal})\">⬆️ 💎 ${costVal}</button>`;
+                else upgBtn = `<span style=\"font-size:11px; color:red; font-weight:bold;\">${t.max}</span>`;
+            }
+            else if (level < 5 && (key === "yarasa" || key === "ejderha")) {
                 let costVal = level * 5; 
                 upgBtn = `<button style=\"background:#e67e22; padding: 4px 8px; font-size:11px; border:none; color:white; border-radius:5px; cursor:pointer;\" onclick=\"upgradePet('${key}', ${level+1}, ${costVal})\">⬆️ 💎 ${costVal}</button>`; 
             }
             else if (level < 5 && key === "kurt") { 
                 let costVal = level * 2; 
                 upgBtn = `<button style=\"background:#e67e22; padding: 4px 8px; font-size:11px; border:none; color:white; border-radius:5px; cursor:pointer;\" onclick=\"upgradePet('${key}', ${level+1}, ${costVal})\">⬆️ 💎 ${costVal}</button>`; 
-            } else if (level < 4 && key !== "kurt" && key !== "yarasa" && key !== "ejderha") { 
+            } else if (level < 4 && key !== "kurt" && key !== "yarasa" && key !== "ejderha" && key !== "anka" && key !== "grifon") { 
                 let costVal = (level === 1) ? 1 : (level === 2) ? 3 : 5; 
                 upgBtn = `<button style=\"background:#e67e22; padding: 4px 8px; font-size:11px; border:none; color:white; border-radius:5px; cursor:pointer;\" onclick=\"upgradePet('${key}', ${level+1}, ${costVal})\">⬆️ 💎 ${costVal}</button>`; 
             } else { 
@@ -841,10 +925,6 @@ window.equipPet = function(petKey) { const t = texts[currentLang]; if (phase !==
 
 window.showVipMenu = function() { document.getElementById("shopModal").style.display = "none"; document.getElementById("vipInfoModal").style.display = "flex"; };
 window.closeVipMenu = function() { document.getElementById("vipInfoModal").style.display = "none"; document.getElementById("shopModal").style.display = "block"; };
-
-// ==========================================
-// 🔥 CS:GO TARZI KASA AÇMA ANİMASYONU VE KORUMA 🔥
-// ==========================================
 
 const caseModal = document.createElement("div");
 caseModal.id = "csgoCaseModal";
