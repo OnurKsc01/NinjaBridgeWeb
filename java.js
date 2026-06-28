@@ -234,7 +234,9 @@ document.getElementById("reviveAdBtn").addEventListener("click", () => {
     }).catch(() => { });
 });
 
-document.getElementById("skipReviveBtn").addEventListener("click", () => { document.getElementById("reviveMenu").style.display = "none"; restartButton.style.display = "block"; saveScoreToAPI(); });
+// 🔥 BUG FİX: Oyuncu reklam izlemeden çıkarsa buton anında kaydetsin diye temizlendi (Artık otomatik kaydediyor)
+document.getElementById("skipReviveBtn").addEventListener("click", () => { document.getElementById("reviveMenu").style.display = "none"; restartButton.style.display = "block"; });
+
 document.getElementById("watchEarnBtn").addEventListener("click", () => {
     if (phase !== "waiting") return;
     if (!adController) { if(tg && tg.showAlert) tg.showAlert(texts[currentLang].msgAdFail); return; }
@@ -325,7 +327,7 @@ function resetGame() {
   
   totalPlatformsGenerated = 1; 
   vampirePlatformTarget = Math.floor(Math.random() * 31) + 10; 
-  yeeyPlatformTarget = vampirePlatformTarget + 12; // 🔥 Vampirden tam 12 platform sonra çıkar!
+  yeeyPlatformTarget = vampirePlatformTarget + 12; 
   vampireEffectTimer = 0; 
   yeeyAnimTimer = 0;
 
@@ -489,7 +491,6 @@ function animate(timestamp) {
         if (nextPlatform) {
           nextPlatform.isMoving = false; 
 
-          // 🔥 YEEEY TETİKLEYİCİSİ
           if (nextPlatform.isYeeyTrigger && !nextPlatform.yeeyTriggered) {
               nextPlatform.yeeyTriggered = true;
               yeeyAnimTimer = 100; 
@@ -542,7 +543,6 @@ function animate(timestamp) {
 
       let currentPlat = platforms.find(p => heroX >= p.x && heroX <= p.x + p.w);
       
-      // 🔥 VAMPİR TETİKLEYİCİSİ (Zaman 450'ye Çıkarıldı = 7.5 Saniye)
       if (currentPlat && currentPlat.isVampireTrigger && !currentPlat.vampireTriggered) { 
           currentPlat.vampireTriggered = true; 
           vampireEffectTimer = 450; 
@@ -574,18 +574,24 @@ function animate(timestamp) {
     case "transitioning": { sceneOffset += dt / transitioningSpeed; const [nextPlatform] = thePlatformTheStickHits(); if (sceneOffset > nextPlatform.x + nextPlatform.w - paddingX) { sticks.push({ x: nextPlatform.x + nextPlatform.w, length: 0, rotation: 0 }); phase = "waiting"; cleanUpOldObjects(); } break; }
     case "dead_monster": {
         if (currentMonkeyLives > 0) { currentMonkeyLives--; phase = "waiting"; perfectElement.innerText = texts[currentLang].monkey; perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1; setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); let m = monsters.find(mo => Math.abs(heroX - mo.x) < 30); if (m) m.dead = true; break; }
+        
+        saveScoreToAPI(); // 🔥 BUG FIX: ANINDA KAYDET
+
         perfectElement.innerText = texts[currentLang].monsterDie; perfectElement.style.color = "#e74c3c"; perfectElement.style.opacity = 1; 
-        if (isDuelMode) { phase = "dead_options"; restartButton.style.display = "block"; saveScoreToAPI(); break; }
+        if (isDuelMode) { phase = "dead_options"; restartButton.style.display = "block"; break; }
         let reviveMenuEl = document.getElementById("reviveMenu"); if (!adReviveUsedThisRun && reviveMenuEl) { phase = "dead_options"; reviveMenuEl.style.display = "flex"; break; }
-        phase = "dead_options"; restartButton.style.display = "block"; saveScoreToAPI(); break;
+        phase = "dead_options"; restartButton.style.display = "block"; break;
     }
     case "falling": {
       if (sticks[sticks.length - 1].rotation < 180) sticks[sticks.length - 1].rotation += dt / turningSpeed; heroY += dt / fallingSpeed; const maxHeroY = platformHeight + 100 + (window.innerHeight || 800) / 2;
       if (heroY > maxHeroY) {
         if (currentMonkeyLives > 0) { currentMonkeyLives--; phase = "waiting"; heroY = 0; heroX = sticks[sticks.length - 1].x - heroDistanceFromEdge; sticks[sticks.length - 1].length = 0; sticks[sticks.length - 1].rotation = 0; perfectElement.innerText = texts[currentLang].monkey; perfectElement.style.color = "#FF8C00"; perfectElement.style.opacity = 1; draw(); setTimeout(() => { perfectElement.style.opacity = 0; perfectElement.style.color = "#FFD700"; }, 1500); break; }
-        if (isDuelMode) { phase = "dead_options"; perfectElement.innerText = texts[currentLang].duelEnded; perfectElement.style.color = "#e74c3c"; perfectElement.style.opacity = 1; restartButton.style.display = "block"; saveScoreToAPI(); break; }
+        
+        saveScoreToAPI(); // 🔥 BUG FIX: ANINDA KAYDET
+
+        if (isDuelMode) { phase = "dead_options"; perfectElement.innerText = texts[currentLang].duelEnded; perfectElement.style.color = "#e74c3c"; perfectElement.style.opacity = 1; restartButton.style.display = "block"; break; }
         let reviveMenuEl = document.getElementById("reviveMenu"); if (!adReviveUsedThisRun && reviveMenuEl) { phase = "dead_options"; reviveMenuEl.style.display = "flex"; break; }
-        phase = "dead_options"; restartButton.style.display = "block"; saveScoreToAPI(); break;
+        phase = "dead_options"; restartButton.style.display = "block"; break;
       }
       break;
     }
@@ -604,7 +610,6 @@ function draw() {
     ctx.save(); ctx.clearRect(0, 0, wWidth, wHeight); drawBackground(); 
     ctx.translate(Math.floor((wWidth - canvasWidth) / 2 - sceneOffset), Math.floor((wHeight - canvasHeight) / 2));
     
-    // 🔥 YEEEY ANİMASYONU ÇİZİMİ (Sütun arkasında maskelensin diye platformdan ÖNCE)
     if (yeeyAnimTimer > 0) {
         ctx.save();
         let yOffset = 0;
@@ -634,18 +639,15 @@ function draw() {
 
     ctx.restore(); 
 
-    // 🔥 VAMPİR ANİMASYONU (7.5 Saniye Süren Yeni Versiyon: Ortada Arkadan Öne Büyüyerek Gelir)
     if (vampireEffectTimer > 0) {
         ctx.save();
         let totalDuration = 450; 
         let progress = (totalDuration - vampireEffectTimer) / totalDuration; 
 
-        // Belirme ve Silinme Opaklığı (İlk %20'de çıkar, son %20'de silinir)
         let opacity = 1;
         if (progress < 0.2) opacity = progress / 0.2;
         else if (progress > 0.8) opacity = (1 - progress) / 0.2;
 
-        // Büyüme (Arkadan öne gelme) efekti
         let scale = 0.5 + (progress * 1.5); 
 
         let vX = wWidth / 2;
@@ -678,7 +680,6 @@ function draw() {
         ctx.restore(); easterMessageTimer--;
     }
 
-    // 🔥 ÖZEL TEŞEKKÜR MESAJI (Skor 16 - 20 arasındayken)
     if (score >= 16 && score <= 20) {
         ctx.save();
         ctx.font = "bold 20px Arial";
