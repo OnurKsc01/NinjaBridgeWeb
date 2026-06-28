@@ -211,11 +211,11 @@ const petData = {
     "anka": { nameTr: "Anka Kuşu", nameEn: "Phoenix", descTr: "Dev Kusursuz Alan & Çifte Kombo", descEn: "Huge Perfect & Double Combo", price: 3000, emoji: "🦚" }
 };
 
-const preRenderedPets = {}; try { Object.keys(petData).forEach(key => { let c = document.createElement('canvas'); c.width = 32; c.height = 32; let cCtx = c.getContext('2d'); cCtx.font = "22px Arial"; cCtx.fillText(petData[key].emoji, 2, 24); preRenderedPets[key] = c; let img = new Image(); img.src = key + '.png'; img.onload = () => { cCtx.clearRect(0, 0, 32, 32); cCtx.drawImage(img, 0, 0, 26, 26); }; }); } catch(e) {}
+const preRenderedPets = {}; try { Object.keys(petData).forEach(key => { let c = document.createElement('canvas'); c.width = 40; c.height = 40; let cCtx = c.getContext('2d'); cCtx.font = "30px Arial"; cCtx.fillText(petData[key].emoji, 2, 30); preRenderedPets[key] = c; let img = new Image(); img.src = key + '.png'; img.onload = () => { cCtx.clearRect(0, 0, 40, 40); cCtx.drawImage(img, 0, 0, 36, 36); }; }); } catch(e) {}
 
 const introductionElement = document.getElementById("introduction"); const perfectElement = document.getElementById("perfect"); const restartButton = document.getElementById("restart"); const scoreElement = document.getElementById("score"); const coinCountElement = document.getElementById("coinCount"); const shopCoinCountElement = document.getElementById("shopCoinCount");
 
-let devClickCount = 0; scoreElement.addEventListener("click", () => { devClickCount++; if (devClickCount >= 10) { score += 4000; scoreElement.innerText = score; devClickCount = 0; if(tg && tg.showAlert) tg.showAlert("👑 Geliştirici Hilesi: +4000 Puan Eklendi!"); } });
+let devClickCount = 0; scoreElement.addEventListener("click", () => { devClickCount++; if (devClickCount >= 10) { score += 1000; scoreElement.innerText = score; devClickCount = 0; if(tg && tg.showAlert) tg.showAlert("👑 Geliştirici Hilesi: +1000 Puan Eklendi!"); } });
 
 const bgMusic = new Audio('bg.mp3'); bgMusic.loop = true; bgMusic.volume = 0.3; 
 const comboSound = new Audio('combo.mp3'); comboSound.volume = 0.8;
@@ -811,7 +811,7 @@ function drawHero() {
     const legDistance = 5; ctx.beginPath(); ctx.arc(legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.beginPath(); ctx.arc(-legDistance, 11.5, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.beginPath(); ctx.fillStyle = "white"; ctx.arc(5, -7, 3, 0, Math.PI * 2, false); ctx.fill(); ctx.fillStyle = skin.bandana; ctx.fillRect(-heroWidth / 2 - 1, -12, heroWidth + 2, 4.5); ctx.beginPath(); ctx.moveTo(-9, -14.5); ctx.lineTo(-17, -18.5); ctx.lineTo(-14, -8.5); ctx.fill(); ctx.beginPath(); ctx.moveTo(-10, -10.5); ctx.lineTo(-15, -3.5); ctx.lineTo(-5, -7); ctx.fill(); ctx.restore(); 
 }
 
-function drawPet() { if (currentPet === "default") return; let bounce = (phase === "walking" || phase === "transitioning") ? Math.abs(Math.sin(Date.now() / 100)) * 6 : 0; ctx.save(); ctx.translate(heroX - 32, heroY + canvasHeight - platformHeight - 20 - bounce); if (preRenderedPets[currentPet]) { ctx.drawImage(preRenderedPets[currentPet], 0, 0); } ctx.restore(); }
+function drawPet() { if (currentPet === "default") return; let bounce = (phase === "walking" || phase === "transitioning") ? Math.abs(Math.sin(Date.now() / 100)) * 6 : 0; ctx.save(); ctx.translate(heroX - 38, heroY + canvasHeight - platformHeight - 26 - bounce); if (preRenderedPets[currentPet]) { ctx.drawImage(preRenderedPets[currentPet], 0, 0); } ctx.restore(); }
 function drawRoundedRect(x, y, width, height, radius) { ctx.beginPath(); ctx.moveTo(x, y + radius); ctx.lineTo(x, y + height - radius); ctx.arcTo(x, y + height, x + radius, y + height, radius); ctx.lineTo(x + width - radius, y + height); ctx.arcTo(x + width, y + height, x + width, y + height - radius, radius); ctx.lineTo(x + width, y + radius); ctx.arcTo(x + width, y, x + width - radius, y, radius); ctx.lineTo(x + radius, y); ctx.arcTo(x, y, x, y + radius, radius); ctx.fill(); }
 
 function drawSticks() { 
