@@ -435,7 +435,7 @@ function generatePlatform() {
         lastPlatform.fireSpeed = 5 + Math.random() * 3; 
     }
     
-    if (score >= 1500 && !isChestSpawn && platforms.length > 1) {
+    if (score >= 2500 && !isChestSpawn && platforms.length > 1) {
         if (Math.random() < 0.3) {
             newPlatform.isMoving = true;
             newPlatform.dir = Math.random() > 0.5 ? 1 : -1;
