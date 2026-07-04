@@ -139,7 +139,7 @@ function isMenuOpen() {
 let tg = window.Telegram?.WebApp;
 let user = tg?.initDataUnsafe?.user;
 let tgUserId = user ? user.id : 123456789;
-let tgUserName = user ? user.first_name : "Foxx";
+let tgUserName = user ? user.first_name : "Test Oyuncusu";
 
 let startParam = tg?.initDataUnsafe?.start_param;
 const urlParams = new URLSearchParams(window.location.search);
