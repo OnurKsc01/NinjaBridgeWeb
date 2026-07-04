@@ -1,5 +1,5 @@
 🥷 Ninja Bridge - Telegram Mini App Game
-(Eğer varsa buraya oyunun havalı bir ekran görüntüsü veya GIF linki koyabilirsin)
+/////  https://imgur.com/a/bFC0c8N  /////
 
 🇹🇷 [Türkçe] | 🇬🇧 [English]
 (Aşağı kaydırarak İngilizce versiyonuna ulaşabilirsiniz / Scroll down for the English version)
